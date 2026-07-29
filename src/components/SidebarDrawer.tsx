@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 import useAuthStore from '../store/useAuthStore';
+import { playClickSound } from '../utils/feedback';
 
 const DRAWER_WIDTH = 280;
 
@@ -46,6 +47,7 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
   }, [visible]);
 
   const handleClose = () => {
+    playClickSound();
     translateX.value = withTiming(-DRAWER_WIDTH, { duration: 160, easing: Easing.in(Easing.quad) });
     opacity.value = withTiming(0, { duration: 140 }, () => {
       runOnJS(onClose)();
@@ -98,6 +100,7 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
                 key={item.screen}
                 style={[styles.menuItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
+                  playClickSound();
                   onNavigate(item.screen);
                   handleClose();
                 }}

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
+import { playClickSound } from '../utils/feedback';
 
 export interface BottomNavProps {
   activeTab: string;
@@ -13,6 +14,11 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 6);
+
+  const handleTabPress = (tab: string) => {
+    playClickSound();
+    onTabSelect(tab);
+  };
 
   return (
     <View
@@ -29,7 +35,7 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
       {/* Home Tab */}
       <TouchableOpacity
         style={styles.tab}
-        onPress={() => onTabSelect('home')}
+        onPress={() => handleTabPress('home')}
         activeOpacity={0.7}
       >
         <Ionicons
@@ -50,7 +56,7 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
       {/* New Appointment Tab (+ Icon) */}
       <TouchableOpacity
         style={styles.centerTab}
-        onPress={() => onTabSelect('newAppt')}
+        onPress={() => handleTabPress('newAppt')}
         activeOpacity={0.8}
       >
         <View style={[styles.plusCircle, { backgroundColor: colors.primary }]}>
@@ -61,7 +67,7 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
       {/* Settings Tab */}
       <TouchableOpacity
         style={styles.tab}
-        onPress={() => onTabSelect('settings')}
+        onPress={() => handleTabPress('settings')}
         activeOpacity={0.7}
       >
         <Ionicons

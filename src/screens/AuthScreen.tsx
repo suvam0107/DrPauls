@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../theme/ThemeContext';
 import useAuthStore from '../store/useAuthStore';
+import { playLoginSound, playClickSound } from '../utils/feedback';
 
 export interface AuthScreenProps {
   onLoginSuccess?: () => void;
@@ -39,6 +40,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   // Auto-fill demo credentials helper
   const handleQuickLogin = (demoEmail: string, demoPass: string) => {
+    playClickSound();
     setEmail(demoEmail);
     setPassword(demoPass);
     setErrorMsg('');
@@ -57,6 +59,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     setLoading(false);
 
     if (res.success && res.user) {
+      playLoginSound();
       Toast.show({
         type: 'success',
         text1: `Welcome back, ${res.user.name}`,
@@ -85,7 +88,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         {/* Clinic Branding Header */}
         <View style={styles.brandHeader}>
           <Image
-            source={require('../../assets/logo.png')}
+            source={require('../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -136,7 +139,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
+              <TouchableOpacity onPress={() => { playClickSound(); setShowPassword(!showPassword); }} hitSlop={8}>
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={18}

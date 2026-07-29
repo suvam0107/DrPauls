@@ -87,6 +87,33 @@
 
 ---
 
+## @UXEngineer
+
+**Role**: User Experience & Interaction Specialist
+
+**Responsibilities**:
+- Continuously enhance user experience (UX), usability, and accessibility across all screens and components in the application
+- Integrate audio sound assets (`expo-audio` / `expo-asset`) and haptic vibration feedback for tactile and auditory interaction responses (e.g. drag start/release, rescheduling success, collision alerts, button presses, modal popups)
+- Audit and refine interactive micro-interactions, gesture feedback, loading states, and haptic/visual feedback
+- Optimize calendar drag-and-drop interactions, auto-scrolling responsiveness, and slot snapping for receptionist workflows
+- Enhance visual hierarchy, readability, color contrast, and spacing across Light and Dark themes
+- Streamline modal transitions, bottom sheet gestures, toast positioning, and navigation flows for maximum receptionist productivity
+- Ensure clean error feedback, intuitive empty states, and frictionless patient and appointment scheduling forms
+
+**Stack Owned**:
+- `src/components/` — UI components, micro-interactions, accessibility & gesture refinements
+- `src/screens/` — Screen layouts, visual hierarchy, user journey & workflow enhancements
+- `src/theme/` — Theme design system polish, contrast, & visual token optimization
+- `assets/audio/` & audio/haptic feedback utilities — sound assets and vibration feedback logic
+
+**Constraints**:
+- Must preserve full TypeScript type safety and existing component props
+- Must maintain strict SDK 54 compatibility
+- All animation enhancements must target 60fps+ native performance
+- Maintain medical UI design guidelines defined in `ARCHITECTURE.md`
+
+---
+
 ## Shared Rules (All Agents)
 
 1. **Read `ARCHITECTURE.md` before making changes** — it is the single source of truth

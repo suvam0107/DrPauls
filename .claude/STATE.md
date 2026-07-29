@@ -6,36 +6,35 @@
 ---
 
 ## Last Updated
-`2026-07-29` — Disabled appointment creation on past timeslots, low-latency 60fps VSync auto-scroll loop (`requestAnimationFrame`), Week View date header tap-to-switch Day View, patient double-booking prevention, and side-by-side split layout for concurrent appointments.
+`2026-07-29` — Comprehensive audio and haptic feedback integration completed throughout the UI (`src/utils/feedback.ts`, `App.tsx`, `AuthScreen.tsx`, `ExitConfirmationModal.tsx`, `LogoutConfirmationModal.tsx`, `DraggableChip.tsx`, `CreateAppointmentSheet.tsx`, `AppointmentDetailModal.tsx`, `Header.tsx`, `BottomNav.tsx`, `SidebarDrawer.tsx`, `CalendarHeader.tsx`, `AppointmentChip.tsx`, `Select.tsx`, `SearchInput.tsx`).
 
 ---
 
 ## Current Sprint Focus
 
-### Disabled Appointment Creation on Past Timeslots (`@Frontend`)
-- **Past Slot Protection**:
-  - Implemented `isPastSlot(dateStr, slotTime)` helper in [`src/utils/dateUtils.ts`](file:///d:/IconWizard/DrPauls/src/utils/dateUtils.ts).
-  - Evaluates if a timeslot is earlier than the current date and time.
-  - In [`CalendarGrid.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/CalendarGrid.tsx), any slot where `isPastSlot(...) === true` has `disabled={true}` and `onPress` disabled, strictly preventing tap to open `CreateAppointmentSheet` for past slots.
-  - Applies a subtle past slot background overlay (`isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)'`) to visually signal inactive past timeslots to receptionists.
+### UI Audio & Haptic Feedback Engine (`@UXEngineer`)
+- **Centralized Controller ([`src/utils/feedback.ts`](file:///d:/IconWizard/DrPauls/src/utils/feedback.ts))**:
+  - Leverages `expo-audio` `createAudioPlayer` and `expo-haptics` (with `react-native` `Vibration` fallback).
+  - Priority hierarchy & cooldown locks prevent double-firing or audio overlapping.
+- **7 Audio & Haptic Asset Mappings**:
+  1. `click.wav` + Short Haptic: Taps on buttons, tabs, dropdowns, filters, chips, theme toggles, and drawer items.
+  2. `navigation.wav` + Short Haptic: OS hardware back button & back gesture navigation stack pops (`router.back()`).
+  3. `confirmation.wav` + Short Haptic: Presentation of Exit Confirmation Modal and Logout Confirmation Modal.
+  4. `login.wav` + Medium Haptic: Successful user sign in.
+  5. `logout.wav` + Medium Haptic: Successful user sign out confirmation.
+  6. `appointment_update_success.wav` + Medium Haptic: Successful appointment drag-reschedule, creation, or status change (toast trigger).
+  7. `appointment_update_failure.wav` + Medium Haptic: Failed appointment reschedule, collision, or double-booking error (toast trigger).
+- **Overlap Prevention Enforcement**:
+  - Sign Out click triggers `confirmation.wav` (suppresses `click.wav`).
+  - Hardware back button on Home screen triggers `confirmation.wav` for Exit App modal (suppresses `navigation.wav`).
+  - Sign Out confirmation action triggers `logout.wav` (suppresses `click.wav`).
 
-### Low-Latency Jitter-Free Auto-Scroll Loop (`@Frontend`)
-- **VSync-Tethered Motion**:
-  - Native `requestAnimationFrame` loop in [`DraggableChip.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/DraggableChip.tsx).
-  - Fires in lockstep with native screen refresh VSync ticks (60Hz / 90Hz / 120Hz).
-  - Synchronizes chip position `pan.setValue` with `scrollRef.current?.scrollTo({ y: nextOffset, animated: false })` on every single VSync tick for smooth, zero-jitter, low-latency scrolling.
-
-### Week View Date Header Tap-to-Switch Day View (`@Frontend`)
-- **Direct Navigation**:
-  - Wrapped each day cell in the Week View date header row in [`CalendarGrid.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/CalendarGrid.tsx) with `TouchableOpacity`.
-  - Connected `onDateSelect={handleMonthDateSelect}` in [`CalendarScreen.tsx`](file:///d:/IconWizard/DrPauls/src/screens/CalendarScreen.tsx).
-  - Tapping any date in the Week View header row updates `selectedDate` and smoothly switches the active view to Day View for that date.
-
-### Patient Double-Booking Prevention & Multi-Doctor Layout
-- **Patient Double-Booking Prevention**:
-  - `validateSlot()` in [`useAppointmentStore.ts`](file:///d:/IconWizard/DrPauls/src/store/useAppointmentStore.ts) rejects ANY overlapping timeslot for the same patient across all doctors.
-- **Side-by-Side Split Column Layout**:
-  - `computeAppointmentLayouts()` in [`src/utils/dateUtils.ts`](file:///d:/IconWizard/DrPauls/src/utils/dateUtils.ts) groups concurrent appointments for different doctors side-by-side in Day & Week views.
+### Calendar Grid & Appointment Rescheduling
+- **Disabled Appointment Creation on Past Slots**: `isPastSlot()` helper disables tap on past slots visually and functionally.
+- **Low-Latency VSync Auto-Scroll**: `requestAnimationFrame` loop in `DraggableChip.tsx` for 60fps jitter-free auto-scrolling during drag.
+- **Week View Header Navigation**: Tapping any date in the Week View date header row switches directly to Day View for that date.
+- **Patient Double-Booking Prevention**: `validateSlot()` strictly prevents a patient from having two concurrent appointments across any doctor.
+- **Multi-Doctor Concurrent Split Layout**: Side-by-side split width positioning for overlapping doctor appointments.
 
 ---
 
@@ -43,19 +42,16 @@
 
 ### Infrastructure & Dependencies
 - [x] Full TypeScript strict mode (`tsconfig.json`, `src/types/index.ts`)
+- [x] `@UXEngineer` agent scope updated in `AGENTS.md` and `.claude/AGENTS.md` to include audio assets & vibration feedback
 - [x] Expo SDK 54.0.36
+- [x] `expo-audio`, `expo-asset`, `expo-haptics` installed & SDK-aligned
+- [x] Centralized sound & haptics feedback controller (`src/utils/feedback.ts`)
+- [x] Audio and haptics connected to all 7 user interaction event types
+- [x] Audio overlap suppression rules enforced across modals, auth, and navigation
 - [x] `@react-native-async-storage/async-storage` persistent token engine
 - [x] Global themed Toast (`AppToast.tsx`) with bottom margin above BottomNav
-- [x] Entrypoint `"main": "index.ts"` in `package.json`
 - [x] `npx tsc --noEmit` — 0 errors
 - [x] `npx expo-doctor` — 18/18 checks pass
-
-### Components & Screens (@Frontend & @DataEngineer)
-- [x] `dateUtils.ts` — `isPastSlot()` helper and `computeAppointmentLayouts()` side-by-side cluster math.
-- [x] `CalendarGrid.tsx` — Past timeslot tap disabled with subtle styling; Week View header touchable date cells.
-- [x] `DraggableChip.tsx` — Low-latency 60fps `requestAnimationFrame` VSync auto-scroll loop with synchronized chip motion.
-- [x] `CalendarScreen.tsx` — `onDateSelect` switches to Day View mode on date tap.
-- [x] `useAppointmentStore.ts` — `validateSlot` enforces doctor interval collision AND patient double-booking prevention.
 
 ---
 
@@ -63,6 +59,5 @@
 _None_
 
 ## Notes
-- `npx expo-doctor`: 18/18 checks pass.
+- `npx expo-doctor`: 18/18 checks pass cleanly.
 - `npx tsc --noEmit`: 0 errors.
-- Past timeslot creation strictly disabled visually and functionally.

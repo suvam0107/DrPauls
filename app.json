@@ -4,10 +4,10 @@
     "slug": "DrPauls",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,7 +17,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/logo.png"
+        "foregroundImage": "./assets/images/logo.png"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -41,10 +41,12 @@
         {
           "contactsPermission": "DrPauls needs access to your contacts to easily invite family members or set emergency contacts."
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-asset"
     ],
     "web": {
-      "favicon": "./assets/logo.png"
+      "favicon": "./assets/images/logo.png"
     }
   }
 }

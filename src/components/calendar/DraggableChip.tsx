@@ -13,6 +13,7 @@ import {
 import { GRID_START_HOUR, GRID_END_HOUR } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Appointment } from '../../types';
+import { playAppointmentSuccessSound, playAppointmentFailureSound } from '../../utils/feedback';
 
 const ELIGIBLE_STATUSES: string[] = [
   APPOINTMENT_STATUS.SCHEDULED,
@@ -264,6 +265,7 @@ export default function DraggableChip({
               .getState()
               .moveAppointment(appt.id, newDate, newStartTime, newEndTime);
 
+            playAppointmentSuccessSound();
             Toast.show({
               type: 'success',
               text1: 'Appointment Rescheduled',
@@ -272,6 +274,7 @@ export default function DraggableChip({
               visibilityTime: 3000,
             });
           } else {
+            playAppointmentFailureSound();
             Toast.show({
               type: 'error',
               text1: validation.reason === 'past' ? 'Invalid Time' : 'Slot Collision',

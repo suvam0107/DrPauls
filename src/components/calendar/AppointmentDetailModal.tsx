@@ -8,6 +8,7 @@ import { APPOINTMENT_STATUS } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Appointment } from '../../types';
+import { playAppointmentSuccessSound } from '../../utils/feedback';
 
 export interface ModalContentProps {
   appointment: Appointment;
@@ -20,11 +21,13 @@ function ModalContent({ appointment, onClose }: ModalContentProps) {
 
   const handleStatusChange = (status: string) => {
     useAppointmentStore.getState().updateStatus(appointment.id, status);
+    playAppointmentSuccessSound();
     onClose();
   };
 
   const handleCancel = () => {
     useAppointmentStore.getState().cancelAppointment(appointment.id);
+    playAppointmentSuccessSound();
     onClose();
   };
 

@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { TextInput, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
+import { playClickSound } from '../../utils/feedback';
 
 export interface SearchInputProps {
   value: string;
@@ -39,7 +40,13 @@ export default function SearchInput({
         autoCapitalize="none"
       />
       {!!value && (
-        <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8}>
+        <TouchableOpacity
+          onPress={() => {
+            playClickSound();
+            onChangeText('');
+          }}
+          hitSlop={8}
+        >
           <Ionicons name="close-circle" size={18} color={colors.textMuted} />
         </TouchableOpacity>
       )}

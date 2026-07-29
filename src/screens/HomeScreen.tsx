@@ -10,6 +10,7 @@ import CreateAppointmentSheet from '../components/appointment/CreateAppointmentS
 import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
+import { playClickSound } from '../utils/feedback';
 
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -42,7 +43,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         </View>
         <TouchableOpacity
           style={[styles.calendarQuickBtn, { backgroundColor: colors.primary }]}
-          onPress={() => onNavigate('calendar')}
+          onPress={() => {
+            playClickSound();
+            onNavigate('calendar');
+          }}
         >
           <Ionicons name="calendar-outline" size={18} color="#FFF" />
           <Text style={styles.calendarQuickText}>Full Calendar</Text>
@@ -76,7 +80,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       <View style={styles.quickNavRow}>
         <TouchableOpacity
           style={[styles.quickNavCard, { backgroundColor: colors.primaryLight }]}
-          onPress={() => setShowCreate(true)}
+          onPress={() => {
+            playClickSound();
+            setShowCreate(true);
+          }}
         >
           <Ionicons name="add-circle" size={24} color={colors.primary} />
           <Text style={[styles.quickNavText, { color: colors.primary }]}>New Appt</Text>
@@ -84,7 +91,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
 
         <TouchableOpacity
           style={[styles.quickNavCard, { backgroundColor: colors.surface }]}
-          onPress={() => onNavigate('patients')}
+          onPress={() => {
+            playClickSound();
+            onNavigate('patients');
+          }}
         >
           <Ionicons name="people-outline" size={24} color={colors.text} />
           <Text style={[styles.quickNavText, { color: colors.text }]}>{patientCount} Patients</Text>
@@ -92,7 +102,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
 
         <TouchableOpacity
           style={[styles.quickNavCard, { backgroundColor: colors.surface }]}
-          onPress={() => onNavigate('calendar')}
+          onPress={() => {
+            playClickSound();
+            onNavigate('calendar');
+          }}
         >
           <Ionicons name="time-outline" size={24} color={colors.text} />
           <Text style={[styles.quickNavText, { color: colors.text }]}>Schedule Grid</Text>
@@ -115,7 +128,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
           <TouchableOpacity
             key={appt.id}
             style={[styles.apptCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => setSelectedAppt(appt)}
+            onPress={() => {
+              playClickSound();
+              setSelectedAppt(appt);
+            }}
           >
             <View style={styles.apptTimeCol}>
               <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>

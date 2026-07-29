@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 
+import { playClickSound } from '../utils/feedback';
+
 export interface HeaderProps {
   onMenuPress: () => void;
   onThemeToggle: () => void;
@@ -19,6 +21,16 @@ export default function Header({
   const insets = useSafeAreaInsets();
   const topPadding = Math.max(insets.top, 0);
 
+  const handleMenuPress = () => {
+    playClickSound();
+    onMenuPress();
+  };
+
+  const handleThemeToggle = () => {
+    playClickSound();
+    onThemeToggle();
+  };
+
   return (
     <View
       style={[
@@ -31,20 +43,20 @@ export default function Header({
         },
       ]}
     >
-      <TouchableOpacity onPress={onMenuPress} hitSlop={8}>
+      <TouchableOpacity onPress={handleMenuPress} hitSlop={8}>
         <Ionicons name="menu-outline" size={24} color={colors.text} />
       </TouchableOpacity>
 
       <View style={styles.titleContainer}>
         <Image
-          source={require('../../assets/logo.png')}
+          source={require('../../assets/images/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       </View>
 
-      <TouchableOpacity onPress={onThemeToggle} hitSlop={8}>
+      <TouchableOpacity onPress={handleThemeToggle} hitSlop={8}>
         <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={22} color={colors.text} />
       </TouchableOpacity>
     </View>

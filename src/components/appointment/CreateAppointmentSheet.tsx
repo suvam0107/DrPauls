@@ -24,6 +24,11 @@ import useDoctorStore from '../../store/useDoctorStore';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { todayISO, currentTimeSlot, addMins } from '../../utils/dateUtils';
 import { Patient } from '../../types';
+import {
+  playAppointmentSuccessSound,
+  playAppointmentFailureSound,
+  playClickSound,
+} from '../../utils/feedback';
 
 export interface InitialData {
   date?: string;
@@ -71,10 +76,12 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const handleCreate = () => {
     if (!selectedPatient) {
       setError('Please select or add a patient');
+      playAppointmentFailureSound();
       return;
     }
     if (!doctorId) {
       setError('Please select a doctor');
+      playAppointmentFailureSound();
       return;
     }
 
@@ -103,6 +110,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
       remark,
     });
 
+    playAppointmentSuccessSound();
     onClose();
   };
 

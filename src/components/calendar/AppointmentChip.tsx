@@ -5,6 +5,7 @@ import { formatTime } from '../../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { Appointment } from '../../types';
+import { playClickSound } from '../../utils/feedback';
 
 export interface AppointmentChipProps {
   appointment: Appointment;
@@ -29,6 +30,11 @@ export default function AppointmentChip({
 
   const isCancelled = status === APPOINTMENT_STATUS.CANCELLED;
 
+  const handlePress = () => {
+    playClickSound();
+    if (onPress) onPress(appointment);
+  };
+
   if (isCompact) {
     return (
       <View style={[styles.compactSolidWrapper, { backgroundColor: colors.card }]}>
@@ -38,7 +44,7 @@ export default function AppointmentChip({
             { backgroundColor: chipBgColor, borderColor: rawColor },
             isCancelled && styles.cancelledChip,
           ]}
-          onPress={() => onPress && onPress(appointment)}
+          onPress={handlePress}
           activeOpacity={0.8}
         >
           <View style={styles.topRow}>
@@ -74,7 +80,7 @@ export default function AppointmentChip({
           { backgroundColor: chipBgColor, borderColor: rawColor },
           isCancelled && styles.cancelledChip,
         ]}
-        onPress={() => onPress && onPress(appointment)}
+        onPress={handlePress}
         activeOpacity={0.8}
       >
         <View style={styles.topRow}>

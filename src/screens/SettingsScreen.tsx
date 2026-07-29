@@ -6,6 +6,7 @@ import { useTheme } from '../theme/ThemeContext';
 import useUIStore from '../store/useUIStore';
 import useAuthStore from '../store/useAuthStore';
 import LogoutConfirmationModal from '../components/shared/LogoutConfirmationModal';
+import { playClickSound } from '../utils/feedback';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
@@ -70,7 +71,10 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={isDark}
-              onValueChange={(val) => setThemeMode(val ? 'dark' : 'light')}
+              onValueChange={(val) => {
+                playClickSound();
+                setThemeMode(val ? 'dark' : 'light');
+              }}
               thumbColor={isDark ? colors.primary : '#F4F3F4'}
             />
           </View>

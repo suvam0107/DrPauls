@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
+import { playConfirmationSound, playClickSound } from '../../utils/feedback';
 
 export interface ExitConfirmationModalProps {
   visible: boolean;
@@ -13,7 +14,23 @@ export interface ExitConfirmationModalProps {
 export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: ExitConfirmationModalProps) {
   const { colors } = useTheme();
 
+  useEffect(() => {
+    if (visible) {
+      playConfirmationSound();
+    }
+  }, [visible]);
+
   if (!visible) return null;
+
+  const handleCancel = () => {
+    playClickSound();
+    onCancel();
+  };
+
+  const handleConfirm = () => {
+    playClickSound();
+    onConfirm();
+  };
 
   return (
     <Modal
@@ -21,10 +38,10 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onCancel}
+      onRequestClose={handleCancel}
     >
       <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={onCancel}>
+        <TouchableWithoutFeedback onPress={handleCancel}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
@@ -39,7 +56,7 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface }]}
-              onPress={onCancel}
+              onPress={handleCancel}
               activeOpacity={0.7}
             >
               <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
@@ -47,7 +64,7 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
 
             <TouchableOpacity
               style={[styles.btn, styles.exitBtn, { backgroundColor: colors.danger }]}
-              onPress={onConfirm}
+              onPress={handleConfirm}
               activeOpacity={0.8}
             >
               <Ionicons name="exit-outline" size={16} color="#FFFFFF" />

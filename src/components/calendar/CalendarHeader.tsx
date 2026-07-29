@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { APPOINTMENT_STATUS, STATUS_COLORS } from '../../constants';
 import { formatDateShort, formatMonthYear, dayNumber, weekdayLabel } from '../../utils/dateUtils';
 import { CalendarView } from '../../types';
+import { playClickSound } from '../../utils/feedback';
 
 const VIEWS = ['Day', 'Week', 'Month'];
 const VIEW_KEYS: CalendarView[] = ['day', 'week', 'month'];
@@ -67,12 +68,27 @@ export default function CalendarHeader({
     }
   };
 
+  const handleDatePress = (deltaOrDate: number | string) => {
+    playClickSound();
+    onDateChange(deltaOrDate);
+  };
+
+  const handleViewPress = (view: CalendarView) => {
+    playClickSound();
+    onViewChange(view);
+  };
+
+  const handleFilterPress = (status: string) => {
+    playClickSound();
+    onFilterToggle(status);
+  };
+
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       {/* Row 1: Date range & Today shortcut */}
       <View style={styles.row}>
         <View style={styles.dateNavGroup}>
-          <TouchableOpacity onPress={() => onDateChange(-1)} hitSlop={8}>
+          <TouchableOpacity onPress={() => handleDatePress(-1)} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
@@ -80,14 +96,14 @@ export default function CalendarHeader({
             {getDateLabel()}
           </Text>
 
-          <TouchableOpacity onPress={() => onDateChange(1)} hitSlop={8}>
+          <TouchableOpacity onPress={() => handleDatePress(1)} hitSlop={8}>
             <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
           style={[styles.todayBtn, { borderColor: colors.primary }]}
-          onPress={() => onDateChange(0)}
+          onPress={() => handleDatePress(0)}
         >
           <Text style={[styles.todayText, { color: colors.primary }]}>Today</Text>
         </TouchableOpacity>
@@ -115,7 +131,7 @@ export default function CalendarHeader({
               <TouchableOpacity
                 key={v}
                 style={styles.viewBtn}
-                onPress={() => onViewChange(key)}
+                onPress={() => handleViewPress(key)}
                 activeOpacity={0.7}
               >
                 <Text
@@ -141,7 +157,7 @@ export default function CalendarHeader({
               <TouchableOpacity
                 key={d}
                 style={[styles.dayPill, active && { backgroundColor: colors.primary }]}
-                onPress={() => onDateChange(d)}
+                onPress={() => handleDatePress(d)}
               >
                 <Text style={[styles.dayName, { color: active ? '#FFF' : colors.textMuted }]}>
                   {weekdayLabel(d)}
@@ -164,7 +180,7 @@ export default function CalendarHeader({
           return (
             <TouchableOpacity
               key={s}
-              onPress={() => onFilterToggle(s)}
+              onPress={() => handleFilterPress(s)}
               style={[
                 styles.filterChip,
                 { borderColor: c, backgroundColor: active ? activeBg : 'transparent' },

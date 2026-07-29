@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
+import { playClickSound } from '../../utils/feedback';
 
 export interface SelectOptionObject {
   label: string;
@@ -38,12 +39,23 @@ export default function Select({
       : selected
     : placeholder;
 
+  const handleOpen = () => {
+    playClickSound();
+    setOpen(true);
+  };
+
+  const handleSelectOption = (val: string) => {
+    playClickSound();
+    onChange(val);
+    setOpen(false);
+  };
+
   return (
     <>
       {label ? <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text> : null}
       <TouchableOpacity
         style={[styles.trigger, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        onPress={() => setOpen(true)}
+        onPress={handleOpen}
         activeOpacity={0.7}
       >
         <Text style={[styles.triggerText, { color: value ? colors.text : colors.textMuted }]}>
@@ -68,10 +80,7 @@ export default function Select({
                 return (
                   <TouchableOpacity
                     style={[styles.option, isActive && { backgroundColor: colors.primaryLight }]}
-                    onPress={() => {
-                      onChange(val);
-                      setOpen(false);
-                    }}
+                    onPress={() => handleSelectOption(val)}
                   >
                     <Text style={[styles.optionText, { color: isActive ? colors.primary : colors.text }]}>
                       {lbl}

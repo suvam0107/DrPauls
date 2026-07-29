@@ -21,6 +21,7 @@ import ExitConfirmationModal from './src/components/shared/ExitConfirmationModal
 
 import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
+import { playNavigationSound, playClickSound } from './src/utils/feedback';
 
 function MainApp() {
   const { colors, isDark } = useTheme();
@@ -65,24 +66,28 @@ function MainApp() {
     const onBackPress = () => {
       // 0. If exit confirmation modal is open -> dismiss modal
       if (showExitModal) {
+        playClickSound();
         setShowExitModal(false);
         return true;
       }
 
       // 1. If create appointment modal is open -> close modal
       if (showCreateModal) {
+        playClickSound();
         setShowCreateModal(false);
         return true;
       }
 
       // 2. If sidebar drawer is open -> close drawer
       if (drawerOpen) {
+        playClickSound();
         setDrawerOpen(false);
         return true;
       }
 
-      // 3. Router back: pop history stack
+      // 3. Router back: pop history stack (navigation.wav: for every navigation through the gesture/back button of OS)
       if (screenHistory.length > 1) {
+        playNavigationSound();
         const updatedHistory = [...screenHistory];
         updatedHistory.pop(); // Remove current screen
         const prevScreen = updatedHistory[updatedHistory.length - 1];
@@ -94,7 +99,7 @@ function MainApp() {
         return true;
       }
 
-      // 4. On Home screen -> show theme-aligned exit confirmation modal
+      // 4. On Home screen -> show theme-aligned exit confirmation modal (triggers ExitConfirmationModal which plays confirmation.wav and NOT navigation.wav)
       setShowExitModal(true);
       return true;
     };
