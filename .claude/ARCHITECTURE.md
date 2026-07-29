@@ -13,6 +13,7 @@
 - **Micro-interactions**: Smooth 90ms–140ms `withTiming` Easing transitions; bouncy spring animations avoided.
 - **Safe Area Inset Management**: Managed via `react-native-safe-area-context` (`SafeAreaProvider`, `useSafeAreaInsets`). Top insets applied to Header; bottom insets applied to BottomNav, BottomSheet, and Toast offset.
 - **Back Navigation & Exit Policy**: Full Android hardware back button & gesture navigation stack (`router.back()`). Home screen back press presents a theme-aligned exit app confirmation modal (`ExitConfirmationModal`).
+- **Full TypeScript Security**: Strict TypeScript configuration (`"strict": true`, `"noImplicitAny": true`) with central domain interfaces in `src/types/index.ts`.
 
 ---
 
@@ -20,57 +21,62 @@
 
 ```
 DrPauls/
-├── App.js                         # Root entrypoint + Auth Token Gate + SafeAreaProvider + BackHandler + Toast
-├── index.js
+├── App.tsx                        # Root entrypoint + Auth Token Gate + SafeAreaProvider + BackHandler + Toast
+├── index.ts
+├── tsconfig.json                  # TypeScript compiler configuration (strict mode)
 ├── metro.config.js                # Metro bundler config
 ├── tailwind.config.js             # Tailwind CSS config
 ├── package.json
 └── src/
+    ├── types/
+    │   └── index.ts               # Central TypeScript type definitions & interfaces
     ├── components/
-    │   ├── Header.js              # Top app bar with safe area top inset & drawer toggle
-    │   ├── BottomNav.js           # 3-tab bottom navigation bar with safe area bottom inset
-    │   ├── SidebarDrawer.js       # Reanimated slide-in/out navigation drawer (5 menu links)
+    │   ├── Header.tsx             # Top app bar with safe area top inset & drawer toggle
+    │   ├── BottomNav.tsx          # 3-tab bottom navigation bar with safe area bottom inset
+    │   ├── SidebarDrawer.tsx      # Reanimated slide-in/out navigation drawer (5 menu links)
     │   ├── appointment/
-    │   │   ├── CreateAppointmentSheet.js # Bottom sheet modal to add appointments
-    │   │   └── PatientSearchInput.js     # Search dropdown component
+    │   │   ├── AddPatientSheet.tsx       # Quick patient creation bottom sheet
+    │   │   ├── CreateAppointmentSheet.tsx # Bottom sheet modal to add appointments
+    │   │   └── PatientSearchInput.tsx     # Search dropdown component
     │   ├── calendar/
-    │   │   ├── CalendarHeader.js  # Date navigator, view mode toggle, & status filters
-    │   │   ├── CalendarGrid.js    # Time grid container (Day & Week views) with auto-scroll
-    │   │   ├── DraggableChip.js   # Drag-and-Drop rescheduling wrapper with PanResponder
-    │   │   ├── AppointmentChip.js # Individual appointment card component
-    │   │   ├── MonthGrid.js       # 7x5 month view matrix component
-    │   │   └── AppointmentDetailModal.js # Appointment detail bottom sheet
+    │   │   ├── CalendarHeader.tsx # Date navigator, view mode toggle, & status filters
+    │   │   ├── CalendarGrid.tsx   # Time grid container (Day & Week views) with auto-scroll
+    │   │   ├── DraggableChip.tsx  # Drag-and-Drop rescheduling wrapper with PanResponder
+    │   │   ├── AppointmentChip.tsx# Individual appointment card component
+    │   │   ├── MonthGrid.tsx      # 7x5 month view matrix component
+    │   │   └── AppointmentDetailModal.tsx # Appointment detail bottom sheet
     │   └── shared/
-    │       ├── BottomSheet.js     # Translucent Modal portal + safe area insets + drag-to-maximize & scroll expansion
-    │       ├── ExitConfirmationModal.js # Theme-aligned exit confirmation modal dialog
-    │       ├── LogoutConfirmationModal.js # Theme-aligned sign out confirmation modal dialog
-    │       └── StatusChip.js      # Color-coded status badge
+    │       ├── BottomSheet.tsx    # Translucent Modal portal + safe area insets + drag-to-maximize & scroll expansion
+    │       ├── ExitConfirmationModal.tsx  # Theme-aligned exit confirmation modal dialog
+    │       ├── LogoutConfirmationModal.tsx# Theme-aligned sign out confirmation modal dialog
+    │       ├── SearchInput.tsx    # Debounced search bar with clear button
+    │       ├── Select.tsx         # Custom dropdown selector
+    │       └── StatusChip.tsx     # Color-coded status badge
     ├── constants/
-    │   └── index.js               # Status definitions & status color tokens
+    │   └── index.ts               # Status definitions & status color tokens
     ├── data/
-    │   ├── schema.js              # JSDoc type definitions for data models
-    │   └── mockData.js            # Seed dataset with 30 comprehensive appointment records
+    │   └── mockData.ts            # Seed dataset with 30 comprehensive appointment records
     ├── screens/
-    │   ├── AuthScreen.js          # Dedicated Sign In page with Quick Demo pills
-    │   ├── HomeScreen.js          # Main clinic overview dashboard with 2x2 stat grid
-    │   ├── CalendarScreen.js      # Appointment calendar screen
-    │   ├── PatientListScreen.js   # Patient directory screen
-    │   ├── DoctorScreen.js        # Doctor schedule screen
-    │   ├── ReportsScreen.js       # Reports & analytics screen
-    │   └── SettingsScreen.js      # Settings screen with Staff Profile (Mobile + ID) & Sign Out at bottom
+    │   ├── AuthScreen.tsx         # Dedicated Sign In page with Quick Demo pills
+    │   ├── HomeScreen.tsx         # Main clinic overview dashboard with 2x2 stat grid
+    │   ├── CalendarScreen.tsx     # Appointment calendar screen
+    │   ├── PatientListScreen.tsx  # Patient directory screen
+    │   ├── DoctorScreen.tsx       # Doctor schedule screen
+    │   ├── ReportsScreen.tsx      # Reports & analytics screen
+    │   └── SettingsScreen.tsx     # Settings screen with Staff Profile (Mobile + ID) & Sign Out at bottom
     ├── store/
-    │   ├── useAuthStore.js        # Persistent AsyncStorage Auth Token Engine, 24-hour mock JWT issuance & token verification gate
-    │   ├── useAppointmentStore.js # Permanent appointment state & in-memory seed sync
-    │   ├── usePatientStore.js     # Patient directory state management
-    │   ├── useDoctorStore.js      # Doctor schedule & availability state
-    │   └── useUIStore.js          # UI theme & layout state
+    │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine, 24-hour mock JWT issuance & token verification gate
+    │   ├── useAppointmentStore.ts# Permanent appointment state & in-memory seed sync
+    │   ├── usePatientStore.ts     # Patient directory state management
+    │   ├── useDoctorStore.ts      # Doctor schedule & availability state
+    │   └── useUIStore.ts          # UI theme & layout state
     ├── theme/
-    │   ├── colors.js              # Dark & light color tokens
-    │   └── ThemeContext.js        # Theme context provider & hook
+    │   ├── colors.ts              # Dark & light color tokens
+    │   └── ThemeContext.tsx       # Theme context provider & hook
     └── utils/
-        ├── authUtils.js           # Base64 mock JWT generator, parsing, expiration (24h) & refresh helpers
-        ├── dateUtils.js           # Local timezone ISO date formatting & time slot calculators
-        └── searchUtils.js         # Patient search & ID generation logic
+        ├── authUtils.ts          # Base64 mock JWT generator, parsing, expiration (24h) & refresh helpers
+        ├── dateUtils.ts          # Local timezone ISO date formatting & time slot calculators
+        └── searchUtils.ts        # Patient search & ID generation logic
 ```
 
 ---

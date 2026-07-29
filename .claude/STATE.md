@@ -6,40 +6,56 @@
 ---
 
 ## Last Updated
-`2026-07-28` — Persistent disk storage integration (`@react-native-async-storage/async-storage`) for JWT session token management and complete token deletion on logout.
+`2026-07-29` — Disabled appointment creation on past timeslots, low-latency 60fps VSync auto-scroll loop (`requestAnimationFrame`), Week View date header tap-to-switch Day View, patient double-booking prevention, and side-by-side split layout for concurrent appointments.
+
+---
 
 ## Current Sprint Focus
-- **Persistent AsyncStorage Token Engine (`@Frontend` & `@DataEngineer`)**:
-  - Installed `@react-native-async-storage/async-storage` and integrated into [`useAuthStore.js`](file:///d:/IconWizard/DrPauls/src/store/useAuthStore.js).
-  - **App Startup Flow**: `checkAndVerifyAuth()` reads `@drpauls_jwt_token` from persistent device storage.
-    - If a valid token exists, the user is **directly routed to the Home Page** without seeing the login page.
-    - If token is missing, expired, or deleted, the user is presented with the **Login Page (`AuthScreen.js`)**.
-  - **Token Persistence**: Un-signed-out user sessions persist permanently across app restarts/reopens with 24h token auto-refresh.
-  - **Disk Token Deletion on Logout**: Clicking Sign Out in `SettingsScreen.js` and confirming in `LogoutConfirmationModal.js` calls `AsyncStorage.removeItem('@drpauls_jwt_token')`, permanently deleting the token from the device so logged-out users can never be auto-logged back in.
+
+### Disabled Appointment Creation on Past Timeslots (`@Frontend`)
+- **Past Slot Protection**:
+  - Implemented `isPastSlot(dateStr, slotTime)` helper in [`src/utils/dateUtils.ts`](file:///d:/IconWizard/DrPauls/src/utils/dateUtils.ts).
+  - Evaluates if a timeslot is earlier than the current date and time.
+  - In [`CalendarGrid.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/CalendarGrid.tsx), any slot where `isPastSlot(...) === true` has `disabled={true}` and `onPress` disabled, strictly preventing tap to open `CreateAppointmentSheet` for past slots.
+  - Applies a subtle past slot background overlay (`isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)'`) to visually signal inactive past timeslots to receptionists.
+
+### Low-Latency Jitter-Free Auto-Scroll Loop (`@Frontend`)
+- **VSync-Tethered Motion**:
+  - Native `requestAnimationFrame` loop in [`DraggableChip.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/DraggableChip.tsx).
+  - Fires in lockstep with native screen refresh VSync ticks (60Hz / 90Hz / 120Hz).
+  - Synchronizes chip position `pan.setValue` with `scrollRef.current?.scrollTo({ y: nextOffset, animated: false })` on every single VSync tick for smooth, zero-jitter, low-latency scrolling.
+
+### Week View Date Header Tap-to-Switch Day View (`@Frontend`)
+- **Direct Navigation**:
+  - Wrapped each day cell in the Week View date header row in [`CalendarGrid.tsx`](file:///d:/IconWizard/DrPauls/src/components/calendar/CalendarGrid.tsx) with `TouchableOpacity`.
+  - Connected `onDateSelect={handleMonthDateSelect}` in [`CalendarScreen.tsx`](file:///d:/IconWizard/DrPauls/src/screens/CalendarScreen.tsx).
+  - Tapping any date in the Week View header row updates `selectedDate` and smoothly switches the active view to Day View for that date.
+
+### Patient Double-Booking Prevention & Multi-Doctor Layout
+- **Patient Double-Booking Prevention**:
+  - `validateSlot()` in [`useAppointmentStore.ts`](file:///d:/IconWizard/DrPauls/src/store/useAppointmentStore.ts) rejects ANY overlapping timeslot for the same patient across all doctors.
+- **Side-by-Side Split Column Layout**:
+  - `computeAppointmentLayouts()` in [`src/utils/dateUtils.ts`](file:///d:/IconWizard/DrPauls/src/utils/dateUtils.ts) groups concurrent appointments for different doctors side-by-side in Day & Week views.
+
+---
 
 ## Status
 
 ### Infrastructure & Dependencies
+- [x] Full TypeScript strict mode (`tsconfig.json`, `src/types/index.ts`)
 - [x] Expo SDK 54.0.36
-- [x] `@react-native-async-storage/async-storage` installed & integrated
-- [x] Mock JWT 24-hour token issuance & auto-refresh
-- [x] Persistent disk storage token verification on app launch (`checkAndVerifyAuth`)
-- [x] Direct Home Page entry for active token sessions
-- [x] Permanent disk token deletion on Sign Out (`AsyncStorage.removeItem`)
-- [x] `react-native-safe-area-context` integrated across screens and modals
-- [x] `react-native-toast-message` bottom offset configured
-- [x] Zustand state management & seed persistence
-- [x] NativeWind + Tailwind CSS v3
-- [x] Reanimated v4 setup
-- [x] `expo-doctor` — 18/18 checks pass
+- [x] `@react-native-async-storage/async-storage` persistent token engine
+- [x] Global themed Toast (`AppToast.tsx`) with bottom margin above BottomNav
+- [x] Entrypoint `"main": "index.ts"` in `package.json`
+- [x] `npx tsc --noEmit` — 0 errors
+- [x] `npx expo-doctor` — 18/18 checks pass
 
 ### Components & Screens (@Frontend & @DataEngineer)
-- [x] `useAuthStore.js` — AsyncStorage persistent token engine & token deletion on logout.
-- [x] `App.js` — Startup token check & direct Home Page entry flow.
-- [x] `AuthScreen.js` — Dedicated Sign In page with Quick Demo pills.
-- [x] `SettingsScreen.js` — Profile Card with Receptionist ID & mobile number; Sign Out button at very bottom calling disk token removal.
-- [x] `LogoutConfirmationModal.js` & `ExitConfirmationModal.js`.
-- [x] `SidebarDrawer.js`, `Header.js`, `BottomNav.js`.
+- [x] `dateUtils.ts` — `isPastSlot()` helper and `computeAppointmentLayouts()` side-by-side cluster math.
+- [x] `CalendarGrid.tsx` — Past timeslot tap disabled with subtle styling; Week View header touchable date cells.
+- [x] `DraggableChip.tsx` — Low-latency 60fps `requestAnimationFrame` VSync auto-scroll loop with synchronized chip motion.
+- [x] `CalendarScreen.tsx` — `onDateSelect` switches to Day View mode on date tap.
+- [x] `useAppointmentStore.ts` — `validateSlot` enforces doctor interval collision AND patient double-booking prevention.
 
 ---
 
@@ -47,4 +63,6 @@
 _None_
 
 ## Notes
-- All 18 expo-doctor checks pass cleanly.
+- `npx expo-doctor`: 18/18 checks pass.
+- `npx tsc --noEmit`: 0 errors.
+- Past timeslot creation strictly disabled visually and functionally.
