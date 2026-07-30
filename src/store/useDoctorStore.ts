@@ -1,18 +1,30 @@
 import { create } from 'zustand';
-import { doctors as seed, therapists as therapistSeed } from '../data/mockData';
+import { doctorService } from '../api/services/doctorService';
+import { therapistService } from '../api/services/therapistService';
+import { dataStore } from '../api/dataStore';
 import { Doctor, Therapist } from '../types';
 
 export interface ExtendedDoctorState {
   doctors: Doctor[];
   therapists: Therapist[];
+  fetchDoctorsAndTherapists: () => Promise<void>;
   byId: (id: string) => Doctor | undefined;
   therapistsByService: (serviceType?: string) => Therapist[];
   availableDoctors: () => Doctor[];
 }
 
+const initialDoctors = dataStore.getData().doctors;
+const initialTherapists = dataStore.getData().therapists;
+
 const useDoctorStore = create<ExtendedDoctorState>((set, get) => ({
-  doctors: seed,
-  therapists: therapistSeed,
+  doctors: initialDoctors,
+  therapists: initialTherapists,
+
+  fetchDoctorsAndTherapists: async () => {
+    const doctors = await doctorService.getAll();
+    const therapists = await therapistService.getAll();
+    set({ doctors, therapists });
+  },
 
   // --- Selectors ---
   byId: (id) => get().doctors.find((d) => d.id === id),

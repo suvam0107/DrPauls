@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { appointments as seed } from '../data/mockData';
+import { appointmentService } from '../api/services/appointmentService';
+import { dataStore } from '../api/dataStore';
 import { nextAppointmentId } from '../utils/searchUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { timeToMins, todayISO } from '../utils/dateUtils';
@@ -15,6 +16,7 @@ export interface AppointmentValidationResult {
 export interface ExtendedAppointmentState {
   appointments: Appointment[];
   slotMap: Record<string, string>;
+  fetchAppointments: () => Promise<void>;
   addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Appointment;
   updateStatus: (id: string, status: string) => void;
   moveAppointment: (id: string, newDate: string, newStartTime: string, newEndTime: string) => void;
@@ -48,15 +50,16 @@ const buildSlotMap = (appts: Appointment[]): Record<string, string> => {
   return map;
 };
 
-/** Helper to synchronize in-memory seed array so mutations persist permanently */
-const syncSeedData = (updatedAppts: Appointment[]): void => {
-  seed.length = 0;
-  seed.push(...updatedAppts);
-};
+const initialSeed = dataStore.getData().appointments;
 
 const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
-  appointments: seed,
-  slotMap: buildSlotMap(seed),
+  appointments: initialSeed,
+  slotMap: buildSlotMap(initialSeed),
+
+  fetchAppointments: async () => {
+    const fetched = await appointmentService.getAll();
+    set({ appointments: fetched, slotMap: buildSlotMap(fetched) });
+  },
 
   /** Add a new appointment */
   addAppointment: (data) => {
@@ -66,9 +69,11 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    // Call service to mutate JSON-backed dataStore
+    appointmentService.add(data);
+
     set((s) => {
       const updated = [newAppt, ...s.appointments];
-      syncSeedData(updated);
       return { appointments: updated, slotMap: buildSlotMap(updated) };
     });
     return newAppt;
@@ -76,17 +81,23 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
 
   /** Update status of an appointment */
   updateStatus: (id, status) => {
+    appointmentService.update(id, { status });
     set((s) => {
       const updated = s.appointments.map((a) =>
         a.id === id ? { ...a, status, updatedAt: new Date().toISOString() } : a
       );
-      syncSeedData(updated);
       return { appointments: updated, slotMap: buildSlotMap(updated) };
     });
   },
 
   /** Move appointment to new date/time (drag-drop or reschedule) - Permanent Persistence */
   moveAppointment: (id, newDate, newStartTime, newEndTime) => {
+    appointmentService.update(id, {
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      status: APPOINTMENT_STATUS.RESCHEDULED,
+    });
     set((s) => {
       const updated = s.appointments.map((a) =>
         a.id === id
@@ -100,7 +111,6 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
             }
           : a
       );
-      syncSeedData(updated);
       return { appointments: updated, slotMap: buildSlotMap(updated) };
     });
   },

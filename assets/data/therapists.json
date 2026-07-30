@@ -1,0 +1,5 @@
+[
+  { "id": "THR-001", "name": "Meera Singh", "specialization": "Hair", "available": true },
+  { "id": "THR-002", "name": "Pooja Nath", "specialization": "Skin", "available": true },
+  { "id": "THR-003", "name": "Kavita Das", "specialization": "Cosmetic", "available": false }
+]

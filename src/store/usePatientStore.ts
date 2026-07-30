@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import { patients as seed } from '../data/mockData';
+import { patientService } from '../api/services/patientService';
+import { dataStore } from '../api/dataStore';
 import { searchPatients, nextPatientId } from '../utils/searchUtils';
 import { Patient } from '../types';
 
 export interface ExtendedPatientState {
   patients: Patient[];
+  fetchPatients: () => Promise<void>;
   addPatient: (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => Patient;
   updatePatient: (id: string, updates: Partial<Patient>) => void;
   byId: (id: string) => Patient | undefined;
@@ -12,8 +14,15 @@ export interface ExtendedPatientState {
   count: () => number;
 }
 
+const initialSeed = dataStore.getData().patients;
+
 const usePatientStore = create<ExtendedPatientState>((set, get) => ({
-  patients: seed,
+  patients: initialSeed,
+
+  fetchPatients: async () => {
+    const fetched = await patientService.getAll();
+    set({ patients: fetched });
+  },
 
   /** Add new patient, returns the new patient object */
   addPatient: (data) => {
@@ -25,12 +34,14 @@ const usePatientStore = create<ExtendedPatientState>((set, get) => ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    patientService.add(data);
     set((s) => ({ patients: [newPatient, ...s.patients] }));
     return newPatient;
   },
 
   /** Update patient fields */
   updatePatient: (id, updates) => {
+    patientService.update(id, updates);
     set((s) => ({
       patients: s.patients.map((p) =>
         p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p

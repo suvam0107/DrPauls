@@ -14,6 +14,7 @@
 - **Safe Area Inset Management**: Managed via `react-native-safe-area-context` (`SafeAreaProvider`, `useSafeAreaInsets`). Top insets applied to Header; bottom insets applied to BottomNav, BottomSheet, and Toast offset.
 - **Back Navigation & Exit Policy**: Full Android hardware back button & gesture navigation stack (`router.back()`). Home screen back press presents a theme-aligned exit app confirmation modal (`ExitConfirmationModal`).
 - **Full TypeScript Security**: Strict TypeScript configuration (`"strict": true`, `"noImplicitAny": true`) with central domain interfaces in `src/types/index.ts`.
+- **JSON File-System Data Layer & Axios Interceptor Engine**: All domain records originate from static JSON files (`assets/data/*.json`). Data access is routed through an elaborate Axios interceptor layer (`src/api/`) with custom in-memory adapter routing requests to `/nested` and `/nonnested` endpoint families keyed by `spc`.
 
 ---
 
@@ -27,7 +28,36 @@ DrPauls/
 ├── metro.config.js                # Metro bundler config
 ├── tailwind.config.js             # Tailwind CSS config
 ├── package.json
+├── assets/
+│   ├── audio/                     # UI sound assets (.wav)
+│   ├── images/                    # Visual assets & logos
+│   └── data/                      # JSON File-System Seed Database
+│       ├── appointments.json      # 30 appointment seed records
+│       ├── doctors.json           # 3 doctor records
+│       ├── packages.json          # 2 package records
+│       ├── patients.json          # 7 patient records
+│       ├── staff.json             # 1 staff user record
+│       └── therapists.json        # 3 therapist records
 └── src/
+    ├── api/                       # Axios Interceptor & Data Access Layer (@DataEngineer)
+    │   ├── adapter.ts             # Custom Axios adapter routing spc keys to in-memory handlers
+    │   ├── axiosConfig.ts         # Axios instance setup with base URL, headers & interceptors
+    │   ├── dataStore.ts           # In-memory session store hydrated from assets/data/*.json
+    │   ├── index.ts               # Barrel export for API layer
+    │   ├── types.ts               # ApiFamily, SpcKey, ApiRequest, ApiResponse definitions
+    │   ├── handlers/
+    │   │   ├── nestedHandlers.ts  # Relational / composed query handlers
+    │   │   └── nonnestedHandlers.ts # Flat single-collection CRUD handlers
+    │   ├── interceptors/
+    │   │   ├── requestInterceptor.ts # Bearer token injection, request timestamps, logging
+    │   │   └── responseInterceptor.ts# Payload unwrapping & error handling
+    │   └── services/
+    │       ├── appointmentService.ts # Appointment API operations
+    │       ├── doctorService.ts     # Doctor API operations
+    │       ├── packageService.ts    # Package API operations
+    │       ├── patientService.ts    # Patient API operations
+    │       ├── staffService.ts      # Staff API operations
+    │       └── therapistService.ts  # Therapist API operations
     ├── types/
     │   └── index.ts               # Central TypeScript type definitions & interfaces
     ├── components/
@@ -54,8 +84,6 @@ DrPauls/
     │       └── StatusChip.tsx     # Color-coded status badge
     ├── constants/
     │   └── index.ts               # Status definitions & status color tokens
-    ├── data/
-    │   └── mockData.ts            # Seed dataset with 30 comprehensive appointment records
     ├── screens/
     │   ├── AuthScreen.tsx         # Dedicated Sign In page with Quick Demo pills
     │   ├── HomeScreen.tsx         # Main clinic overview dashboard with 2x2 stat grid
@@ -65,10 +93,10 @@ DrPauls/
     │   ├── ReportsScreen.tsx      # Reports & analytics screen
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile (Mobile + ID) & Sign Out at bottom
     ├── store/
-    │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine, 24-hour mock JWT issuance & token verification gate
-    │   ├── useAppointmentStore.ts# Permanent appointment state & in-memory seed sync
-    │   ├── usePatientStore.ts     # Patient directory state management
-    │   ├── useDoctorStore.ts      # Doctor schedule & availability state
+    │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine & 24-hour mock JWT issuance
+    │   ├── useAppointmentStore.ts# State management routed through appointmentService
+    │   ├── usePatientStore.ts     # Patient directory state routed through patientService
+    │   ├── useDoctorStore.ts      # Doctor schedule state routed through doctorService & therapistService
     │   └── useUIStore.ts          # UI theme & layout state
     ├── theme/
     │   ├── colors.ts              # Dark & light color tokens
@@ -76,12 +104,32 @@ DrPauls/
     └── utils/
         ├── authUtils.ts          # Base64 mock JWT generator, parsing, expiration (24h) & refresh helpers
         ├── dateUtils.ts          # Local timezone ISO date formatting & time slot calculators
+        ├── feedback.ts           # Centralized audio & haptic feedback controller
         └── searchUtils.ts        # Patient search & ID generation logic
 ```
 
 ---
 
-## 3. Persistent AsyncStorage JWT Token Lifecycle & Startup Flow
+## 3. JSON File-System Data Layer & Axios Interceptor Architecture
+
+1. **Seed Data Source (`assets/data/*.json`)**:
+   - `patients.json`, `doctors.json`, `therapists.json`, `packages.json`, `appointments.json`, `staff.json` act as the json-based file system data source.
+2. **In-Memory Session Data Store (`src/api/dataStore.ts`)**:
+   - Hydrated at startup from `assets/data/*.json`. Dynamic relative offsets (`dayOffset`) are converted to `YYYY-MM-DD` ISO strings at boot.
+3. **Axios Client & Custom Adapter (`src/api/axiosConfig.ts`, `src/api/adapter.ts`)**:
+   - Base URL: `http://drpauls.local/api/v1`
+   - All requests are routed through `customDataStoreAdapter`, preventing network calls while executing complete RESTful request/response cycles.
+4. **Endpoint Families & `spc` Identification**:
+   - **`/nonnested`**: Flat single-collection CRUD operations (`get_all_patients`, `add_appointment`, `update_patient`, etc.).
+   - **`/nested`**: Relational and composed query operations (`get_appointments_by_date`, `get_appointments_by_range`, `search_patients`, `get_today_stats`, `get_appointment_with_details`).
+   - Every request passes a specific identification key (`spc`) in the payload body.
+5. **Axios Interceptors (`src/api/interceptors/`)**:
+   - **Request Interceptor**: Reads JWT token from AsyncStorage (`@drpauls_jwt_token`) and injects `Authorization: Bearer <token>`, plus ISO timestamp header.
+   - **Response Interceptor**: Standardizes response unwrapping and error messaging.
+
+---
+
+## 4. Persistent AsyncStorage JWT Token Lifecycle & Startup Flow
 
 1. **App Startup Verification**:
    - On application launch, `checkAndVerifyAuth()` inspects `@react-native-async-storage/async-storage` for `@drpauls_jwt_token`.
@@ -95,7 +143,7 @@ DrPauls/
 
 ---
 
-## 4. Navigation Hierarchy & Hardware Back Button Policy
+## 5. Navigation Hierarchy & Hardware Back Button Policy
 
 ```
 App Root (SafeAreaProvider)

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "PKG-001",
+    "name": "Hair Rejuvenation Pack",
+    "serviceType": "Hair",
+    "totalSessions": 10,
+    "usedSessions": 4,
+    "price": 15000,
+    "patientId": "PAT-001",
+    "dayOffset": 90,
+    "status": "Active"
+  },
+  {
+    "id": "PKG-002",
+    "name": "Skin Glow Package",
+    "serviceType": "Skin",
+    "totalSessions": 6,
+    "usedSessions": 6,
+    "price": 9000,
+    "patientId": "PAT-002",
+    "dayOffset": -10,
+    "status": "Completed"
+  }
+]

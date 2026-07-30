@@ -1,0 +1,38 @@
+[
+  {
+    "id": "DOC-001",
+    "name": "Dr. Sarah Paul",
+    "specialty": "Dermatologist",
+    "department": "Skin",
+    "qualification": "MBBS, MD (Dermatology)",
+    "available": true,
+    "consultFee": 500,
+    "location": "Room 1, 2nd Floor",
+    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
+    "workingHours": { "start": "10:00", "end": "19:00" }
+  },
+  {
+    "id": "DOC-002",
+    "name": "Dr. Rajesh Kumar",
+    "specialty": "Trichologist",
+    "department": "Hair",
+    "qualification": "MBBS, DV&D, Trichology Certified",
+    "available": true,
+    "consultFee": 600,
+    "location": "Room 2, 2nd Floor",
+    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
+    "workingHours": { "start": "10:00", "end": "19:00" }
+  },
+  {
+    "id": "DOC-003",
+    "name": "Dr. Ananya Bose",
+    "specialty": "Cosmetic Surgeon",
+    "department": "Cosmetic",
+    "qualification": "MBBS, MS, MCh (Plastic Surgery)",
+    "available": true,
+    "consultFee": 1000,
+    "location": "Room 3, 2nd Floor",
+    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat"],
+    "workingHours": { "start": "11:00", "end": "18:00" }
+  }
+]
