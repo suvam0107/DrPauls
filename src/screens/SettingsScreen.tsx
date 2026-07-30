@@ -137,13 +137,14 @@ export default function SettingsScreen() {
 
         {/* Sign Out Button */}
         <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: colors.dangerBg, borderColor: colors.danger + '40' }]}
+          style={[styles.logoutBtn, { backgroundColor: colors.primary }]}
           onPress={() => setShowLogoutModal(true)}
           activeOpacity={0.8}
         >
-          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-          <Text style={[styles.logoutBtnText, { color: colors.danger }]}>Sign Out of Account</Text>
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+          <Text style={[styles.logoutBtnText, { color: '#FFFFFF' }]}>Sign Out of Account</Text>
         </TouchableOpacity>
+
       </ScrollView>
 
       {/* Theme-Aligned Sign Out Confirmation Modal */}

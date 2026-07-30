@@ -443,6 +443,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           onPress={handleCreate}
           activeOpacity={0.8}
         >
+          <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
           <Text style={styles.submitBtnText}>Create Appointment</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -687,8 +688,10 @@ const styles = StyleSheet.create({
   submitBtn: {
     height: 48,
     borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     marginTop: 8,
   },
   submitBtnText: {

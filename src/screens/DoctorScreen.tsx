@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import useDoctorStore from '../store/useDoctorStore';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Doctor } from '../types';
 import { playClickSound } from '../utils/feedback';
+import DoctorDetailModal from '../components/doctor/DoctorDetailModal';
+import AddDoctorSheet from '../components/doctor/AddDoctorSheet';
 
 export default function DoctorScreen() {
   const { colors } = useTheme();
   const doctors = useDoctorStore((s) => s.doctors);
+
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAddDoctorSheet, setShowAddDoctorSheet] = useState(false);
 
   const handleCall = (phone?: string) => {
     if (!phone) return;
@@ -16,11 +22,33 @@ export default function DoctorScreen() {
     Linking.openURL(`tel:${phone}`);
   };
 
+  const handleOpenDoctorDetail = (doctor: Doctor) => {
+    playClickSound();
+    setSelectedDoctor(doctor);
+    setShowDetailModal(true);
+  };
+
+  const handleOpenAddDoctor = () => {
+    playClickSound();
+    setShowAddDoctorSheet(true);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Doctors & Consultants</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>{doctors.length} active doctors on duty</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: colors.text }]}>Doctors & Consultants</Text>
+          <Text style={[styles.sub, { color: colors.textMuted }]}>{doctors.length} active doctors on duty</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
+          onPress={handleOpenAddDoctor}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="person-add" size={16} color="#FFF" />
+          <Text style={styles.addBtnText}>Add Doctor</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -28,7 +56,11 @@ export default function DoctorScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }: { item: Doctor }) => (
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => handleOpenDoctorDetail(item)}
+            activeOpacity={0.8}
+          >
             <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
               <Ionicons name="medical-outline" size={24} color={colors.primary} />
             </View>
@@ -66,8 +98,21 @@ export default function DoctorScreen() {
                 <Text style={[styles.location, { color: colors.textMuted }]}>{item.location}</Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
+      />
+
+      {/* Doctor Detail & Edit Modal */}
+      <DoctorDetailModal
+        doctor={selectedDoctor}
+        visible={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+      />
+
+      {/* Add New Doctor Sheet */}
+      <AddDoctorSheet
+        visible={showAddDoctorSheet}
+        onClose={() => setShowAddDoctorSheet(false)}
       />
     </View>
   );
@@ -75,10 +120,25 @@ export default function DoctorScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   title: { fontSize: 20, fontWeight: '700' },
   sub: { fontSize: 13, marginTop: 2 },
-  list: { paddingHorizontal: 16, paddingBottom: 32 },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  addBtnText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
+  list: { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -123,3 +183,4 @@ const styles = StyleSheet.create({
   fee: { fontSize: 13, fontWeight: '700' },
   location: { fontSize: 12 },
 });
+

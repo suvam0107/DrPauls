@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import SearchInput from '../components/shared/SearchInput';
 import AddPatientSheet from '../components/appointment/AddPatientSheet';
+import PatientDetailModal from '../components/patient/PatientDetailModal';
 import usePatientStore from '../store/usePatientStore';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Patient } from '../types';
+import { playClickSound } from '../utils/feedback';
 
 export default function PatientListScreen() {
   const { colors } = useTheme();
@@ -14,8 +16,16 @@ export default function PatientListScreen() {
 
   const [query, setQuery] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [showPatientDetail, setShowPatientDetail] = useState(false);
 
   const filteredPatients: Patient[] = query.trim() ? search(query) : patients;
+
+  const handleOpenPatientDetail = (patient: Patient) => {
+    playClickSound();
+    setSelectedPatient(patient);
+    setShowPatientDetail(true);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -26,10 +36,14 @@ export default function PatientListScreen() {
         </View>
         <TouchableOpacity
           style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => setShowAdd(true)}
+          onPress={() => {
+            playClickSound();
+            setShowAdd(true);
+          }}
+          activeOpacity={0.8}
         >
           <Ionicons name="person-add" size={16} color="#FFF" />
-          <Text style={styles.addBtnText}>+ Add</Text>
+          <Text style={styles.addBtnText}>Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -42,7 +56,11 @@ export default function PatientListScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => handleOpenPatientDetail(item)}
+            activeOpacity={0.8}
+          >
             <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.avatarText, { color: colors.primary }]}>{item.name.charAt(0)}</Text>
             </View>
@@ -58,11 +76,19 @@ export default function PatientListScreen() {
                 </Text>
               ) : null}
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
 
+      {/* Quick Add Patient Sheet */}
       <AddPatientSheet visible={showAdd} onClose={() => setShowAdd(false)} />
+
+      {/* Patient Detail & Edit Modal */}
+      <PatientDetailModal
+        patient={selectedPatient}
+        visible={showPatientDetail}
+        onClose={() => setShowPatientDetail(false)}
+      />
     </View>
   );
 }
@@ -110,3 +136,4 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, marginTop: 2 },
   address: { fontSize: 11, marginTop: 2 },
 });
+

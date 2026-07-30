@@ -31,6 +31,7 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
 
   const menuItems: MenuItem[] = [
     { label: 'Calendar Grid', icon: 'calendar-outline', screen: 'calendar' },
+    { label: 'Past Appointments', icon: 'time-outline', screen: 'past-appointments' },
     { label: 'Patient Directory', icon: 'people-outline', screen: 'patients' },
     { label: 'Doctor Schedule', icon: 'medical-outline', screen: 'doctors' },
     { label: 'Reports', icon: 'bar-chart-outline', screen: 'reports' },
@@ -93,8 +94,8 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
             </TouchableOpacity>
           </View>
 
-          {/* Nav List */}
-          <ScrollView contentContainerStyle={styles.menuList}>
+          {/* Navigation Items List */}
+          <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
             {menuItems.map((item) => (
               <TouchableOpacity
                 key={item.screen}

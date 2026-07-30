@@ -2,7 +2,7 @@
  * Patient & Appointment Search / ID Generation Utilities
  */
 
-import { Patient, Appointment } from '../types';
+import { Patient, Appointment, Doctor } from '../types';
 
 /**
  * Regex patient search — matches name, patientId, or mobile.
@@ -43,3 +43,13 @@ export const nextAppointmentId = (appointments: Appointment[]): string => {
   }, 0);
   return `APT-${String(max + 1).padStart(3, '0')}`;
 };
+
+/** Generate next doctor ID */
+export const nextDoctorId = (doctors: Doctor[]): string => {
+  const max = doctors.reduce((m, d) => {
+    const n = parseInt(d.id.replace('DOC-', ''), 10);
+    return isNaN(n) ? m : n > m ? n : m;
+  }, 0);
+  return `DOC-${String(max + 1).padStart(3, '0')}`;
+};
+

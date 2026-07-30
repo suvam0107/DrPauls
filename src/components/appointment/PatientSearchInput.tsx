@@ -29,7 +29,7 @@ export default function PatientSearchInput({
         <Text style={[styles.label, { color: colors.textMuted }]}>Search Patient</Text>
         <TouchableOpacity style={styles.addNewBtn} onPress={onAddNewPress}>
           <Ionicons name="person-add-outline" size={14} color={colors.primary} />
-          <Text style={[styles.addNewText, { color: colors.primary }]}>+ Add New</Text>
+          <Text style={[styles.addNewText, { color: colors.primary }]}>Add New</Text>
         </TouchableOpacity>
       </View>
 

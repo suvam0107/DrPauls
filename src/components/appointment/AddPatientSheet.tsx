@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
 import usePatientStore from '../../store/usePatientStore';
 import { Patient, Gender } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface AddPatientSheetProps {
   visible: boolean;
@@ -100,6 +101,7 @@ export default function AddPatientSheet({ visible, onClose, onPatientAdded }: Ad
         </View>
 
         <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
+          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
           <Text style={styles.saveBtnText}>Save & Select Patient</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -141,8 +143,10 @@ const styles = StyleSheet.create({
   saveBtn: {
     height: 48,
     borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     marginTop: 8,
   },
   saveBtnText: {

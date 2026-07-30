@@ -15,6 +15,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import PatientListScreen from './src/screens/PatientListScreen';
 import DoctorScreen from './src/screens/DoctorScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
+import PastAppointmentsScreen from './src/screens/PastAppointmentsScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
 import AddPatientSheet from './src/components/appointment/AddPatientSheet';
@@ -164,6 +165,7 @@ function MainApp() {
         {currentScreen === 'patients' && <PatientListScreen />}
         {currentScreen === 'doctors' && <DoctorScreen />}
         {currentScreen === 'reports' && <ReportsScreen />}
+        {currentScreen === 'past-appointments' && <PastAppointmentsScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
       </View>
 

@@ -21,4 +21,21 @@ export const doctorService = {
     });
     return res.data.data;
   },
+
+  add: async (data: Omit<Doctor, 'id'>): Promise<Doctor> => {
+    const res = await apiClient.post<ApiResponse<Doctor>>('/nonnested', {
+      spc: 'add_doctor',
+      payload: data,
+    });
+    return res.data.data;
+  },
+
+  update: async (id: string, updates: Partial<Doctor>): Promise<Doctor> => {
+    const res = await apiClient.post<ApiResponse<Doctor>>('/nonnested', {
+      spc: 'update_doctor',
+      payload: { id, updates },
+    });
+    return res.data.data;
+  },
 };
+

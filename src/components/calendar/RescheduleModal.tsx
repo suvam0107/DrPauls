@@ -211,10 +211,12 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
       {/* Action Buttons */}
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.cancelBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          style={[styles.cancelBtn, { backgroundColor: colors.danger }]}
           onPress={onClose}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancel</Text>
+          <Ionicons name="close-circle-outline" size={18} color="#FFF" />
+          <Text style={[styles.cancelBtnText, { color: '#FFF' }]}>Cancel</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -227,6 +229,7 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
           onPress={handleSave}
           activeOpacity={0.8}
         >
+          <Ionicons name="save-outline" size={18} color="#FFF" />
           <Text style={styles.saveBtnText}>Save Changes</Text>
         </TouchableOpacity>
       </View>
@@ -392,9 +395,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 10,
-    borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   cancelBtnText: {
     fontSize: 14,
@@ -404,8 +408,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   saveBtnText: {
     color: '#FFF',

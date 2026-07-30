@@ -4,7 +4,7 @@
 
 import { dataStore } from '../dataStore';
 import { Patient, Doctor, Therapist, Package, Appointment, StaffUser } from '../../types';
-import { nextPatientId, nextAppointmentId } from '../../utils/searchUtils';
+import { nextPatientId, nextAppointmentId, nextDoctorId } from '../../utils/searchUtils';
 
 export const nonnestedHandlers = {
   // --- Patients ---
@@ -57,6 +57,36 @@ export const nonnestedHandlers = {
   get_doctor_by_id: (payload: { id: string }) => {
     return dataStore.getData().doctors.find((d) => d.id === payload.id);
   },
+
+  add_doctor: (payload: Omit<Doctor, 'id'>) => {
+    const store = dataStore.getData();
+    const newDoc: Doctor = {
+      ...payload,
+      id: nextDoctorId(store.doctors),
+      centerSchedule: payload.centerSchedule || [
+        {
+          centerId: 'CC-001',
+          workingDays: payload.workingDays || ['Mon', 'Tue', 'Wed', 'Fri', 'Sat', 'Sun'],
+          workingHours: payload.workingHours || { start: '10:00', end: '19:00' },
+        },
+      ],
+    };
+    store.doctors.unshift(newDoc);
+    return newDoc;
+  },
+
+  update_doctor: (payload: { id: string; updates: Partial<Doctor> }) => {
+    const store = dataStore.getData();
+    const index = store.doctors.findIndex((d) => d.id === payload.id);
+    if (index === -1) throw new Error(`Doctor ${payload.id} not found`);
+    const updated = {
+      ...store.doctors[index],
+      ...payload.updates,
+    };
+    store.doctors[index] = updated;
+    return updated;
+  },
+
 
   // --- Centers ---
   get_all_centers: () => {

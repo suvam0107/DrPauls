@@ -1,0 +1,588 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Linking,
+} from 'react-native';
+import BottomSheet from '../shared/BottomSheet';
+import Select from '../shared/Select';
+import { useTheme } from '../../theme/ThemeContext';
+import usePatientStore from '../../store/usePatientStore';
+import { Patient, Gender } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
+import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
+import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
+
+export interface PatientDetailModalProps {
+  patient: Patient | null;
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function PatientDetailModal({
+  patient,
+  visible,
+  onClose,
+}: PatientDetailModalProps) {
+  const { colors } = useTheme();
+  const updatePatient = usePatientStore((s) => s.updatePatient);
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Form states
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [alternateMobile, setAlternateMobile] = useState('');
+  const [dob, setDob] = useState('');
+  const [gender, setGender] = useState<string>('Male');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
+  const [enquirySource, setEnquirySource] = useState('Walk-in');
+  const [referenceDoctor, setReferenceDoctor] = useState('');
+
+  const [error, setError] = useState('');
+
+  const [cachedPatient, setCachedPatient] = useState<Patient | null>(patient);
+
+  // Hydrate fields when patient changes
+  useEffect(() => {
+    if (patient) {
+      setCachedPatient(patient);
+      setName(patient.name || '');
+      setMobile(patient.mobile || '');
+      setWhatsapp(patient.whatsapp || '');
+      setAlternateMobile(patient.alternateMobile || '');
+      setDob(patient.dob || '');
+      setGender(patient.gender || 'Male');
+      setEmail(patient.email || '');
+      setAddress(patient.address || '');
+      setPinCode(patient.pinCode || '');
+      setState(patient.state || '');
+      setDistrict(patient.district || '');
+      setEnquirySource(patient.enquirySource || 'Walk-in');
+      setReferenceDoctor(patient.referenceDoctor || '');
+      setIsEditing(false);
+      setError('');
+    }
+  }, [patient, visible]);
+
+  const activePat = patient || cachedPatient;
+  if (!activePat) return null;
+
+
+  const handleCall = () => {
+    if (!mobile) return;
+    playClickSound();
+    Linking.openURL(`tel:${mobile}`);
+  };
+
+  const handleSave = () => {
+    playClickSound();
+
+    if (!name.trim()) {
+      setError('Patient name is required');
+      return;
+    }
+    if (!mobile.trim() || mobile.trim().length < 10) {
+      setError('Valid 10-digit mobile number is required');
+      return;
+    }
+
+    setError('');
+
+    const updates: Partial<Patient> = {
+      name: name.trim(),
+      mobile: mobile.trim(),
+      whatsapp: whatsapp.trim() || undefined,
+      alternateMobile: alternateMobile.trim() || undefined,
+      dob: dob.trim() || undefined,
+      gender: gender as Gender,
+      email: email.trim() || undefined,
+      address: address.trim() || undefined,
+      pinCode: pinCode.trim() || undefined,
+      state: state.trim() || undefined,
+      district: district.trim() || undefined,
+      enquirySource: enquirySource.trim() || undefined,
+      referenceDoctor: referenceDoctor.trim() || undefined,
+    };
+
+    updatePatient(activePat.id, updates);
+    playAppointmentSuccessSound();
+    setIsEditing(false);
+  };
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+        {/* Header Profile Section */}
+        <View style={styles.headerRow}>
+          <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>
+              {(name || activePat.name).charAt(0).toUpperCase()}
+            </Text>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
+            <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
+              ID: {activePat.id} • {gender || activePat.gender}
+            </Text>
+          </View>
+        </View>
+
+        {/* Quick Action Bar */}
+        <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.phoneTag}>
+            <Ionicons name="phone-portrait-outline" size={14} color={colors.textMuted} />
+            <Text style={[styles.phoneTagText, { color: colors.text }]}>{mobile || activePat.mobile}</Text>
+          </View>
+
+          <View style={styles.actionBtns}>
+            {mobile ? (
+              <TouchableOpacity
+                style={[styles.iconBtn, { backgroundColor: colors.success }]}
+                onPress={handleCall}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="call-outline" size={15} color="#FFF" />
+                <Text style={[styles.btnText, { color: '#FFF' }]}>Call</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              style={[
+                styles.iconBtn,
+                { backgroundColor: isEditing ? colors.danger : colors.primary },
+              ]}
+              onPress={() => {
+                playClickSound();
+                setIsEditing(!isEditing);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={isEditing ? 'close-circle-outline' : 'create-outline'}
+                size={15}
+                color="#FFF"
+              />
+              <Text style={[styles.btnText, { color: '#FFF' }]}>
+                {isEditing ? 'Cancel' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        {!isEditing ? (
+          /* READ-ONLY VIEW MODE */
+          <View style={styles.detailsContainer}>
+            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Mobile Number</Text>
+              <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
+                {mobile}
+              </Text>
+            </View>
+
+            {whatsapp ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>WhatsApp</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{whatsapp}</Text>
+              </View>
+            ) : null}
+
+            {alternateMobile ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Alternate Phone</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{alternateMobile}</Text>
+              </View>
+            ) : null}
+
+            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Gender</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{gender}</Text>
+            </View>
+
+            {dob ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Date of Birth</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{dob}</Text>
+              </View>
+            ) : null}
+
+            {email ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Email Address</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{email}</Text>
+              </View>
+            ) : null}
+
+            {address ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Address</Text>
+                <Text style={[styles.infoValue, { color: colors.text, flex: 1, textAlign: 'right' }]}>
+                  {address}
+                </Text>
+              </View>
+            ) : null}
+
+            {district || state || pinCode ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {[district, state, pinCode].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Enquiry Source</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{enquirySource}</Text>
+            </View>
+
+            {referenceDoctor ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Reference Doctor</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{referenceDoctor}</Text>
+              </View>
+            ) : null}
+
+            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Registration Date</Text>
+              <Text style={[styles.infoValue, { color: colors.textMuted, fontSize: 12 }]}>
+                {activePat.createdAt ? new Date(activePat.createdAt).toLocaleDateString() : 'N/A'}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          /* EDIT FORM MODE */
+          <View style={{ marginTop: 8 }}>
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>Full Name *</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                ]}
+                value={name}
+                onChangeText={setName}
+                placeholder="Patient Full Name"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Select
+                  label="Gender *"
+                  value={gender}
+                  options={GENDERS}
+                  onChange={setGender}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>WhatsApp Number</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={whatsapp}
+                  onChangeText={setWhatsapp}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  placeholder="Optional"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Alternate Mobile</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={alternateMobile}
+                  onChangeText={setAlternateMobile}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  placeholder="Optional"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Date of Birth</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={dob}
+                  onChangeText={setDob}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Email Address</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  placeholder="email@example.com"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>Street Address</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                ]}
+                value={address}
+                onChangeText={setAddress}
+                placeholder="House / Flat / Area"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>District / City</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={district}
+                  onChangeText={setDistrict}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>State</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={state}
+                  onChangeText={setState}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Pin Code</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                  ]}
+                  value={pinCode}
+                  onChangeText={setPinCode}
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Select
+                  label="Enquiry Source"
+                  value={enquirySource}
+                  options={ENQUIRY_SOURCE}
+                  onChange={setEnquirySource}
+                />
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>Reference Doctor</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                ]}
+                value={referenceDoctor}
+                onChangeText={setReferenceDoctor}
+                placeholder="Dr. Name if referred"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+              onPress={handleSave}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.saveBtnText}>Save Changes</Text>
+            </TouchableOpacity>
+
+          </View>
+        )}
+      </ScrollView>
+    </BottomSheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  patientName: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  patientMeta: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  phoneTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  phoneTagText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  btnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailsContainer: {
+    marginTop: 4,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  field: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  input: {
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  saveBtn: {
+    height: 48,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+});

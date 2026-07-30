@@ -4,7 +4,7 @@ import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import StatusChip from '../shared/StatusChip';
 import RescheduleModal from './RescheduleModal';
 import { useTheme } from '../../theme/ThemeContext';
-import { formatDate, formatTime } from '../../utils/dateUtils';
+import { formatDate, formatTime, todayISO } from '../../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +19,41 @@ export interface ModalContentProps {
 
 function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) {
   const { colors } = useTheme();
-  const { expandSheet, handleScroll } = useBottomSheet();
+  const { handleScroll } = useBottomSheet();
+
+  const today = todayISO();
+  const now = new Date();
+  const currentHHMM =
+    String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  // Check if appointment is in the past
+  const isPast =
+    appointment.date < today ||
+    (appointment.date === today && appointment.startTime < currentHHMM);
+
+  const canReschedule =
+    !isPast &&
+    ([
+      APPOINTMENT_STATUS.SCHEDULED,
+      APPOINTMENT_STATUS.CONFIRMED,
+      APPOINTMENT_STATUS.RESCHEDULED,
+      APPOINTMENT_STATUS.PENDING,
+    ] as string[]).includes(appointment.status);
+
+  const canConfirm =
+    !isPast &&
+    appointment.status !== APPOINTMENT_STATUS.CONFIRMED &&
+    appointment.status !== APPOINTMENT_STATUS.CANCELLED &&
+    appointment.status !== APPOINTMENT_STATUS.PAID;
+
+  const canCancel =
+    !isPast &&
+    appointment.status !== APPOINTMENT_STATUS.CANCELLED &&
+    appointment.status !== APPOINTMENT_STATUS.PAID;
+
+  const canMarkPaid =
+    appointment.status !== APPOINTMENT_STATUS.PAID &&
+    appointment.status !== APPOINTMENT_STATUS.CANCELLED;
 
   const handleStatusChange = (status: string) => {
     useAppointmentStore.getState().updateStatus(appointment.id, status);
@@ -97,46 +131,46 @@ function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) 
 
       {/* Action Buttons */}
       <View style={styles.actions}>
-        {appointment.status !== APPOINTMENT_STATUS.CANCELLED && (
+        {canReschedule && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primaryLight }]}
+            style={[styles.actionBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
               playClickSound();
               onEditPress();
             }}
           >
-            <Ionicons name="create-outline" size={18} color={colors.primary} />
-            <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit / Reschedule</Text>
+            <Ionicons name="create-outline" size={18} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>Edit / Reschedule</Text>
           </TouchableOpacity>
         )}
 
-        {appointment.status !== APPOINTMENT_STATUS.CONFIRMED && (
+        {canConfirm && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.successBg }]}
+            style={[styles.actionBtn, { backgroundColor: colors.success }]}
             onPress={() => handleStatusChange(APPOINTMENT_STATUS.CONFIRMED)}
           >
-            <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
-            <Text style={[styles.actionBtnText, { color: colors.success }]}>Confirm</Text>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>Confirm</Text>
           </TouchableOpacity>
         )}
 
-        {appointment.status !== APPOINTMENT_STATUS.PAID && (
+        {canMarkPaid && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.purpleBg }]}
+            style={[styles.actionBtn, { backgroundColor: colors.purple }]}
             onPress={() => handleStatusChange(APPOINTMENT_STATUS.PAID)}
           >
-            <Ionicons name="cash-outline" size={18} color={colors.purple} />
-            <Text style={[styles.actionBtnText, { color: colors.purple }]}>Mark Paid</Text>
+            <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>Mark Paid</Text>
           </TouchableOpacity>
         )}
 
-        {appointment.status !== APPOINTMENT_STATUS.CANCELLED && (
+        {canCancel && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.dangerBg }]}
+            style={[styles.actionBtn, { backgroundColor: colors.danger }]}
             onPress={handleCancel}
           >
-            <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
-            <Text style={[styles.actionBtnText, { color: colors.danger }]}>Cancel</Text>
+            <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>Cancel</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -225,6 +259,20 @@ const styles = StyleSheet.create({
   remarkText: {
     fontSize: 13,
     marginTop: 2,
+  },
+  pastNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 8,
+  },
+  pastNoticeText: {
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 16,
   },
   actions: {
     flexDirection: 'row',
