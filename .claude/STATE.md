@@ -6,19 +6,16 @@
 ---
 
 ## Last Updated
-`2026-07-30` — Zero-Gap Select Overlay, Sidebar Preceding Appointments Removal, and Strict Past Appointment Modification Rules completed by `@Frontend`.
+`2026-07-30` — New Doctor Quick-Add Option in Bottom Sheet Navigation Popup completed by `@Frontend`.
 
 ---
 
 ## Current Sprint Focus
 
-### UI Polish & Past Appointment Business Rules (`@Frontend`)
-- **Zero-Gap Select Dropdown Overlay (`@Frontend`)**:
-  - `components/shared/Select.tsx`: Dynamically computed `cardHeight` based on option count (`options.length * 42`). Placed the upward-opening overlay directly above the trigger input field (`layoutPos.y - cardHeight - 4`), completely eliminating gaps for option lists under 4 items.
-- **Sidebar Cleanup (`@Frontend`)**:
-  - `components/SidebarDrawer.tsx`: Removed the embedded preceding appointments list from the sidebar drawer to keep navigation concise while retaining the link to the dedicated `Past Appointments` screen.
-- **Strict Past Appointment Modification Rules (`@Frontend`)**:
-  - `components/calendar/AppointmentDetailModal.tsx`: Implemented logic checking `isPast` (`date < today || (date === today && startTime < currentHHMM)`). Disallows Confirm, Cancel, and Edit/Reschedule for past appointments, while displaying an informative historical log banner.
+### Quick-Add Floating Popup Enhancement (`@Frontend`)
+- **New Doctor Quick-Add Option (`@Frontend`)**:
+  - `components/shared/QuickAddPopup.tsx`: Added "New Doctor" option (`onNewDoctor`) to the `+` floating action popup menu above the bottom navigation bar.
+  - `App.tsx`: Wired `onNewDoctor` to open `AddDoctorSheet`, enabling quick doctor registration from any screen in the app.
 
 ---
 
@@ -34,6 +31,7 @@
 - [x] Dynamic Zero-Gap Upward Floating Dropdown Overlay (`Select.tsx`)
 - [x] Sidebar Clean Navigation with Dedicated Past Appointments Screen (`SidebarDrawer.tsx` & `PastAppointmentsScreen.tsx`)
 - [x] Strict Past Appointment Modification Safeguards (`AppointmentDetailModal.tsx`)
+- [x] Quick-Add Popup New Doctor Option (`QuickAddPopup.tsx` & `App.tsx`)
 - [x] `npx tsc --noEmit` — 0 errors
 
 ---
@@ -43,6 +41,7 @@ _None_
 
 ## Notes
 - `npx tsc --noEmit`: 0 errors.
+
 
 
 

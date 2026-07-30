@@ -19,6 +19,7 @@ import PastAppointmentsScreen from './src/screens/PastAppointmentsScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
 import AddPatientSheet from './src/components/appointment/AddPatientSheet';
+import AddDoctorSheet from './src/components/doctor/AddDoctorSheet';
 import CenterSwitchSheet from './src/components/shared/CenterSwitchSheet';
 import QuickAddPopup from './src/components/shared/QuickAddPopup';
 import ExitConfirmationModal from './src/components/shared/ExitConfirmationModal';
@@ -42,6 +43,7 @@ function MainApp() {
   // Modal visibilities
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
   const [showCenterSwitchModal, setShowCenterSwitchModal] = useState(false);
   const [showQuickAddPopup, setShowQuickAddPopup] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -91,6 +93,11 @@ function MainApp() {
         setShowQuickAddPopup(false);
         return true;
       }
+      if (showAddDoctorModal) {
+        playClickSound();
+        setShowAddDoctorModal(false);
+        return true;
+      }
       if (showAddPatientModal) {
         playClickSound();
         setShowAddPatientModal(false);
@@ -130,6 +137,7 @@ function MainApp() {
     showExitModal,
     showCenterSwitchModal,
     showQuickAddPopup,
+    showAddDoctorModal,
     showAddPatientModal,
     showCreateModal,
     drawerOpen,
@@ -182,6 +190,7 @@ function MainApp() {
         onClose={() => setShowQuickAddPopup(false)}
         onNewAppointment={() => setShowCreateModal(true)}
         onNewPatient={() => setShowAddPatientModal(true)}
+        onNewDoctor={() => setShowAddDoctorModal(true)}
       />
 
       {/* Center Switch Bottom Sheet */}
@@ -207,6 +216,12 @@ function MainApp() {
       <AddPatientSheet
         visible={showAddPatientModal}
         onClose={() => setShowAddPatientModal(false)}
+      />
+
+      {/* Quick Add Doctor Modal */}
+      <AddDoctorSheet
+        visible={showAddDoctorModal}
+        onClose={() => setShowAddDoctorModal(false)}
       />
 
       {/* Theme-Aligned Exit App Confirmation Modal */}

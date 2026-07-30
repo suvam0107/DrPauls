@@ -10,6 +10,7 @@ export interface QuickAddPopupProps {
   onClose: () => void;
   onNewAppointment: () => void;
   onNewPatient: () => void;
+  onNewDoctor: () => void;
 }
 
 export default function QuickAddPopup({
@@ -17,6 +18,7 @@ export default function QuickAddPopup({
   onClose,
   onNewAppointment,
   onNewPatient,
+  onNewDoctor,
 }: QuickAddPopupProps) {
   const { colors } = useTheme();
 
@@ -68,7 +70,7 @@ export default function QuickAddPopup({
                 }}
                 activeOpacity={0.7}
               >
-                <View>
+                <View style={styles.iconCol}>
                   <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                 </View>
                 <View>
@@ -78,7 +80,7 @@ export default function QuickAddPopup({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.optionRow}
+                style={[styles.optionRow, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
                 onPress={() => {
                   playClickSound();
                   onClose();
@@ -86,12 +88,30 @@ export default function QuickAddPopup({
                 }}
                 activeOpacity={0.7}
               >
-                <View>
+                <View style={styles.iconCol}>
                   <Ionicons name="person-add-outline" size={18} color={colors.success} />
                 </View>
                 <View>
                   <Text style={[styles.optionTitle, { color: colors.text }]}>New Patient</Text>
                   <Text style={[styles.optionSub, { color: colors.textMuted }]}>Register a new patient record</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionRow}
+                onPress={() => {
+                  playClickSound();
+                  onClose();
+                  onNewDoctor();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.iconCol}>
+                  <Ionicons name="medical-outline" size={18} color={colors.purple} />
+                </View>
+                <View>
+                  <Text style={[styles.optionTitle, { color: colors.text }]}>New Doctor</Text>
+                  <Text style={[styles.optionSub, { color: colors.textMuted }]}>Add doctor to clinic staff</Text>
                 </View>
               </TouchableOpacity>
             </Animated.View>
@@ -111,7 +131,7 @@ const styles = StyleSheet.create({
     paddingBottom: 72, // Above bottom nav
   },
   popup: {
-    width: 230,
+    width: 235,
     borderRadius: 16,
     borderWidth: 1,
     padding: 6,
@@ -127,6 +147,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     gap: 10,
+  },
+  iconCol: {
+    width: 22,
+    alignItems: 'center',
   },
   optionTitle: {
     fontSize: 14,
