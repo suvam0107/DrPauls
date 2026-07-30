@@ -11,6 +11,7 @@ export interface ExtendedDoctorState {
   byId: (id: string) => Doctor | undefined;
   therapistsByService: (serviceType?: string) => Therapist[];
   availableDoctors: () => Doctor[];
+  count: () => number;
 }
 
 const initialDoctors = dataStore.getData().doctors;
@@ -36,6 +37,8 @@ const useDoctorStore = create<ExtendedDoctorState>((set, get) => ({
     ),
 
   availableDoctors: () => get().doctors.filter((d) => d.available),
+
+  count: () => get().doctors.length,
 }));
 
 export default useDoctorStore;

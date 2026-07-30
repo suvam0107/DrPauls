@@ -18,6 +18,8 @@ export interface CalendarHeaderProps {
   weekDates: string[];
   calendarView: CalendarView;
   onViewChange: (view: CalendarView) => void;
+  displayMode?: 'grid' | 'list';
+  onDisplayModeChange?: (mode: 'grid' | 'list') => void;
   activeFilters: string[];
   onFilterToggle: (status: string) => void;
 }
@@ -28,6 +30,8 @@ export default function CalendarHeader({
   weekDates,
   calendarView,
   onViewChange,
+  displayMode = 'grid',
+  onDisplayModeChange,
   activeFilters,
   onFilterToggle,
 }: CalendarHeaderProps) {
@@ -83,9 +87,16 @@ export default function CalendarHeader({
     onFilterToggle(status);
   };
 
+  const handleDisplayToggle = () => {
+    playClickSound();
+    if (onDisplayModeChange) {
+      onDisplayModeChange(displayMode === 'grid' ? 'list' : 'grid');
+    }
+  };
+
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      {/* Row 1: Date range & Today shortcut */}
+      {/* Row 1: Date range, Today shortcut & List/Grid toggle icon */}
       <View style={styles.row}>
         <View style={styles.dateNavGroup}>
           <TouchableOpacity onPress={() => handleDatePress(-1)} hitSlop={8}>
@@ -101,12 +112,30 @@ export default function CalendarHeader({
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.todayBtn, { borderColor: colors.primary }]}
-          onPress={() => handleDatePress(0)}
-        >
-          <Text style={[styles.todayText, { color: colors.primary }]}>Today</Text>
-        </TouchableOpacity>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity
+            style={[styles.todayBtn, { borderColor: colors.primary }]}
+            onPress={() => handleDatePress(0)}
+          >
+            <Text style={[styles.todayText, { color: colors.primary }]}>Today</Text>
+          </TouchableOpacity>
+
+          {/* List Mode / Grid Mode Icon Toggle */}
+          <TouchableOpacity
+            style={[
+              styles.modeBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={handleDisplayToggle}
+            hitSlop={6}
+          >
+            <Ionicons
+              name={displayMode === 'grid' ? 'list-outline' : 'grid-outline'}
+              size={18}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Row 2: Day / Week / Month Toggle Pill */}
@@ -210,8 +239,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dateLabel: { fontSize: 16, fontWeight: '700' },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   todayBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   todayText: { fontSize: 12, fontWeight: '600' },
+  modeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   viewRow: {
     paddingHorizontal: 16,
     marginBottom: 8,

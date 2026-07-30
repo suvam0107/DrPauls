@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import useAppointmentStore from '../store/useAppointmentStore';
 import usePatientStore from '../store/usePatientStore';
+import useUIStore from '../store/useUIStore';
 import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
@@ -11,6 +12,7 @@ import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
+import useDoctorStore from '../store/useDoctorStore';
 
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -20,12 +22,16 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { colors } = useTheme();
   const appointments = useAppointmentStore((s) => s.appointments);
   const patientCount = usePatientStore((s) => s.count());
+  const doctorCount = useDoctorStore((s) => s.count());
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
 
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const today = todayISO();
-  const todayAppts = appointments.filter(
+  // Filter appointments for active center and today's date
+  const centerAppts = appointments.filter((a) => !a.centerId || a.centerId === activeCenterId);
+  const todayAppts = centerAppts.filter(
     (a) => a.date === today && a.status !== APPOINTMENT_STATUS.CANCELLED
   );
 
@@ -79,36 +85,25 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       {/* Quick Nav Bar */}
       <View style={styles.quickNavRow}>
         <TouchableOpacity
-          style={[styles.quickNavCard, { backgroundColor: colors.primaryLight }]}
-          onPress={() => {
-            playClickSound();
-            setShowCreate(true);
-          }}
-        >
-          <Ionicons name="add-circle" size={24} color={colors.primary} />
-          <Text style={[styles.quickNavText, { color: colors.primary }]}>New Appt</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.quickNavCard, { backgroundColor: colors.surface }]}
+          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {
             playClickSound();
             onNavigate('patients');
           }}
         >
-          <Ionicons name="people-outline" size={24} color={colors.text} />
-          <Text style={[styles.quickNavText, { color: colors.text }]}>{patientCount} Patients</Text>
+          <Ionicons name="people-outline" size={24} color={colors.primary} />
+          <Text style={[styles.quickNavText, { color: colors.text }]}>{patientCount} Patients Directory</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickNavCard, { backgroundColor: colors.surface }]}
+          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {
             playClickSound();
-            onNavigate('calendar');
+            onNavigate('doctors');
           }}
         >
-          <Ionicons name="time-outline" size={24} color={colors.text} />
-          <Text style={[styles.quickNavText, { color: colors.text }]}>Schedule Grid</Text>
+          <Ionicons name="medical-outline" size={24} color={colors.primary} />
+          <Text style={[styles.quickNavText, { color: colors.text }]}>{doctorCount} Doctors on Duty</Text>
         </TouchableOpacity>
       </View>
 
@@ -205,11 +200,14 @@ const styles = StyleSheet.create({
   quickNavRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   quickNavCard: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    borderWidth: 1,
+    gap: 8,
   },
   quickNavText: { fontSize: 12, fontWeight: '600' },
   sectionHeader: {

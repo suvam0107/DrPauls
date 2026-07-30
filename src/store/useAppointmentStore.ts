@@ -3,12 +3,14 @@ import { appointmentService } from '../api/services/appointmentService';
 import { dataStore } from '../api/dataStore';
 import { nextAppointmentId } from '../utils/searchUtils';
 import { APPOINTMENT_STATUS } from '../constants';
-import { timeToMins, todayISO } from '../utils/dateUtils';
+import { timeToMins, todayISO, isDoctorAvailableOnDate, formatDateShort } from '../utils/dateUtils';
 import { Appointment } from '../types';
+import useDoctorStore from './useDoctorStore';
+import useUIStore from './useUIStore';
 
 export interface AppointmentValidationResult {
   valid: boolean;
-  reason?: 'past' | 'collision';
+  reason?: 'past' | 'collision' | 'doctor_unavailable';
   collidingAppt?: Appointment;
   message?: string;
 }
@@ -19,6 +21,7 @@ export interface ExtendedAppointmentState {
   fetchAppointments: () => Promise<void>;
   addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Appointment;
   updateStatus: (id: string, status: string) => void;
+  updateAppointment: (id: string, updates: Partial<Appointment>) => void;
   moveAppointment: (id: string, newDate: string, newStartTime: string, newEndTime: string) => void;
   cancelAppointment: (id: string) => void;
   validateSlot: (
@@ -90,6 +93,17 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
     });
   },
 
+  /** Update generic fields of an appointment */
+  updateAppointment: (id, updates) => {
+    appointmentService.update(id, updates);
+    set((s) => {
+      const updated = s.appointments.map((a) =>
+        a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
+      );
+      return { appointments: updated, slotMap: buildSlotMap(updated) };
+    });
+  },
+
   /** Move appointment to new date/time (drag-drop or reschedule) - Permanent Persistence */
   moveAppointment: (id, newDate, newStartTime, newEndTime) => {
     appointmentService.update(id, {
@@ -136,6 +150,36 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
       const startMins = timeToMins(startTime);
       if (startMins < currentMins) {
         return { valid: false, reason: 'past', message: 'Cannot reschedule to a past time slot.' };
+      }
+    }
+
+    // 2. Doctor Availability & Working Hours Check
+    const activeCenterId = useUIStore.getState().activeCenterId;
+    const doctor = useDoctorStore.getState().doctors.find((d) => d.id === doctorId);
+
+    if (doctor) {
+      if (!isDoctorAvailableOnDate(doctor, date, activeCenterId)) {
+        return {
+          valid: false,
+          reason: 'doctor_unavailable',
+          message: `${doctor.name} is not available on ${formatDateShort(date)}.`,
+        };
+      }
+
+      const cSched = doctor.centerSchedule?.find((cs) => cs.centerId === activeCenterId);
+      const hours = cSched ? cSched.workingHours : doctor.workingHours;
+      if (hours) {
+        const newStartMins = timeToMins(startTime);
+        const newEndMins = timeToMins(endTime);
+        const doctorStartMins = timeToMins(hours.start);
+        const doctorEndMins = timeToMins(hours.end);
+        if (newStartMins < doctorStartMins || newEndMins > doctorEndMins) {
+          return {
+            valid: false,
+            reason: 'doctor_unavailable',
+            message: `${doctor.name} is only available between ${hours.start} and ${hours.end}.`,
+          };
+        }
       }
     }
 

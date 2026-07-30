@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../theme/ThemeContext';
 import useUIStore from '../store/useUIStore';
+import useCenterStore from '../store/useCenterStore';
 import useAuthStore from '../store/useAuthStore';
 import LogoutConfirmationModal from '../components/shared/LogoutConfirmationModal';
 import { playClickSound } from '../utils/feedback';
@@ -12,6 +13,10 @@ export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const themeMode = useUIStore((s) => s.themeMode);
   const setThemeMode = useUIStore((s) => s.setThemeMode);
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
+
+  const centers = useCenterStore((s) => s.centers);
+  const currentCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -80,28 +85,57 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Clinic Details */}
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Clinic Details</Text>
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={18} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.text }]}>
-              2nd Floor, Hotel Parnil Palace Building, Zoo Tiniali, Guwahati
+        {/* Clinic Details (Current Center) */}
+        {currentCenter && (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              Center Details
             </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={18} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.text }]}>+91 9230177777</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={18} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.text }]}>
-              Mon-Sun: 10:00 AM - 7:00 PM (Thu Closed)
-            </Text>
-          </View>
-        </View>
+            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.infoRow}>
+                <Ionicons name="business-outline" size={18} color={colors.primary} />
+                <Text style={[styles.infoTitleText, { color: colors.text }]}>
+                  {currentCenter.cc_name} {currentCenter.isMain ? '(Main Center)' : ''}
+                </Text>
+              </View>
 
-        {/* Sign Out Button (Below Everything) */}
+              {currentCenter.comp_name && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="briefcase-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.infoText, { color: colors.text }]}>
+                    {currentCenter.comp_name}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={18} color={colors.primary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  {currentCenter.bill_address}, {currentCenter.bill_state} - {currentCenter.bill_pin}
+                </Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="call-outline" size={18} color={colors.primary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  +91 {currentCenter.phone} {currentCenter.email ? `• ${currentCenter.email}` : ''}
+                </Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" size={18} color={colors.primary} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  Open: {currentCenter.openHours.start} - {currentCenter.openHours.end}{`\n`}({currentCenter.openDays.join(', ')})
+                  {currentCenter.closedDays && currentCenter.closedDays.length > 0
+                    ? `\nClosed: ${currentCenter.closedDays.join(', ')}`
+                    : ''}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* Sign Out Button */}
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: colors.dangerBg, borderColor: colors.danger + '40' }]}
           onPress={() => setShowLogoutModal(true)}
@@ -156,7 +190,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  sectionTitle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginLeft: 4
+  },
   sectionCard: {
     borderRadius: 12,
     borderWidth: 1,
@@ -172,8 +212,9 @@ const styles = StyleSheet.create({
   settingTextGroup: { flex: 1 },
   settingTitle: { fontSize: 15, fontWeight: '600' },
   settingSub: { fontSize: 12, marginTop: 2 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  infoText: { fontSize: 13, flex: 1 },
+  infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  infoTitleText: { fontSize: 14, fontWeight: '700', flex: 1 },
+  infoText: { fontSize: 13, flex: 1, lineHeight: 18 },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',

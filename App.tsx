@@ -17,31 +17,39 @@ import DoctorScreen from './src/screens/DoctorScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
+import AddPatientSheet from './src/components/appointment/AddPatientSheet';
+import CenterSwitchSheet from './src/components/shared/CenterSwitchSheet';
+import QuickAddPopup from './src/components/shared/QuickAddPopup';
 import ExitConfirmationModal from './src/components/shared/ExitConfirmationModal';
 
 import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
+import useCenterStore from './src/store/useCenterStore';
 import { playNavigationSound, playClickSound } from './src/utils/feedback';
 
 function MainApp() {
   const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkAndVerifyAuth = useAuthStore((s) => s.checkAndVerifyAuth);
+  const fetchCenters = useCenterStore((s) => s.fetchCenters);
 
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('home');
   const [screenHistory, setScreenHistory] = useState<string[]>(['home']);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Modal visibilities
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [showCenterSwitchModal, setShowCenterSwitchModal] = useState(false);
+  const [showQuickAddPopup, setShowQuickAddPopup] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
   const setThemeMode = useUIStore((s) => s.setThemeMode);
 
-  // App Startup Token Verification Flow:
-  // If valid token exists -> directs straight to Home Page without showing login page
-  // If token is null/expired -> presents Login page
   useEffect(() => {
     checkAndVerifyAuth();
+    fetchCenters();
   }, []);
 
   // Navigate & push to navigation history stack
@@ -55,41 +63,53 @@ function MainApp() {
   };
 
   const handleTabSelect = (tab: string) => {
+    if (tab === 'quickAdd') {
+      setShowQuickAddPopup(true);
+      return;
+    }
     setActiveTab(tab);
     if (tab === 'home') handleNavigate('home');
     else if (tab === 'settings') handleNavigate('settings');
-    else if (tab === 'newAppt') setShowCreateModal(true);
   };
 
-  // Android hardware back button & back gesture handler (router.back behavior)
+  // Android hardware back button & back gesture handler
   useEffect(() => {
     const onBackPress = () => {
-      // 0. If exit confirmation modal is open -> dismiss modal
       if (showExitModal) {
         playClickSound();
         setShowExitModal(false);
         return true;
       }
-
-      // 1. If create appointment modal is open -> close modal
+      if (showCenterSwitchModal) {
+        playClickSound();
+        setShowCenterSwitchModal(false);
+        return true;
+      }
+      if (showQuickAddPopup) {
+        playClickSound();
+        setShowQuickAddPopup(false);
+        return true;
+      }
+      if (showAddPatientModal) {
+        playClickSound();
+        setShowAddPatientModal(false);
+        return true;
+      }
       if (showCreateModal) {
         playClickSound();
         setShowCreateModal(false);
         return true;
       }
-
-      // 2. If sidebar drawer is open -> close drawer
       if (drawerOpen) {
         playClickSound();
         setDrawerOpen(false);
         return true;
       }
 
-      // 3. Router back: pop history stack (navigation.wav: for every navigation through the gesture/back button of OS)
       if (screenHistory.length > 1) {
         playNavigationSound();
         const updatedHistory = [...screenHistory];
-        updatedHistory.pop(); // Remove current screen
+        updatedHistory.pop();
         const prevScreen = updatedHistory[updatedHistory.length - 1];
         setScreenHistory(updatedHistory);
         setCurrentScreen(prevScreen);
@@ -99,16 +119,23 @@ function MainApp() {
         return true;
       }
 
-      // 4. On Home screen -> show theme-aligned exit confirmation modal (triggers ExitConfirmationModal which plays confirmation.wav and NOT navigation.wav)
       setShowExitModal(true);
       return true;
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backHandler.remove();
-  }, [showExitModal, showCreateModal, drawerOpen, screenHistory, currentScreen]);
+  }, [
+    showExitModal,
+    showCenterSwitchModal,
+    showQuickAddPopup,
+    showAddPatientModal,
+    showCreateModal,
+    drawerOpen,
+    screenHistory,
+    currentScreen,
+  ]);
 
-  // If user is not authenticated or token was deleted -> present AuthScreen
   if (!isAuthenticated) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -123,10 +150,11 @@ function MainApp() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Top App Header with safe area inset */}
+      {/* Top App Header with safe area inset & center toggle */}
       <Header
         onMenuPress={() => setDrawerOpen(true)}
         onThemeToggle={() => setThemeMode(isDark ? 'light' : 'dark')}
+        onCenterPress={() => setShowCenterSwitchModal(true)}
       />
 
       {/* Main Screen Content */}
@@ -140,7 +168,25 @@ function MainApp() {
       </View>
 
       {/* Bottom Nav Bar with safe area bottom inset */}
-      <BottomNav activeTab={activeTab} onTabSelect={handleTabSelect} />
+      <BottomNav
+        activeTab={activeTab}
+        onTabSelect={handleTabSelect}
+        onPlusPress={() => setShowQuickAddPopup((prev) => !prev)}
+      />
+
+      {/* Quick Add Floating Popup (above bottom nav) */}
+      <QuickAddPopup
+        visible={showQuickAddPopup}
+        onClose={() => setShowQuickAddPopup(false)}
+        onNewAppointment={() => setShowCreateModal(true)}
+        onNewPatient={() => setShowAddPatientModal(true)}
+      />
+
+      {/* Center Switch Bottom Sheet */}
+      <CenterSwitchSheet
+        visible={showCenterSwitchModal}
+        onClose={() => setShowCenterSwitchModal(false)}
+      />
 
       {/* Sidebar Drawer */}
       <SidebarDrawer
@@ -153,6 +199,12 @@ function MainApp() {
       <CreateAppointmentSheet
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+      />
+
+      {/* Quick Add Patient Modal */}
+      <AddPatientSheet
+        visible={showAddPatientModal}
+        onClose={() => setShowAddPatientModal(false)}
       />
 
       {/* Theme-Aligned Exit App Confirmation Modal */}

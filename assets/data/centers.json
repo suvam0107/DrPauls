@@ -1,0 +1,44 @@
+[
+  {
+    "id": "CC-001",
+    "cc_name": "Dr. Paul's Guwahati Main",
+    "comp_name": "DR PAULS MULTISPECIALITY CLINIC PVT LTD",
+    "bill_address": "GS Road, ABC Bus Stop, Near Tarun Ram Phookan Park, Guwahati",
+    "bill_state": "ASSAM",
+    "bill_pin": 781005,
+    "phone": "9000000001",
+    "email": "main@drpaulsclinic.com",
+    "isMain": true,
+    "openDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
+    "closedDays": ["Thu"],
+    "openHours": { "start": "10:00", "end": "19:00" }
+  },
+  {
+    "id": "CC-002",
+    "cc_name": "Dr. Paul's Dispur Branch",
+    "comp_name": "DR PAULS MULTISPECIALITY CLINIC PVT LTD",
+    "bill_address": "Dispur Last Gate, Opposite Capital Complex, Guwahati",
+    "bill_state": "ASSAM",
+    "bill_pin": 781006,
+    "phone": "9000000002",
+    "email": "dispur@drpaulsclinic.com",
+    "isMain": false,
+    "openDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "closedDays": ["Sun"],
+    "openHours": { "start": "10:00", "end": "18:00" }
+  },
+  {
+    "id": "CC-003",
+    "cc_name": "Dr. Paul's Silchar Branch",
+    "comp_name": "DR PAULS MULTISPECIALITY CLINIC PVT LTD",
+    "bill_address": "Park Road, Near Goldighi Shopping Mall, Silchar",
+    "bill_state": "ASSAM",
+    "bill_pin": 788001,
+    "phone": "9000000003",
+    "email": "silchar@drpaulsclinic.com",
+    "isMain": false,
+    "openDays": ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "closedDays": ["Mon"],
+    "openHours": { "start": "11:00", "end": "19:00" }
+  }
+]

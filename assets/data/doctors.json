@@ -5,11 +5,25 @@
     "specialty": "Dermatologist",
     "department": "Skin",
     "qualification": "MBBS, MD (Dermatology)",
+    "phone": "9876543210",
+    "maxPatientsPerDay": 20,
     "available": true,
     "consultFee": 500,
     "location": "Room 1, 2nd Floor",
     "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-    "workingHours": { "start": "10:00", "end": "19:00" }
+    "workingHours": { "start": "10:00", "end": "19:00" },
+    "centerSchedule": [
+      {
+        "centerId": "CC-001",
+        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
+        "workingHours": { "start": "10:00", "end": "19:00" }
+      },
+      {
+        "centerId": "CC-002",
+        "workingDays": ["Mon", "Wed", "Fri"],
+        "workingHours": { "start": "10:00", "end": "17:00" }
+      }
+    ]
   },
   {
     "id": "DOC-002",
@@ -17,11 +31,25 @@
     "specialty": "Trichologist",
     "department": "Hair",
     "qualification": "MBBS, DV&D, Trichology Certified",
+    "phone": "9876543211",
+    "maxPatientsPerDay": 15,
     "available": true,
     "consultFee": 600,
     "location": "Room 2, 2nd Floor",
     "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-    "workingHours": { "start": "10:00", "end": "19:00" }
+    "workingHours": { "start": "10:00", "end": "19:00" },
+    "centerSchedule": [
+      {
+        "centerId": "CC-001",
+        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
+        "workingHours": { "start": "10:00", "end": "19:00" }
+      },
+      {
+        "centerId": "CC-003",
+        "workingDays": ["Tue", "Thu", "Sat"],
+        "workingHours": { "start": "11:00", "end": "18:00" }
+      }
+    ]
   },
   {
     "id": "DOC-003",
@@ -29,10 +57,29 @@
     "specialty": "Cosmetic Surgeon",
     "department": "Cosmetic",
     "qualification": "MBBS, MS, MCh (Plastic Surgery)",
+    "phone": "9876543212",
+    "maxPatientsPerDay": 12,
     "available": true,
     "consultFee": 1000,
     "location": "Room 3, 2nd Floor",
     "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat"],
-    "workingHours": { "start": "11:00", "end": "18:00" }
+    "workingHours": { "start": "11:00", "end": "18:00" },
+    "centerSchedule": [
+      {
+        "centerId": "CC-001",
+        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat"],
+        "workingHours": { "start": "11:00", "end": "18:00" }
+      },
+      {
+        "centerId": "CC-002",
+        "workingDays": ["Tue", "Thu"],
+        "workingHours": { "start": "11:00", "end": "16:00" }
+      },
+      {
+        "centerId": "CC-003",
+        "workingDays": ["Fri", "Sun"],
+        "workingHours": { "start": "12:00", "end": "19:00" }
+      }
+    ]
   }
 ]

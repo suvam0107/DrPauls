@@ -8,9 +8,10 @@ import { playClickSound } from '../utils/feedback';
 export interface BottomNavProps {
   activeTab: string;
   onTabSelect: (tab: string) => void;
+  onPlusPress?: () => void;
 }
 
-export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
+export default function BottomNav({ activeTab, onTabSelect, onPlusPress }: BottomNavProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 6);
@@ -18,6 +19,15 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
   const handleTabPress = (tab: string) => {
     playClickSound();
     onTabSelect(tab);
+  };
+
+  const handlePlusPress = () => {
+    playClickSound();
+    if (onPlusPress) {
+      onPlusPress();
+    } else {
+      onTabSelect('quickAdd');
+    }
   };
 
   return (
@@ -53,10 +63,10 @@ export default function BottomNav({ activeTab, onTabSelect }: BottomNavProps) {
         </Text>
       </TouchableOpacity>
 
-      {/* New Appointment Tab (+ Icon) */}
+      {/* Quick Add Plus Tab */}
       <TouchableOpacity
         style={styles.centerTab}
-        onPress={() => handleTabPress('newAppt')}
+        onPress={handlePlusPress}
         activeOpacity={0.8}
       >
         <View style={[styles.plusCircle, { backgroundColor: colors.primary }]}>

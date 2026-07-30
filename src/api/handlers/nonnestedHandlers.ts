@@ -58,6 +58,15 @@ export const nonnestedHandlers = {
     return dataStore.getData().doctors.find((d) => d.id === payload.id);
   },
 
+  // --- Centers ---
+  get_all_centers: () => {
+    return dataStore.getData().centers;
+  },
+
+  get_center_by_id: (payload: { id: string }) => {
+    return dataStore.getData().centers.find((c) => c.id === payload.id);
+  },
+
   // --- Therapists ---
   get_all_therapists: () => {
     return dataStore.getData().therapists;

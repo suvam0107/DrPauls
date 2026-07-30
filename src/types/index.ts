@@ -44,6 +44,9 @@ export type ModalType =
   | 'createAppointment'
   | 'appointmentDetail'
   | 'addPatient'
+  | 'centerSwitch'
+  | 'quickAdd'
+  | 'rescheduleAppointment'
   | null;
 
 export type CalendarView = 'day' | 'week' | 'month';
@@ -62,7 +65,28 @@ export interface TherapistAssignment {
   isPrimary: boolean;
 }
 
+export interface DoctorCenterSchedule {
+  centerId: string;
+  workingDays: WeekDay[];
+  workingHours: { start: string; end: string };
+}
+
 // --- Domain Models ---
+export interface Center {
+  id: string; // "CC-001"
+  cc_name: string;
+  comp_name?: string;
+  bill_address: string;
+  bill_state: string;
+  bill_pin: number;
+  phone: string;
+  email?: string;
+  isMain: boolean;
+  openDays: WeekDay[];
+  closedDays: WeekDay[];
+  openHours: { start: string; end: string };
+}
+
 export interface Patient {
   id: string; // "PAT-001"
   name: string;
@@ -91,16 +115,20 @@ export interface Doctor {
   specialty: string;
   department: string;
   qualification?: string;
+  phone?: string;
+  maxPatientsPerDay: number;
   available: boolean;
   consultFee: number;
   location: string;
   workingDays: WeekDay[];
   workingHours: { start: string; end: string }; // "HH:mm"
+  centerSchedule: DoctorCenterSchedule[];
   photo?: string;
 }
 
 export interface Appointment {
   id: string; // "APT-001"
+  centerId: string; // "CC-001"
   patientId: string;
   patientName: string;
   patientMobile: string;
@@ -240,6 +268,8 @@ export interface UIState {
   clearStatusFilters: () => void;
   activeDoctorFilter: string | null;
   setDoctorFilter: (id: string | null) => void;
+  activeCenterId: string;
+  setActiveCenterId: (id: string) => void;
 }
 
 export interface AppointmentState {

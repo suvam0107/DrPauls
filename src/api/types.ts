@@ -13,6 +13,8 @@ export type SpcKey =
   | 'delete_patient'
   | 'get_all_doctors'
   | 'get_doctor_by_id'
+  | 'get_all_centers'
+  | 'get_center_by_id'
   | 'get_all_therapists'
   | 'get_therapists_by_service'
   | 'get_all_packages'

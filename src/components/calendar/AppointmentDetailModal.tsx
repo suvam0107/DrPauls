@@ -1,23 +1,25 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import StatusChip from '../shared/StatusChip';
+import RescheduleModal from './RescheduleModal';
 import { useTheme } from '../../theme/ThemeContext';
 import { formatDate, formatTime } from '../../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Appointment } from '../../types';
-import { playAppointmentSuccessSound } from '../../utils/feedback';
+import { playAppointmentSuccessSound, playClickSound } from '../../utils/feedback';
 
 export interface ModalContentProps {
   appointment: Appointment;
   onClose: () => void;
+  onEditPress: () => void;
 }
 
-function ModalContent({ appointment, onClose }: ModalContentProps) {
+function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) {
   const { colors } = useTheme();
-  const { expandSheet } = useBottomSheet();
+  const { expandSheet, handleScroll } = useBottomSheet();
 
   const handleStatusChange = (status: string) => {
     useAppointmentStore.getState().updateStatus(appointment.id, status);
@@ -34,11 +36,7 @@ function ModalContent({ appointment, onClose }: ModalContentProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      onScroll={(e) => {
-        if (e.nativeEvent.contentOffset.y > 4) {
-          expandSheet();
-        }
-      }}
+      onScroll={handleScroll}
       scrollEventThrottle={16}
     >
       <View style={styles.header}>
@@ -72,20 +70,20 @@ function ModalContent({ appointment, onClose }: ModalContentProps) {
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Visit Type</Text>
           <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.visitType} Visit</Text>
         </View>
-        {appointment.therapistName && (
+        {appointment.therapistName ? (
           <View style={styles.gridItem}>
             <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Therapist</Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.therapistName}</Text>
           </View>
-        )}
-        {appointment.prePaymentRequired && (
+        ) : null}
+        {appointment.prePaymentRequired ? (
           <View style={styles.gridItem}>
             <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Pre-payment</Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>
               ₹{appointment.prePaymentAmount}
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
 
       {appointment.remark ? (
@@ -99,6 +97,19 @@ function ModalContent({ appointment, onClose }: ModalContentProps) {
 
       {/* Action Buttons */}
       <View style={styles.actions}>
+        {appointment.status !== APPOINTMENT_STATUS.CANCELLED && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.primaryLight }]}
+            onPress={() => {
+              playClickSound();
+              onEditPress();
+            }}
+          >
+            <Ionicons name="create-outline" size={18} color={colors.primary} />
+            <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit / Reschedule</Text>
+          </TouchableOpacity>
+        )}
+
         {appointment.status !== APPOINTMENT_STATUS.CONFIRMED && (
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.successBg }]}
@@ -144,12 +155,29 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
   appointment,
   onClose,
 }: AppointmentDetailModalProps) {
+  const [showReschedule, setShowReschedule] = useState(false);
+
   if (!appointment || !visible) return null;
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={440}>
-      <ModalContent appointment={appointment} onClose={onClose} />
-    </BottomSheet>
+    <>
+      <BottomSheet visible={visible} onClose={onClose} snapHeight={460}>
+        <ModalContent
+          appointment={appointment}
+          onClose={onClose}
+          onEditPress={() => setShowReschedule(true)}
+        />
+      </BottomSheet>
+
+      {/* Reschedule / Edit Modal */}
+      <RescheduleModal
+        visible={showReschedule}
+        appointment={appointment}
+        onClose={() => {
+          setShowReschedule(false);
+        }}
+      />
+    </>
   );
 });
 
@@ -213,6 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
     flex: 1,
+    minWidth: '45%',
     justifyContent: 'center',
   },
   actionBtnText: {

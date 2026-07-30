@@ -1,5 +1,5 @@
 import { GRID_START_HOUR, GRID_END_HOUR, SLOT_MINUTES, SLOT_HEIGHT, APPOINTMENT_STATUS } from '../constants';
-import { Appointment } from '../types';
+import { Appointment, Doctor, WeekDay } from '../types';
 
 export interface AppointmentLayoutInfo {
   overlapIndex: number;
@@ -261,4 +261,55 @@ export const computeAppointmentLayouts = (appts: Appointment[]): Map<string, App
 
   return layoutMap;
 };
+
+/**
+ * Returns true if doctor works on the given date (weekday check) for a specific center.
+ */
+export const isDoctorAvailableOnDate = (
+  doctor: Doctor | undefined,
+  dateStr: string,
+  centerId: string
+): boolean => {
+  if (!doctor) return false;
+  const wDay = weekdayLabel(dateStr) as WeekDay;
+  const cSched = doctor.centerSchedule?.find((cs) => cs.centerId === centerId);
+  const workingDays = cSched ? cSched.workingDays : doctor.workingDays;
+  return workingDays ? workingDays.includes(wDay) : false;
+};
+
+/**
+ * Returns available time slots for a doctor on a given date + center.
+ * Respects doctor's centerSchedule, filters past slots if date is today.
+ */
+export const getDoctorAvailableSlots = (
+  doctor: Doctor | undefined,
+  dateStr: string,
+  centerId: string
+): TimeSlot[] => {
+  if (!doctor) return [];
+  if (!isDoctorAvailableOnDate(doctor, dateStr, centerId)) return [];
+
+  const cSched = doctor.centerSchedule?.find((cs) => cs.centerId === centerId);
+  const hours = cSched ? cSched.workingHours : doctor.workingHours;
+  if (!hours) return [];
+
+  const startMins = timeToMins(hours.start);
+  const endMins = timeToMins(hours.end);
+
+  const slots: TimeSlot[] = [];
+  const today = todayISO();
+  const isToday = dateStr === today;
+  const nowMins = isToday ? new Date().getHours() * 60 + new Date().getMinutes() : 0;
+
+  for (let m = startMins; m < endMins; m += SLOT_MINUTES) {
+    if (isToday && m < nowMins) {
+      continue; // only upcoming timeslot from current timeslot onwards
+    }
+    const tStr = minsToTime(m);
+    slots.push({ time: tStr, label: formatTime(tStr) });
+  }
+
+  return slots;
+};
+
 

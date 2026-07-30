@@ -10,8 +10,9 @@ import therapistsRaw from '../../assets/data/therapists.json';
 import packagesRaw from '../../assets/data/packages.json';
 import appointmentsRaw from '../../assets/data/appointments.json';
 import staffRaw from '../../assets/data/staff.json';
+import centersRaw from '../../assets/data/centers.json';
 
-import { Patient, Doctor, Therapist, Package, Appointment, StaffUser } from '../types';
+import { Patient, Doctor, Therapist, Package, Appointment, StaffUser, Center } from '../types';
 import { todayISO, offsetDate } from '../utils/dateUtils';
 
 export interface InMemoryStoreData {
@@ -21,6 +22,7 @@ export interface InMemoryStoreData {
   packages: Package[];
   appointments: Appointment[];
   staff: StaffUser;
+  centers: Center[];
 }
 
 const buildInitialStore = (): InMemoryStoreData => {
@@ -41,6 +43,7 @@ const buildInitialStore = (): InMemoryStoreData => {
     const { dayOffset, ...rest } = apt;
     return {
       ...rest,
+      centerId: rest.centerId || 'CC-001',
       date: typeof dayOffset === 'number' ? offsetDate(today, dayOffset) : rest.date || today,
       createdAt: rest.createdAt || nowISO,
       updatedAt: rest.updatedAt || nowISO,
@@ -54,6 +57,7 @@ const buildInitialStore = (): InMemoryStoreData => {
     packages,
     appointments,
     staff: { ...(staffRaw as StaffUser) },
+    centers: [...(centersRaw as Center[])],
   };
 };
 

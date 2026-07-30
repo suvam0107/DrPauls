@@ -11,6 +11,7 @@ export interface MonthGridProps {
   selectedDate: string;
   appointments?: Appointment[];
   onSelectDate: (date: string) => void;
+  onMonthChange?: (date: string) => void;
   onDateDoubleTap?: (date: string) => void;
 }
 
@@ -18,10 +19,19 @@ export default function MonthGrid({
   selectedDate,
   appointments = [],
   onSelectDate,
+  onMonthChange,
 }: MonthGridProps) {
   const { colors } = useTheme();
   const today = todayISO();
   const monthGrid = getMonthGrid(selectedDate);
+
+  const handleCellPress = (cellDate: string, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth && onMonthChange) {
+      onMonthChange(cellDate);
+    } else {
+      onSelectDate(cellDate);
+    }
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -55,7 +65,7 @@ export default function MonthGrid({
                 !cell.isCurrentMonth && styles.outsideCell,
                 isSelected && { backgroundColor: colors.primaryLight, borderColor: colors.primary },
               ]}
-              onPress={() => onSelectDate(cell.date)}
+              onPress={() => handleCellPress(cell.date, cell.isCurrentMonth)}
               activeOpacity={0.7}
             >
               {/* Day Number Badge */}
@@ -91,7 +101,7 @@ export default function MonthGrid({
 
               {/* Appointment count pill */}
               {dayAppts.length > 0 && (
-                <View style={[styles.countPill, { backgroundColor: colors.surface }]}>
+                <View style={styles.countContainer}>
                   <Text style={[styles.countText, { color: colors.primary }]}>
                     {dayAppts.length} appt{dayAppts.length > 1 ? 's' : ''}
                   </Text>
@@ -130,7 +140,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   cell: {
-    width: '14.28%', // 100% / 7 columns
+    width: '14.28%',
     height: 80,
     borderWidth: 0.5,
     padding: 4,
@@ -166,8 +176,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '600',
   },
-  countPill: {
-    borderRadius: 6,
+  countContainer: {
     paddingHorizontal: 4,
     paddingVertical: 2,
     alignSelf: 'stretch',

@@ -3,23 +3,30 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
-
+import useCenterStore from '../store/useCenterStore';
+import useUIStore from '../store/useUIStore';
 import { playClickSound } from '../utils/feedback';
 
 export interface HeaderProps {
   onMenuPress: () => void;
   onThemeToggle: () => void;
+  onCenterPress?: () => void;
   title?: string;
 }
 
 export default function Header({
   onMenuPress,
   onThemeToggle,
+  onCenterPress,
   title = "Dr. Paul's Clinic",
 }: HeaderProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const topPadding = Math.max(insets.top, 0);
+
+  const centers = useCenterStore((s) => s.centers);
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
+  const currentCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
 
   const handleMenuPress = () => {
     playClickSound();
@@ -31,6 +38,15 @@ export default function Header({
     onThemeToggle();
   };
 
+  const handleCenterPress = () => {
+    if (centers.length > 1 && onCenterPress) {
+      playClickSound();
+      onCenterPress();
+    }
+  };
+
+  const headerHeight = centers.length > 0 ? 66 + topPadding : 56 + topPadding;
+
   return (
     <View
       style={[
@@ -39,7 +55,7 @@ export default function Header({
           backgroundColor: colors.card,
           borderBottomColor: colors.border,
           paddingTop: topPadding,
-          height: 56 + topPadding,
+          height: headerHeight,
         },
       ]}
     >
@@ -48,12 +64,28 @@ export default function Header({
       </TouchableOpacity>
 
       <View style={styles.titleContainer}>
-        <Image
-          source={require('../../assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+        </View>
+
+        {/* Center Toggle */}
+        {currentCenter && (
+          <TouchableOpacity
+            style={styles.centerToggleRow}
+            onPress={handleCenterPress}
+            disabled={centers.length <= 1}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            <Ionicons name="location-outline" size={14} color={colors.primary} />
+            <Text style={[styles.centerText, { color: colors.primary }]} numberOfLines={1}>
+              {currentCenter.cc_name}
+            </Text>
+            {centers.length > 1 && (
+              <Ionicons name="chevron-down" size={14} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <TouchableOpacity onPress={handleThemeToggle} hitSlop={8}>
@@ -72,16 +104,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   logo: {
-    width: 28,
-    height: 28,
+    width: 22,
+    height: 22,
   },
   title: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
+  },
+  centerToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  centerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    maxWidth: 220,
   },
 });

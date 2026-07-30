@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, createContext, useContext, ReactNode } from 'react';
+import React, { useEffect, useRef, useState, createContext, useContext, ReactNode } from 'react';
 import {
   View,
   TouchableWithoutFeedback,
@@ -8,6 +8,8 @@ import {
   Platform,
   Modal,
   PanResponder,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -23,12 +25,16 @@ const { height: SCREEN_H } = Dimensions.get('window');
 
 export interface BottomSheetContextValue {
   expandSheet: () => void;
+  collapseSheet: () => void;
   isExpanded: boolean;
+  handleScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
 export const BottomSheetContext = createContext<BottomSheetContextValue>({
   expandSheet: () => {},
+  collapseSheet: () => {},
   isExpanded: false,
+  handleScroll: () => {},
 });
 
 export const useBottomSheet = () => useContext(BottomSheetContext);
@@ -41,7 +47,8 @@ export interface BottomSheetProps {
 }
 
 /**
- * Ultra-fast smooth bottom sheet with full safe area inset protection, instant drag-to-maximize & scroll auto-expansion.
+ * Ultra-fast smooth bottom sheet with safe area inset protection,
+ * instant drag-to-maximize/close, zero-lag exit transition, and scroll-to-dismiss.
  */
 export default function BottomSheet({
   visible,
@@ -59,56 +66,88 @@ export default function BottomSheet({
   const heightValue = useSharedValue(snapHeight);
   const translateY = useSharedValue(snapHeight);
   const opacity = useSharedValue(0);
+
+  const [isMounted, setIsMounted] = useState(visible);
   const isExpandedRef = useRef(false);
+  const isClosingRef = useRef(false);
 
   const expandSheet = () => {
-    if (!isExpandedRef.current) {
+    if (!isExpandedRef.current && !isClosingRef.current) {
       isExpandedRef.current = true;
-      heightValue.value = withTiming(fullHeight, { duration: 90, easing: Easing.out(Easing.quad) });
+      heightValue.value = withTiming(fullHeight, { duration: 110, easing: Easing.out(Easing.quad) });
     }
   };
 
   const collapseSheet = () => {
-    if (isExpandedRef.current) {
+    if (isExpandedRef.current && !isClosingRef.current) {
       isExpandedRef.current = false;
-      heightValue.value = withTiming(snapHeight, { duration: 90, easing: Easing.out(Easing.quad) });
+      heightValue.value = withTiming(snapHeight, { duration: 110, easing: Easing.out(Easing.quad) });
     }
+  };
+
+  const finishClose = () => {
+    isClosingRef.current = false;
+    setIsMounted(false);
+    onClose();
+  };
+
+  const animateDismiss = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    translateY.value = withTiming(snapHeight + 50, { duration: 120, easing: Easing.in(Easing.quad) });
+    opacity.value = withTiming(0, { duration: 100 }, () => {
+      runOnJS(finishClose)();
+    });
   };
 
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsMounted(true);
       isExpandedRef.current = false;
       heightValue.value = snapHeight;
-      opacity.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
-      translateY.value = withTiming(0, { duration: 100, easing: Easing.out(Easing.quad) });
-    } else {
-      opacity.value = withTiming(0, { duration: 90 });
-      translateY.value = withTiming(snapHeight, { duration: 100 });
+      opacity.value = withTiming(1, { duration: 110, easing: Easing.out(Easing.quad) });
+      translateY.value = withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) });
+    } else if (isMounted && !isClosingRef.current) {
+      animateDismiss();
     }
   }, [visible, snapHeight]);
 
   const handleDismiss = () => {
-    translateY.value = withTiming(snapHeight, { duration: 100, easing: Easing.in(Easing.quad) });
-    opacity.value = withTiming(0, { duration: 80 }, () => {
-      runOnJS(onClose)();
-    });
+    animateDismiss();
   };
 
-  // Instant drag handle pan responder for drag to maximize (up) and drag to minimize/close (down)
+  // Handle child scroll events: when scrolling DOWN while at top of scroll view, minimize/close sheet
+  const lastScrollY = useRef(0);
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    if (y > 4) {
+      expandSheet();
+    } else if (y < -15 || (y <= 0 && lastScrollY.current > 5)) {
+      if (isExpandedRef.current) {
+        collapseSheet();
+      } else {
+        handleDismiss();
+      }
+    }
+    lastScrollY.current = y;
+  };
+
+  // Drag handle pan responder for drag up (maximize) and drag down (minimize/close)
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) =>
         Math.abs(gestureState.dy) > 2 || Math.abs(gestureState.vy) > 0.1,
       onPanResponderMove: (_, gestureState) => {
-        // Instant drag UP to maximize
+        // Drag UP to maximize
         if (gestureState.dy < -6 || gestureState.vy < -0.1) {
           runOnJS(expandSheet)();
           translateY.value = withTiming(0, { duration: 60 });
           return;
         }
 
-        // Drag down translation when not expanded
+        // Drag down translation
         if (gestureState.dy > 0 && !isExpandedRef.current) {
           translateY.value = gestureState.dy;
         }
@@ -121,7 +160,7 @@ export default function BottomSheet({
           return;
         }
 
-        // Dragged DOWN when expanded -> collapse to initial snap height
+        // Dragged DOWN when expanded -> collapse
         if (gestureState.dy > 15 && isExpandedRef.current) {
           runOnJS(collapseSheet)();
           translateY.value = withTiming(0, { duration: 80 });
@@ -129,7 +168,7 @@ export default function BottomSheet({
         }
 
         // Dragged DOWN when not expanded -> close modal
-        if (gestureState.dy > 50 || gestureState.vy > 0.35) {
+        if (gestureState.dy > 40 || gestureState.vy > 0.3) {
           runOnJS(handleDismiss)();
         } else {
           translateY.value = withTiming(0, { duration: 80, easing: Easing.out(Easing.quad) });
@@ -145,12 +184,19 @@ export default function BottomSheet({
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  if (!visible) return null;
+  if (!isMounted) return null;
 
   return (
-    <BottomSheetContext.Provider value={{ expandSheet, isExpanded: isExpandedRef.current }}>
+    <BottomSheetContext.Provider
+      value={{
+        expandSheet,
+        collapseSheet,
+        isExpanded: isExpandedRef.current,
+        handleScroll,
+      }}
+    >
       <Modal
-        visible={visible}
+        visible={isMounted}
         transparent
         animationType="none"
         statusBarTranslucent

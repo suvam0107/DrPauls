@@ -41,6 +41,10 @@ const useUIStore = create<UIState>((set) => ({
 
   activeDoctorFilter: null,
   setDoctorFilter: (id: string | null) => set({ activeDoctorFilter: id }),
+
+  // --- Center state ---
+  activeCenterId: 'CC-001',
+  setActiveCenterId: (id: string) => set({ activeCenterId: id }),
 }));
 
 export default useUIStore;

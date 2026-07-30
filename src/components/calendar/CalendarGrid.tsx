@@ -18,10 +18,12 @@ import {
   currentTimeSlot,
   computeAppointmentLayouts,
   isPastSlot,
+  isDoctorAvailableOnDate,
+  timeToMins,
 } from '../../utils/dateUtils';
 import { SLOT_HEIGHT, TIME_LABEL_WIDTH } from '../../constants';
 import DraggableChip from './DraggableChip';
-import { Appointment, CalendarView } from '../../types';
+import { Appointment, CalendarView, Doctor } from '../../types';
 
 const WEEK_COL_MIN_WIDTH = 76;
 const HEADER_HEIGHT = 44;
@@ -31,6 +33,8 @@ export interface CalendarGridProps {
   weekDates: string[];
   viewMode?: CalendarView;
   appointments?: Appointment[];
+  doctors?: Doctor[];
+  centerId?: string;
   onSlotPress?: (date: string, time: string) => void;
   onAppointmentPress?: (appointment: Appointment) => void;
   onDateSelect?: (date: string) => void;
@@ -41,6 +45,8 @@ export default function CalendarGrid({
   weekDates,
   viewMode = 'day',
   appointments = [],
+  doctors = [],
+  centerId = 'CC-001',
   onSlotPress,
   onAppointmentPress,
   onDateSelect,
@@ -50,11 +56,8 @@ export default function CalendarGrid({
 
   const verticalScrollRef = useRef<ScrollView>(null);
   const [isDraggingChip, setIsDraggingChip] = useState(false);
+  const [draggingAppt, setDraggingAppt] = useState<Appointment | null>(null);
 
-  /**
-   * Track current scroll offset Y in a ref so DraggableChip's auto-scroll
-   * can read and write the offset without triggering re-renders.
-   */
   const scrollOffsetY = useRef(0);
 
   const handleScroll = useCallback(
@@ -67,7 +70,7 @@ export default function CalendarGrid({
   const isWeek = viewMode === 'week';
   const daysToRender = isWeek ? weekDates : [selectedDate];
 
-  // Auto-scroll to current timeslot when the calendar page opens
+  // Auto-scroll to current timeslot
   useEffect(() => {
     const currentSlot = currentTimeSlot();
     const targetY = Math.max(0, timeToTopOffset(currentSlot) - 60);
@@ -77,6 +80,29 @@ export default function CalendarGrid({
     }, 150);
     return () => clearTimeout(timer);
   }, []);
+
+  const draggingDoctor = draggingAppt
+    ? doctors.find((d) => d.id === draggingAppt.doctorId)
+    : undefined;
+
+  /**
+   * Helper to check if a specific slot is unavailable for the dragging doctor.
+   */
+  const checkSlotUnavailableForDraggingDoctor = (dateStr: string, slotTime: string): boolean => {
+    if (!isDraggingChip || !draggingDoctor) return false;
+    if (!isDoctorAvailableOnDate(draggingDoctor, dateStr, centerId)) return true;
+
+    // Check working hours
+    const cSched = draggingDoctor.centerSchedule?.find((cs) => cs.centerId === centerId);
+    const hours = cSched ? cSched.workingHours : draggingDoctor.workingHours;
+    if (!hours) return true;
+
+    const slotMins = timeToMins(slotTime);
+    const startMins = timeToMins(hours.start);
+    const endMins = timeToMins(hours.end);
+
+    return slotMins < startMins || slotMins >= endMins;
+  };
 
   return (
     <ScrollView
@@ -90,10 +116,8 @@ export default function CalendarGrid({
       <View style={styles.gridWrapper}>
         {/* Fixed Left Time Labels Column */}
         <View style={[styles.stickyTimeColumn, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
-          {/* Top-Left Corner Spacer Box (aligned with Week Header height) */}
           {isWeek && <View style={[styles.cornerBox, { height: HEADER_HEIGHT, borderBottomColor: colors.border }]} />}
 
-          {/* Vertical Time Label Cells */}
           {timeSlots.map((slot) => (
             <View key={slot.time} style={[styles.timeLabelBox, { height: SLOT_HEIGHT }]}>
               <Text style={[styles.timeText, { color: colors.textMuted }]}>{slot.label}</Text>
@@ -103,7 +127,6 @@ export default function CalendarGrid({
 
         {/* Right Schedule Area */}
         {isWeek ? (
-          /* Single Synchronized Horizontal ScrollView containing BOTH Header and Grid Row! */
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -112,7 +135,7 @@ export default function CalendarGrid({
             style={{ flex: 1 }}
           >
             <View>
-              {/* Synchronized Week Date Header Row */}
+              {/* Synchronized Week Header Row */}
               <View style={[styles.weekHeaderRow, { borderBottomColor: colors.border, height: HEADER_HEIGHT }]}>
                 {daysToRender.map((d) => (
                   <TouchableOpacity
@@ -144,6 +167,8 @@ export default function CalendarGrid({
                       {/* Empty slot touchable boxes */}
                       {timeSlots.map((slot) => {
                         const past = isPastSlot(dateStr, slot.time);
+                        const unavailableRed = checkSlotUnavailableForDraggingDoctor(dateStr, slot.time);
+
                         return (
                           <TouchableOpacity
                             key={slot.time}
@@ -151,6 +176,10 @@ export default function CalendarGrid({
                               styles.slotCell,
                               { height: SLOT_HEIGHT, borderColor: colors.border },
                               past && { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)' },
+                              unavailableRed && {
+                                backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(254,226,226,0.6)',
+                                borderColor: 'rgba(239,68,68,0.3)',
+                              },
                             ]}
                             onPress={() => !past && onSlotPress && onSlotPress(dateStr, slot.time)}
                             disabled={past}
@@ -159,7 +188,7 @@ export default function CalendarGrid({
                         );
                       })}
 
-                      {/* Overlay Occupied Appointment Chips with Drag-and-Drop */}
+                      {/* Overlay Occupied Appointment Chips */}
                       {dayAppts.map((appt) => {
                         const chipTop = timeToTopOffset(appt.startTime);
                         const chipHeight = durationToHeight(appt.startTime, appt.endTime);
@@ -180,8 +209,14 @@ export default function CalendarGrid({
                             totalOverlapCount={layout.totalOverlapCount}
                             scrollRef={verticalScrollRef}
                             scrollOffsetY={scrollOffsetY}
-                            onDragStart={() => setIsDraggingChip(true)}
-                            onDragEnd={() => setIsDraggingChip(false)}
+                            onDragStart={() => {
+                              setIsDraggingChip(true);
+                              setDraggingAppt(appt);
+                            }}
+                            onDragEnd={() => {
+                              setIsDraggingChip(false);
+                              setDraggingAppt(null);
+                            }}
                           />
                         );
                       })}
@@ -206,6 +241,8 @@ export default function CalendarGrid({
                   {/* Empty slot touchable boxes */}
                   {timeSlots.map((slot) => {
                     const past = isPastSlot(dateStr, slot.time);
+                    const unavailableRed = checkSlotUnavailableForDraggingDoctor(dateStr, slot.time);
+
                     return (
                       <TouchableOpacity
                         key={slot.time}
@@ -213,6 +250,10 @@ export default function CalendarGrid({
                           styles.slotCell,
                           { height: SLOT_HEIGHT, borderColor: colors.border },
                           past && { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)' },
+                          unavailableRed && {
+                            backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(254,226,226,0.6)',
+                            borderColor: 'rgba(239,68,68,0.3)',
+                          },
                         ]}
                         onPress={() => !past && onSlotPress && onSlotPress(dateStr, slot.time)}
                         disabled={past}
@@ -221,7 +262,7 @@ export default function CalendarGrid({
                     );
                   })}
 
-                  {/* Overlay Occupied Appointment Chips with Drag-and-Drop */}
+                  {/* Overlay Occupied Appointment Chips */}
                   {dayAppts.map((appt) => {
                     const chipTop = timeToTopOffset(appt.startTime);
                     const chipHeight = durationToHeight(appt.startTime, appt.endTime);
@@ -242,8 +283,14 @@ export default function CalendarGrid({
                         totalOverlapCount={layout.totalOverlapCount}
                         scrollRef={verticalScrollRef}
                         scrollOffsetY={scrollOffsetY}
-                        onDragStart={() => setIsDraggingChip(true)}
-                        onDragEnd={() => setIsDraggingChip(false)}
+                        onDragStart={() => {
+                          setIsDraggingChip(true);
+                          setDraggingAppt(appt);
+                        }}
+                        onDragEnd={() => {
+                          setIsDraggingChip(false);
+                          setDraggingAppt(null);
+                        }}
                       />
                     );
                   })}
@@ -316,5 +363,18 @@ const styles = StyleSheet.create({
   slotCell: {
     borderBottomWidth: 1,
     width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  redSlotBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    backgroundColor: '#DC2626',
+    borderRadius: 4,
+  },
+  redSlotText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '700',
   },
 });

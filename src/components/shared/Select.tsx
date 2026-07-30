@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Pressable } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { playClickSound } from '../../utils/feedback';
@@ -29,6 +30,28 @@ export default function Select({
 }: SelectProps) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  const translateY = useSharedValue(60);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (open) {
+      setIsMounted(true);
+      opacity.value = withTiming(1, { duration: 110, easing: Easing.out(Easing.quad) });
+      translateY.value = withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) });
+    } else if (isMounted) {
+      opacity.value = withTiming(0, { duration: 90, easing: Easing.in(Easing.quad) });
+      translateY.value = withTiming(40, { duration: 90, easing: Easing.in(Easing.quad) }, () => {
+        runOnJS(setIsMounted)(false);
+      });
+    }
+  }, [open]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const selected = options.find((o) =>
     typeof o === 'object' ? o.value === value : o === value
@@ -64,33 +87,35 @@ export default function Select({
         <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={isMounted || open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {label ? <Text style={[styles.sheetTitle, { color: colors.text }]}>{label}</Text> : null}
-            <FlatList
-              data={options}
-              keyExtractor={(item, i) =>
-                String(typeof item === 'object' ? item.value : item ?? i)
-              }
-              renderItem={({ item }) => {
-                const val = typeof item === 'object' ? item.value : item;
-                const lbl = typeof item === 'object' ? item.label : item;
-                const isActive = val === value;
-                return (
-                  <TouchableOpacity
-                    style={[styles.option, isActive && { backgroundColor: colors.primaryLight }]}
-                    onPress={() => handleSelectOption(val)}
-                  >
-                    <Text style={[styles.optionText, { color: isActive ? colors.primary : colors.text }]}>
-                      {lbl}
-                    </Text>
-                    {isActive && <Ionicons name="checkmark" size={16} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
+          <Pressable onPress={(e) => e.stopPropagation()} style={{ width: '100%' }}>
+            <Animated.View style={[styles.sheet, animatedStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {label ? <Text style={[styles.sheetTitle, { color: colors.text }]}>{label}</Text> : null}
+              <FlatList
+                data={options}
+                keyExtractor={(item, i) =>
+                  String(typeof item === 'object' ? item.value : item ?? i)
+                }
+                renderItem={({ item }) => {
+                  const val = typeof item === 'object' ? item.value : item;
+                  const lbl = typeof item === 'object' ? item.label : item;
+                  const isActive = val === value;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.option, isActive && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => handleSelectOption(val)}
+                    >
+                      <Text style={[styles.optionText, { color: isActive ? colors.primary : colors.text }]}>
+                        {lbl}
+                      </Text>
+                      {isActive && <Ionicons name="checkmark" size={16} color={colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </Animated.View>
+          </Pressable>
         </Pressable>
       </Modal>
     </>
