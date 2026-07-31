@@ -237,13 +237,20 @@ function MainApp() {
   );
 }
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <MainApp />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <ThemeProvider>
+            <MainApp />
+          </ThemeProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

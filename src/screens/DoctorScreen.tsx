@@ -8,6 +8,8 @@ import { playClickSound } from '../utils/feedback';
 import DoctorDetailModal from '../components/doctor/DoctorDetailModal';
 import AddDoctorSheet from '../components/doctor/AddDoctorSheet';
 
+import { copyToClipboard } from '../utils/clipboardUtils';
+
 export default function DoctorScreen() {
   const { colors } = useTheme();
   const doctors = useDoctorStore((s) => s.doctors);
@@ -88,9 +90,14 @@ export default function DoctorScreen() {
               <Text style={[styles.qual, { color: colors.textMuted }]}>{item.qualification}</Text>
 
               {item.phone && (
-                <Text style={[styles.phoneText, { color: colors.textMuted }]}>
-                  {item.phone}
-                </Text>
+                <TouchableOpacity
+                  onLongPress={() => item.phone && copyToClipboard(item.phone, 'Doctor Phone')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.phoneText, { color: colors.textMuted }]}>
+                    {item.phone}
+                  </Text>
+                </TouchableOpacity>
               )}
 
               <View style={[styles.footerRow, { borderTopColor: colors.border }]}>

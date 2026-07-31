@@ -11,7 +11,8 @@
 
 - **Clean & Professional aesthetic**: Premium medical UI matching receptionist clinical workflow.
 - **Micro-interactions**: Smooth 90ms–140ms `withTiming` Easing transitions; bouncy spring animations avoided.
-- **Safe Area Inset Management**: Managed via `react-native-safe-area-context` (`SafeAreaProvider`, `useSafeAreaInsets`). Top insets applied to Header; bottom insets applied to BottomNav, BottomSheet, and Toast offset.
+- **Safe Area Inset Management & Keyboard Control**: Managed via `react-native-safe-area-context` (`SafeAreaProvider`, `useSafeAreaInsets`) and `react-native-keyboard-controller` (`KeyboardProvider`, `KeyboardAwareScrollView`). Top insets applied to Header; bottom insets applied to BottomNav, BottomSheet, and Toast offset.
+- **Native Gesture Bottom Sheets**: Built with `@gorhom/bottom-sheet` (`BottomSheetModal`, `BottomSheetModalProvider`) and `react-native-gesture-handler` (`GestureHandlerRootView`), featuring dual snap points, smooth backdrops, and pan gesture dismiss.
 - **Back Navigation & Exit Policy**: Full Android hardware back button & gesture navigation stack (`router.back()`). Home screen back press presents a theme-aligned exit app confirmation modal (`ExitConfirmationModal`).
 - **Full TypeScript Security**: Strict TypeScript configuration (`"strict": true`, `"noImplicitAny": true`) with central domain interfaces in `src/types/index.ts`.
 - **JSON File-System Data Layer & Axios Interceptor Engine**: All domain records originate from static JSON files (`assets/data/*.json`). Data access is routed through an elaborate Axios interceptor layer (`src/api/`) with custom in-memory adapter routing requests to `/nested` and `/nonnested` endpoint families keyed by `spc`.
@@ -80,7 +81,7 @@ DrPauls/
     │   │   ├── RescheduleModal.tsx# Validated appointment edit modal (date, doctor, slot)
     │   │   └── AppointmentDetailModal.tsx # Appointment detail sheet with Edit action button
     │   └── shared/
-    │       ├── BottomSheet.tsx    # Translucent Modal portal + smooth exit transition + scroll-to-dismiss
+    │       ├── BottomSheet.tsx    # @gorhom/bottom-sheet wrapper with dual snap points & backdrop
     │       ├── CenterSwitchSheet.tsx # Bottom sheet for switching clinic center
     │       ├── QuickAddPopup.tsx  # Floating popup above navbar with New Appt & New Patient options
     │       ├── ExitConfirmationModal.tsx  # Theme-aligned exit confirmation modal dialog
@@ -110,6 +111,7 @@ DrPauls/
     │   └── ThemeContext.tsx       # Theme context provider & hook
     └── utils/
         ├── authUtils.ts          # Base64 mock JWT generator, parsing, expiration & refresh helpers
+        ├── clipboardUtils.ts     # Centralized expo-clipboard long-press copy helper with toast & haptics
         ├── dateUtils.ts          # ISO date formatting, slot calculators & doctor availability helpers
         ├── feedback.ts           # Centralized audio & haptic feedback controller
         └── searchUtils.ts        # Patient search & ID generation logic

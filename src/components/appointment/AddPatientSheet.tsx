@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
@@ -52,7 +53,7 @@ export default function AddPatientSheet({ visible, onClose, onPatientAdded }: Ad
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={420}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 36 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, { color: colors.text }]}>Quick Patient Registration</Text>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -104,7 +105,7 @@ export default function AddPatientSheet({ visible, onClose, onPatientAdded }: Ad
           <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
           <Text style={styles.saveBtnText}>Save & Select Patient</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }

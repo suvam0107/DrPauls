@@ -8,6 +8,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Patient } from '../types';
 import { playClickSound } from '../utils/feedback';
+import { copyToClipboard } from '../utils/clipboardUtils';
 
 export default function PatientListScreen() {
   const { colors } = useTheme();
@@ -65,7 +66,12 @@ export default function PatientListScreen() {
               <Text style={[styles.avatarText, { color: colors.primary }]}>{item.name.charAt(0)}</Text>
             </View>
 
-            <View style={{ flex: 1 }}>
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => handleOpenPatientDetail(item)}
+              onLongPress={() => item.mobile && copyToClipboard(item.mobile, 'Patient Mobile')}
+              activeOpacity={0.8}
+            >
               <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
               <Text style={[styles.meta, { color: colors.textMuted }]}>
                 {item.mobile} • {item.gender} • ID: {item.id}
@@ -75,7 +81,7 @@ export default function PatientListScreen() {
                   {item.address}
                 </Text>
               ) : null}
-            </View>
+            </TouchableOpacity>
           </TouchableOpacity>
         )}
       />

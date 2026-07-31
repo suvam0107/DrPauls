@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
 import BottomSheet from '../shared/BottomSheet';
 import Select from '../shared/Select';
@@ -140,7 +141,8 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={420}>
-      <View style={styles.header}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 36 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Reschedule / Edit Appointment</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>
           {appointment.patientName} • Current: {formatDateShort(appointment.date)} {appointment.startTime}
@@ -233,6 +235,7 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
           <Text style={styles.saveBtnText}>Save Changes</Text>
         </TouchableOpacity>
       </View>
+      </BottomSheetScrollView>
 
       {/* Date Picker Modal */}
       <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>

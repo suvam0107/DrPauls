@@ -10,6 +10,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
 import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
@@ -222,11 +223,12 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
 
   return (
     <>
-      <ScrollView
+      <BottomSheetScrollView
+        style={{ paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header & Mode Tabs */}
         <View style={styles.topHeader}>
@@ -390,7 +392,8 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
                 playClickSound();
                 setPrePaymentRequired(val);
               }}
-              thumbColor={prePaymentRequired ? colors.primary : '#F4F3F4'}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={prePaymentRequired ? '#FFFFFF' : '#F4F3F4'}
             />
           </View>
 
@@ -446,7 +449,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
           <Text style={styles.submitBtnText}>Create Appointment</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </BottomSheetScrollView>
 
       {/* Date Picker Calendar Modal */}
       <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>

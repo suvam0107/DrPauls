@@ -8,6 +8,7 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
@@ -123,7 +124,7 @@ export default function AddDoctorSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, { color: colors.text }]}>Add New Doctor</Text>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -292,7 +293,7 @@ export default function AddDoctorSheet({
           <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
           <Text style={styles.saveBtnText}>Save Doctor</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }

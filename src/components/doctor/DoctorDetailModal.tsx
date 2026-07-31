@@ -15,7 +15,9 @@ import { useTheme } from '../../theme/ThemeContext';
 import useDoctorStore from '../../store/useDoctorStore';
 import { Doctor, WeekDay } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
+import { copyToClipboard } from '../../utils/clipboardUtils';
 
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -148,7 +150,7 @@ export default function DoctorDetailModal({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
         {/* Header Profile Section */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
@@ -231,10 +233,14 @@ export default function DoctorDetailModal({
               </Text>
             </View>
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.infoRow, { borderBottomColor: colors.border }]}
+              onLongPress={() => phone && copyToClipboard(phone, 'Phone Number')}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Contact Phone</Text>
               <Text style={[styles.infoValue, { color: colors.text }]}>{phone || 'N/A'}</Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Consultation Fee</Text>
@@ -250,12 +256,16 @@ export default function DoctorDetailModal({
               </Text>
             </View>
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.infoRow, { borderBottomColor: colors.border }]}
+              onLongPress={() => location && copyToClipboard(location, 'Location')}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location / Branch</Text>
               <Text style={[styles.infoValue, { color: colors.text }]}>
                 {location || 'Guwahati Main'}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Working Hours</Text>
@@ -462,6 +472,7 @@ export default function DoctorDetailModal({
                   setAvailable(val);
                 }}
                 trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={available ? '#FFFFFF' : '#F4F3F4'}
               />
             </View>
 
@@ -476,7 +487,7 @@ export default function DoctorDetailModal({
 
           </View>
         )}
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }

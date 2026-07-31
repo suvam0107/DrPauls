@@ -14,8 +14,10 @@ import { useTheme } from '../../theme/ThemeContext';
 import usePatientStore from '../../store/usePatientStore';
 import { Patient, Gender } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
+import { copyToClipboard } from '../../utils/clipboardUtils';
 
 export interface PatientDetailModalProps {
   patient: Patient | null;
@@ -121,7 +123,7 @@ export default function PatientDetailModal({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
         {/* Header Profile Section */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
@@ -140,10 +142,14 @@ export default function PatientDetailModal({
 
         {/* Quick Action Bar */}
         <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.phoneTag}>
+          <TouchableOpacity
+            style={styles.phoneTag}
+            onLongPress={() => (mobile || activePat.mobile) && copyToClipboard(mobile || activePat.mobile, 'Mobile Number')}
+            activeOpacity={0.7}
+          >
             <Ionicons name="phone-portrait-outline" size={14} color={colors.textMuted} />
             <Text style={[styles.phoneTagText, { color: colors.text }]}>{mobile || activePat.mobile}</Text>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.actionBtns}>
             {mobile ? (
@@ -186,18 +192,26 @@ export default function PatientDetailModal({
         {!isEditing ? (
           /* READ-ONLY VIEW MODE */
           <View style={styles.detailsContainer}>
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.infoRow, { borderBottomColor: colors.border }]}
+              onLongPress={() => mobile && copyToClipboard(mobile, 'Mobile Number')}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Mobile Number</Text>
               <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
                 {mobile}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             {whatsapp ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => copyToClipboard(whatsapp, 'WhatsApp Number')}
+                activeOpacity={0.7}
+              >
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>WhatsApp</Text>
                 <Text style={[styles.infoValue, { color: colors.text }]}>{whatsapp}</Text>
-              </View>
+              </TouchableOpacity>
             ) : null}
 
             {alternateMobile ? (
@@ -227,12 +241,16 @@ export default function PatientDetailModal({
             ) : null}
 
             {address ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => copyToClipboard(address, 'Address')}
+                activeOpacity={0.7}
+              >
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Address</Text>
                 <Text style={[styles.infoValue, { color: colors.text, flex: 1, textAlign: 'right' }]}>
                   {address}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ) : null}
 
             {district || state || pinCode ? (
@@ -455,7 +473,7 @@ export default function PatientDetailModal({
 
           </View>
         )}
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }

@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -73,18 +73,20 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }
   };
 
+  const keyboardHeight = useKeyboardState((state) => state.height);
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAwareScrollView
+      showsVerticalScrollIndicator={false}
       style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: Math.max(insets.top + 32, 48), paddingBottom: Math.max(insets.bottom + 24, 40) },
+      ]}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={keyboardHeight}
+      extraKeyboardSpace={keyboardHeight}
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: Math.max(insets.top + 32, 48), paddingBottom: Math.max(insets.bottom + 24, 40) },
-        ]}
-      >
         {/* Clinic Branding Header */}
         <View style={styles.brandHeader}>
           <Image
@@ -217,8 +219,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
           Dr. Paul's Multispeciality Clinic
         </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 

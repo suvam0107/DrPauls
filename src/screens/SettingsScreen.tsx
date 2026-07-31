@@ -8,6 +8,7 @@ import useCenterStore from '../store/useCenterStore';
 import useAuthStore from '../store/useAuthStore';
 import LogoutConfirmationModal from '../components/shared/LogoutConfirmationModal';
 import { playClickSound } from '../utils/feedback';
+import { copyToClipboard } from '../utils/clipboardUtils';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
@@ -80,7 +81,8 @@ export default function SettingsScreen() {
                 playClickSound();
                 setThemeMode(val ? 'dark' : 'light');
               }}
-              thumbColor={isDark ? colors.primary : '#F4F3F4'}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={isDark ? '#FFFFFF' : '#F4F3F4'}
             />
           </View>
         </View>
@@ -108,19 +110,55 @@ export default function SettingsScreen() {
                 </View>
               )}
 
-              <View style={styles.infoRow}>
+              <TouchableOpacity
+                style={styles.infoRow}
+                onLongPress={() =>
+                  copyToClipboard(
+                    `${currentCenter.bill_address}, ${currentCenter.bill_state} - ${currentCenter.bill_pin}`,
+                    'Center Address'
+                  )
+                }
+                activeOpacity={0.7}
+              >
                 <Ionicons name="location-outline" size={18} color={colors.primary} />
                 <Text style={[styles.infoText, { color: colors.text }]}>
                   {currentCenter.bill_address}, {currentCenter.bill_state} - {currentCenter.bill_pin}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.infoRow}>
+              <TouchableOpacity
+                style={styles.infoRow}
+                onLongPress={() =>
+                  copyToClipboard(
+                    `+91 ${currentCenter.phone}`,
+                    'Center Contact'
+                  )
+                }
+                activeOpacity={0.7}
+              >
                 <Ionicons name="call-outline" size={18} color={colors.primary} />
                 <Text style={[styles.infoText, { color: colors.text }]}>
-                  +91 {currentCenter.phone} {currentCenter.email ? `• ${currentCenter.email}` : ''}
+                  +91 {currentCenter.phone}
                 </Text>
-              </View>
+              </TouchableOpacity>
+
+              {currentCenter.email && (
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  onLongPress={() =>
+                    copyToClipboard(
+                      `${currentCenter.email}`,
+                      'Center Email'
+                    )
+                  }
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="mail-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.infoText, { color: colors.text }]}>
+                    {currentCenter.email}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <View style={styles.infoRow}>
                 <Ionicons name="time-outline" size={18} color={colors.primary} />

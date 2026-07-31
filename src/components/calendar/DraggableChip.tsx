@@ -9,6 +9,7 @@ import {
   addMins,
   formatTime,
   formatDateShort,
+  isPastSlot,
 } from '../../utils/dateUtils';
 import { GRID_START_HOUR, GRID_END_HOUR } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
@@ -82,7 +83,8 @@ export default function DraggableChip({
   const pan = useRef(new Animated.ValueXY()).current;
   const [isDragging, setIsDragging] = useState(false);
 
-  const isEligible = ELIGIBLE_STATUSES.includes(appointment.status);
+  const isPast = isPastSlot(appointment.date, appointment.startTime);
+  const isEligible = ELIGIBLE_STATUSES.includes(appointment.status) && !isPast;
 
   // Refs for latest data (prevents stale closures inside PanResponder)
   const appointmentRef = useRef(appointment);

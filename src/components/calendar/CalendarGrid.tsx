@@ -175,7 +175,7 @@ export default function CalendarGrid({
                             style={[
                               styles.slotCell,
                               { height: SLOT_HEIGHT, borderColor: colors.border },
-                              past && { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)' },
+                              past && { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
                               unavailableRed && {
                                 backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(254,226,226,0.6)',
                                 borderColor: 'rgba(239,68,68,0.3)',
@@ -249,7 +249,7 @@ export default function CalendarGrid({
                         style={[
                           styles.slotCell,
                           { height: SLOT_HEIGHT, borderColor: colors.border },
-                          past && { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(229,231,235,0.4)' },
+                          past && { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
                           unavailableRed && {
                             backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(254,226,226,0.6)',
                             borderColor: 'rgba(239,68,68,0.3)',
