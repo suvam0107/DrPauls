@@ -39,7 +39,7 @@ export default function Header({
   };
 
   const handleCenterPress = () => {
-    if (centers.length > 1 && onCenterPress) {
+    if (onCenterPress) {
       playClickSound();
       onCenterPress();
     }
@@ -73,7 +73,6 @@ export default function Header({
           <TouchableOpacity
             style={styles.centerToggleRow}
             onPress={handleCenterPress}
-            disabled={centers.length <= 1}
             activeOpacity={0.7}
             hitSlop={6}
           >
@@ -81,9 +80,7 @@ export default function Header({
             <Text style={[styles.centerText, { color: colors.primary }]} numberOfLines={1}>
               {currentCenter.cc_name}
             </Text>
-            {centers.length > 1 && (
-              <Ionicons name="chevron-down" size={14} color={colors.primary} />
-            )}
+            <Ionicons name="chevron-down" size={14} color={colors.primary} />
           </TouchableOpacity>
         )}
       </View>

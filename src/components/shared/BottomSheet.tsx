@@ -8,7 +8,7 @@ import React, {
   useState,
   useEffect,
 } from 'react';
-import { StyleSheet, Dimensions, Modal } from 'react-native';
+import { StyleSheet, Dimensions, Modal, Keyboard, StatusBar, Platform } from 'react-native';
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
@@ -47,6 +47,7 @@ export interface BottomSheetProps {
   onClose: () => void;
   children: ReactNode;
   snapHeight?: number;
+  keyboardBlurBehavior?: 'restore' | 'none';
 }
 
 // ---------------------------------------------------------------------------
@@ -56,16 +57,35 @@ function InnerSheet({
   onClose,
   children,
   snapHeight,
+  keyboardBlurBehavior = 'none',
 }: Omit<BottomSheetProps, 'visible'> & { snapHeight: number }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<GorhomBottomSheet>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const maxPct = useMemo(() => {
+    const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : (insets.top || 44);
+    const safeTop = Math.max(insets.top || 0, statusBarH);
+    const topSpace = safeTop + 28;
+    const pct = Math.round(((SCREEN_H - topSpace) / SCREEN_H) * 100);
+    return Math.min(80, Math.max(45, pct));
+  }, [insets.top]);
+
   const snapPoints = useMemo(() => {
-    const pct = Math.min(90, Math.max(35, Math.round((snapHeight / SCREEN_H) * 100)));
-    return [`${pct}%`, '95%'];
-  }, [snapHeight]);
+    const minPct = Math.min(maxPct - 5, Math.max(35, Math.round((snapHeight / SCREEN_H) * 100)));
+    return [`${minPct}%`, `${maxPct}%`];
+  }, [snapHeight, maxPct]);
+
+  // Handle keyboard hide restoration if keyboardBlurBehavior === 'restore'
+  useEffect(() => {
+    if (keyboardBlurBehavior === 'restore') {
+      const sub = Keyboard.addListener('keyboardDidHide', () => {
+        sheetRef.current?.snapToIndex(0);
+      });
+      return () => sub.remove();
+    }
+  }, [keyboardBlurBehavior]);
 
   // Close the sheet from outside (e.g. hardware back button)
   const dismiss = useCallback(() => {
@@ -104,8 +124,6 @@ function InnerSheet({
     []
   );
 
-  const bottomPadding = Math.max(insets.bottom, 16);
-
   return (
     // GestureHandlerRootView is REQUIRED inside React Native Modal —
     // Modal creates a new native view tree that doesn't inherit the
@@ -143,8 +161,9 @@ function InnerSheet({
           }}
           // ── Gesture / motion ─────────────────────────────────────────────
           enablePanDownToClose
-          keyboardBehavior="interactive"
-          keyboardBlurBehavior="restore"
+          enableOverDrag={false}
+          keyboardBehavior="extend"
+          keyboardBlurBehavior={keyboardBlurBehavior}
           android_keyboardInputMode="adjustResize"
           overDragResistanceFactor={10}
         >
@@ -163,49 +182,22 @@ export default function BottomSheet({
   onClose,
   children,
   snapHeight = SCREEN_H * 0.6,
+  keyboardBlurBehavior = 'none',
 }: BottomSheetProps) {
-  // `isMounted` controls Modal visibility.
-  // We delay unmounting so the close animation can play before the Modal
-  // disappears from the screen.
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Stable key — increments ONLY when a fresh open happens, NOT on every
-  // render. This prevents InnerSheet from remounting (and replaying the
-  // opening animation) when parent state changes while the sheet is open.
-  const openCountRef = useRef(0);
-
-  useEffect(() => {
-    if (visible) {
-      // New open: give InnerSheet a fresh key so its gorhom state is clean
-      openCountRef.current += 1;
-      setIsMounted(true);
-    }
-  }, [visible]);
-
-  const handleClose = useCallback(() => {
-    // The sheet gesture has completed and the sheet is fully hidden.
-    // Wait for animation, then unmount the Modal so the next open
-    // renders a completely fresh InnerSheet instance (fixes reopen bug).
-    setTimeout(() => setIsMounted(false), 50);
-    onClose();
-  }, [onClose]);
-
-  if (!isMounted) return null;
+  if (!visible) return null;
 
   return (
     <Modal
-      visible={isMounted}
+      visible={visible}
       transparent
       animationType="none"
-      onRequestClose={handleClose}
+      onRequestClose={onClose}
       statusBarTranslucent
     >
-      {/* Stable key across re-renders within one open session,
-          but changes between opens to give a fresh gorhom instance */}
       <InnerSheet
-        key={openCountRef.current}
-        onClose={handleClose}
+        onClose={onClose}
         snapHeight={snapHeight}
+        keyboardBlurBehavior={keyboardBlurBehavior}
       >
         {children}
       </InnerSheet>

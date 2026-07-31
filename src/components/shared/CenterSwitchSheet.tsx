@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from './BottomSheet';
 import { useTheme } from '../../theme/ThemeContext';
 import useCenterStore from '../../store/useCenterStore';
@@ -24,18 +25,16 @@ export default function CenterSwitchSheet({ visible, onClose }: CenterSwitchShee
     onClose();
   };
 
-  if (!visible) return null;
-
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={380}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Select Clinic Center</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>
-          Switching center updates all schedules and data
-        </Text>
-      </View>
+      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Select Clinic Center</Text>
+          <Text style={[styles.sub, { color: colors.textMuted }]}>
+            Switching center updates all schedules and data
+          </Text>
+        </View>
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {centers.map((center) => {
           const isActive = center.id === activeCenterId;
           return (
@@ -74,7 +73,7 @@ export default function CenterSwitchSheet({ visible, onClose }: CenterSwitchShee
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }

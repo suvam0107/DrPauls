@@ -123,24 +123,20 @@ export default function DoctorDetailModal({
     setError('');
 
     const updates: Partial<Doctor> = {
-      name: name.trim().startsWith('Dr.') ? name.trim() : `Dr. ${name.trim()}`,
-      specialty,
-      department: department.trim(),
-      qualification: qualification.trim(),
-      phone: phone.trim(),
-      consultFee: fee,
-      maxPatientsPerDay: maxP,
-      location: location.trim(),
+      name: name.trim(),
+      specialty: specialty.trim() || 'Skin',
+      department: department.trim() || 'Dermatology',
+      qualification: qualification.trim() || 'MBBS',
+      phone: phone.trim() || undefined,
+      consultFee: parseFloat(consultFee) || 800,
+      maxPatientsPerDay: parseInt(maxPatientsPerDay) || 15,
+      location: location.trim() || 'Guwahati Main',
       workingDays: selectedDays,
-      workingHours: { start: startHour.trim(), end: endHour.trim() },
+      workingHours: {
+        start: startHour || '10:00',
+        end: endHour || '19:00',
+      },
       available,
-      centerSchedule: [
-        {
-          centerId: 'CC-001',
-          workingDays: selectedDays,
-          workingHours: { start: startHour.trim(), end: endHour.trim() },
-        },
-      ],
     };
 
     updateDoctor(activeDoc.id, updates);
@@ -149,8 +145,9 @@ export default function DoctorDetailModal({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
+    <BottomSheet visible={visible && !!activeDoc} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
+      {activeDoc ? (
+        <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
         {/* Header Profile Section */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
@@ -488,6 +485,7 @@ export default function DoctorDetailModal({
           </View>
         )}
       </BottomSheetScrollView>
+      ) : null}
     </BottomSheet>
   );
 }

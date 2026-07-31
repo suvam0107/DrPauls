@@ -100,26 +100,14 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
       setError('Please select a valid time slot');
       playAppointmentFailureSound();
       return;
-    }
-
-    setError('');
-    const endTime = addMins(startTime, 30);
-
-    // Validate slot collision
-    const val = useAppointmentStore
-      .getState()
-      .validateSlot(date, startTime, endTime, doctorId, appointment.id);
-
-    if (!val.valid) {
-      setError(val.message || 'Time slot collision detected');
+      setError('Please select a time slot');
       playAppointmentFailureSound();
       return;
     }
 
-    // Save updates
+    const endTime = addMins(startTime, 30);
     moveAppointment(appointment.id, date, startTime, endTime);
 
-    // If doctor changed, update doctor info too
     if (doctorId !== appointment.doctorId) {
       updateAppointment(appointment.id, {
         doctorId,
@@ -127,11 +115,10 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
       });
     }
 
-    playAppointmentSuccessSound();
     Toast.show({
       type: 'success',
-      text1: 'Appointment Updated',
-      text2: `${appointment.patientName} moved to ${formatDateShort(date)} ${startTime} with ${selectedDoctor?.name}`,
+      text1: 'Appointment Rescheduled',
+      text2: `${appointment.patientName} moved to ${formatDateShort(date)} at ${startTime}`,
       position: 'bottom',
     });
     onClose();
@@ -140,8 +127,9 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
   const monthGridCells = getMonthGrid(pickerMonth);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={420}>
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 36 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={420} keyboardBlurBehavior="none">
+      {appointment ? (
+        <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 220 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Reschedule / Edit Appointment</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>
@@ -236,6 +224,7 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
         </TouchableOpacity>
       </View>
       </BottomSheetScrollView>
+      ) : null}
 
       {/* Date Picker Modal */}
       <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>

@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet from '../shared/BottomSheet';
 import StatusChip from '../shared/StatusChip';
 import RescheduleModal from './RescheduleModal';
 import { useTheme } from '../../theme/ThemeContext';
@@ -8,18 +9,34 @@ import { formatDate, formatTime, todayISO } from '../../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Ionicons } from '@expo/vector-icons';
-import { Appointment } from '../../types';
+import { Appointment, Patient } from '../../types';
 import { playAppointmentSuccessSound, playClickSound } from '../../utils/feedback';
+
+import PatientDetailModal from '../patient/PatientDetailModal';
+import usePatientStore from '../../store/usePatientStore';
 
 export interface ModalContentProps {
   appointment: Appointment;
   onClose: () => void;
   onEditPress: () => void;
+  onPatientPress: (patient: Patient) => void;
 }
 
-function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) {
+function ModalContent({ appointment, onClose, onEditPress, onPatientPress }: ModalContentProps) {
   const { colors } = useTheme();
-  const { handleScroll } = useBottomSheet();
+  const patients = usePatientStore((s) => s.patients);
+
+  const patientObj: Patient = patients.find((p) => p.id === appointment.patientId || p.name.toLowerCase() === appointment.patientName.toLowerCase()) || {
+    id: appointment.patientId || 'PAT-000',
+    name: appointment.patientName,
+    mobile: appointment.patientMobile || '9000000000',
+    gender: 'Male' as const,
+    enquirySource: 'Walk-in',
+    parentDetails: [],
+    therapistDetails: [],
+    createdAt: todayISO(),
+    updatedAt: todayISO(),
+  };
 
   const today = todayISO();
   const now = new Date();
@@ -68,20 +85,30 @@ function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) 
   };
 
   return (
-    <ScrollView
+    <BottomSheetScrollView
       showsVerticalScrollIndicator={false}
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
+      style={{ paddingHorizontal: 16 }}
+      contentContainerStyle={{ paddingBottom: 220 }}
     >
-      <View style={styles.header}>
+      <TouchableOpacity
+        style={styles.header}
+        onPress={() => {
+          playClickSound();
+          onPatientPress(patientObj);
+        }}
+        activeOpacity={0.7}
+      >
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>{appointment.patientName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.title, { color: colors.primary }]}>{appointment.patientName}</Text>
+            <Ionicons name="open-outline" size={16} color={colors.primary} />
+          </View>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {appointment.patientMobile} • ID: {appointment.patientId}
+            {appointment.patientMobile} • ID: {appointment.patientId} (Tap for details)
           </Text>
         </View>
         <StatusChip status={appointment.status} />
-      </View>
+      </TouchableOpacity>
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -174,7 +201,7 @@ function ModalContent({ appointment, onClose, onEditPress }: ModalContentProps) 
           </TouchableOpacity>
         )}
       </View>
-    </ScrollView>
+    </BottomSheetScrollView>
   );
 }
 
@@ -190,17 +217,19 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
   onClose,
 }: AppointmentDetailModalProps) {
   const [showReschedule, setShowReschedule] = useState(false);
-
-  if (!appointment || !visible) return null;
+  const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
 
   return (
     <>
-      <BottomSheet visible={visible} onClose={onClose} snapHeight={460}>
-        <ModalContent
-          appointment={appointment}
-          onClose={onClose}
-          onEditPress={() => setShowReschedule(true)}
-        />
+      <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={460} keyboardBlurBehavior="none">
+        {appointment ? (
+          <ModalContent
+            appointment={appointment}
+            onClose={onClose}
+            onEditPress={() => setShowReschedule(true)}
+            onPatientPress={(pat) => setSelectedPatientForDetail(pat)}
+          />
+        ) : null}
       </BottomSheet>
 
       {/* Reschedule / Edit Modal */}
@@ -210,6 +239,13 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
         onClose={() => {
           setShowReschedule(false);
         }}
+      />
+
+      {/* Patient Detail Modal */}
+      <PatientDetailModal
+        patient={selectedPatientForDetail}
+        visible={!!selectedPatientForDetail}
+        onClose={() => setSelectedPatientForDetail(null)}
       />
     </>
   );

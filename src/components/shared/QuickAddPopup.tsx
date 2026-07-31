@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { playClickSound } from '../../utils/feedback';
 
@@ -21,6 +22,7 @@ export default function QuickAddPopup({
   onNewDoctor,
 }: QuickAddPopupProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [isMounted, setIsMounted] = useState(visible);
   const opacity = useSharedValue(0);
@@ -49,10 +51,12 @@ export default function QuickAddPopup({
 
   if (!isMounted && !visible) return null;
 
+  const bottomSpace = Math.max(insets.bottom + 68, 80);
+
   return (
     <Modal visible={isMounted || visible} transparent animationType="none" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { paddingBottom: bottomSpace }]}>
           <TouchableWithoutFeedback>
             <Animated.View
               style={[

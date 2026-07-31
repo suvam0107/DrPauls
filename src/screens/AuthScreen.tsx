@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -28,6 +28,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Input refs for automatic focus navigation
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   // Sign In Form State
   const [email, setEmail] = useState('');
@@ -73,20 +77,21 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }
   };
 
-  const keyboardHeight = useKeyboardState((state) => state.height);
-
   return (
-    <KeyboardAwareScrollView
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[
-        styles.scrollContent,
-        { paddingTop: Math.max(insets.top + 32, 48), paddingBottom: Math.max(insets.bottom + 24, 40) },
-      ]}
-      keyboardShouldPersistTaps="handled"
-      bottomOffset={keyboardHeight}
-      extraKeyboardSpace={keyboardHeight}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.container}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Math.max(insets.top + 24, 36), paddingBottom: Math.max(insets.bottom + 24, 40) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Clinic Branding Header */}
         <View style={styles.brandHeader}>
           <Image
@@ -117,13 +122,20 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="mail-outline" size={18} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
+                ref={emailInputRef}
                 style={[styles.input, { color: colors.text }]}
                 placeholder="e.g. anita.reception@drpauls.com"
                 placeholderTextColor={colors.textMuted}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  if (errorMsg) setErrorMsg('');
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
           </View>
@@ -134,12 +146,24 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
             <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
+                ref={passwordInputRef}
                 style={[styles.input, { color: colors.text }]}
                 placeholder="Enter your password"
                 placeholderTextColor={colors.textMuted}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(val) => {
+                  setPassword(val);
+                  if (errorMsg) setErrorMsg('');
+                }}
                 secureTextEntry={!showPassword}
+                keyboardType="default"
+                autoCorrect={false}
+                autoComplete="off"
+                spellCheck={false}
+                textContentType="password"
+                importantForAutofill="no"
+                returnKeyType="done"
+                onSubmitEditing={handleLoginSubmit}
               />
               <TouchableOpacity onPress={() => { playClickSound(); setShowPassword(!showPassword); }} hitSlop={8}>
                 <Ionicons
@@ -219,7 +243,8 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
           Dr. Paul's Multispeciality Clinic
         </Text>
-    </KeyboardAwareScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

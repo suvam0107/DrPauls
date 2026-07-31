@@ -77,8 +77,6 @@ export default function PatientDetailModal({
   }, [patient, visible]);
 
   const activePat = patient || cachedPatient;
-  if (!activePat) return null;
-
 
   const handleCall = () => {
     if (!mobile) return;
@@ -87,6 +85,7 @@ export default function PatientDetailModal({
   };
 
   const handleSave = () => {
+    if (!activePat) return;
     playClickSound();
 
     if (!name.trim()) {
@@ -122,8 +121,9 @@ export default function PatientDetailModal({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
+    <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
+      {activePat ? (
+        <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
         {/* Header Profile Section */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
@@ -474,6 +474,7 @@ export default function PatientDetailModal({
           </View>
         )}
       </BottomSheetScrollView>
+      ) : null}
     </BottomSheet>
   );
 }

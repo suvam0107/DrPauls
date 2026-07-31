@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import BottomSheet from '../shared/BottomSheet';
+import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
 import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
@@ -15,8 +15,9 @@ export interface AddPatientSheetProps {
   onPatientAdded?: (patient: Patient) => void;
 }
 
-export default function AddPatientSheet({ visible, onClose, onPatientAdded }: AddPatientSheetProps) {
+function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 'visible'>) {
   const { colors } = useTheme();
+  const { expandSheet } = useBottomSheet();
   const addPatient = usePatientStore((s) => s.addPatient);
 
   const [name, setName] = useState('');
@@ -52,60 +53,68 @@ export default function AddPatientSheet({ visible, onClose, onPatientAdded }: Ad
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={420}>
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 36 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, { color: colors.text }]}>Quick Patient Registration</Text>
+    <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 220 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.title, { color: colors.text }]}>Quick Patient Registration</Text>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Patient Name *</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Rahul Sharma"
-            placeholderTextColor={colors.textMuted}
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>Patient Name *</Text>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          value={name}
+          onChangeText={setName}
+          onFocus={expandSheet}
+          placeholder="e.g. Rahul Sharma"
+          placeholderTextColor={colors.textMuted}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          value={mobile}
+          onChangeText={setMobile}
+          onFocus={expandSheet}
+          keyboardType="phone-pad"
+          maxLength={10}
+          placeholder="10-digit mobile number"
+          placeholderTextColor={colors.textMuted}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Select
+            label="Gender"
+            value={gender}
+            options={GENDERS}
+            onChange={setGender}
           />
         </View>
-
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-            value={mobile}
-            onChangeText={setMobile}
-            keyboardType="phone-pad"
-            maxLength={10}
-            placeholder="10-digit mobile number"
-            placeholderTextColor={colors.textMuted}
+        <View style={{ flex: 1 }}>
+          <Select
+            label="Enquiry Source"
+            value={enquirySource}
+            options={ENQUIRY_SOURCE}
+            onChange={setEnquirySource}
           />
         </View>
+      </View>
 
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Select
-              label="Gender"
-              value={gender}
-              options={GENDERS}
-              onChange={setGender}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Select
-              label="Enquiry Source"
-              value={enquirySource}
-              options={ENQUIRY_SOURCE}
-              onChange={setEnquirySource}
-            />
-          </View>
-        </View>
+      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
+        <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+        <Text style={styles.saveBtnText}>Save & Select Patient</Text>
+      </TouchableOpacity>
+    </BottomSheetScrollView>
+  );
+}
 
-        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
-          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.saveBtnText}>Save & Select Patient</Text>
-        </TouchableOpacity>
-      </BottomSheetScrollView>
+export default function AddPatientSheet({ visible, onClose, onPatientAdded }: AddPatientSheetProps) {
+  return (
+    <BottomSheet visible={visible} onClose={onClose} snapHeight={420} keyboardBlurBehavior="restore">
+      <AddPatientForm onClose={onClose} onPatientAdded={onPatientAdded} />
     </BottomSheet>
   );
 }

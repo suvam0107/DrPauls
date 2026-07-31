@@ -9,7 +9,7 @@ import {
   Switch,
 } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import BottomSheet from '../shared/BottomSheet';
+import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
 import useDoctorStore from '../../store/useDoctorStore';
@@ -26,12 +26,9 @@ export interface AddDoctorSheetProps {
   onDoctorAdded?: (doctor: Doctor) => void;
 }
 
-export default function AddDoctorSheet({
-  visible,
-  onClose,
-  onDoctorAdded,
-}: AddDoctorSheetProps) {
+function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'visible'>) {
   const { colors } = useTheme();
+  const { expandSheet } = useBottomSheet();
   const addDoctor = useDoctorStore((s) => s.addDoctor);
 
   const [name, setName] = useState('');
@@ -42,18 +39,10 @@ export default function AddDoctorSheet({
   const [consultFee, setConsultFee] = useState('800');
   const [maxPatientsPerDay, setMaxPatientsPerDay] = useState('15');
   const [location, setLocation] = useState('Guwahati Main');
-  const [selectedDays, setSelectedDays] = useState<WeekDay[]>([
-    'Mon',
-    'Tue',
-    'Wed',
-    'Fri',
-    'Sat',
-    'Sun',
-  ]);
+  const [selectedDays, setSelectedDays] = useState<WeekDay[]>(['Mon', 'Tue', 'Wed', 'Fri', 'Sat', 'Sun']);
   const [startHour, setStartHour] = useState('10:00');
   const [endHour, setEndHour] = useState('19:00');
   const [available, setAvailable] = useState(true);
-
   const [error, setError] = useState('');
 
   const toggleDay = (day: WeekDay) => {
@@ -115,7 +104,6 @@ export default function AddDoctorSheet({
     playAppointmentSuccessSound();
     if (onDoctorAdded) onDoctorAdded(newDoc);
 
-    // Reset form
     setName('');
     setPhone('');
     setError('');
@@ -123,177 +111,198 @@ export default function AddDoctorSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={600}>
-      <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, { color: colors.text }]}>Add New Doctor</Text>
+    <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.title, { color: colors.text }]}>Add New Doctor</Text>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Doctor Name *</Text>
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>Doctor Name *</Text>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          value={name}
+          onChangeText={setName}
+          onFocus={expandSheet}
+          placeholder="e.g. Dr. Rajesh Sharma"
+          placeholderTextColor={colors.textMuted}
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Select
+            label="Specialty *"
+            value={specialty}
+            options={SPECIALTIES}
+            onChange={setSpecialty}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Department *</Text>
           <TextInput
             style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Dr. Rajesh Sharma"
+            value={department}
+            onChangeText={setDepartment}
+            onFocus={expandSheet}
+            placeholder="e.g. Trichology"
             placeholderTextColor={colors.textMuted}
           />
         </View>
+      </View>
 
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Select
-              label="Specialty *"
-              value={specialty}
-              options={SPECIALTIES}
-              onChange={setSpecialty}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Department *</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={department}
-              onChangeText={setDepartment}
-              placeholder="e.g. Trichology"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Qualification</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={qualification}
-              onChangeText={setQualification}
-              placeholder="e.g. MBBS, MD"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Phone Number *</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              maxLength={10}
-              placeholder="10-digit mobile"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Consult Fee (₹) *</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={consultFee}
-              onChangeText={setConsultFee}
-              keyboardType="numeric"
-              placeholder="800"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Max Patients / Day *</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={maxPatientsPerDay}
-              onChangeText={setMaxPatientsPerDay}
-              keyboardType="numeric"
-              placeholder="15"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Location / Branch</Text>
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Qualification</Text>
           <TextInput
             style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-            value={location}
-            onChangeText={setLocation}
-            placeholder="e.g. Guwahati Main"
+            value={qualification}
+            onChangeText={setQualification}
+            onFocus={expandSheet}
+            placeholder="e.g. MBBS, MD"
             placeholderTextColor={colors.textMuted}
           />
         </View>
-
-        {/* Working Days Multi-Select */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Working Days *</Text>
-          <View style={styles.daysRow}>
-            {WEEKDAYS.map((day) => {
-              const selected = selectedDays.includes(day);
-              return (
-                <TouchableOpacity
-                  key={day}
-                  style={[
-                    styles.dayChip,
-                    {
-                      backgroundColor: selected ? colors.primary : colors.surface,
-                      borderColor: selected ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => toggleDay(day)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.dayText, { color: selected ? '#FFF' : colors.text }]}>{day}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Working Hours */}
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Start Time (HH:mm)</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={startHour}
-              onChangeText={setStartHour}
-              placeholder="10:00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>End Time (HH:mm)</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-              value={endHour}
-              onChangeText={setEndHour}
-              placeholder="19:00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        {/* Availability Toggle */}
-        <View style={styles.switchRow}>
-          <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>Available On Duty</Text>
-          <Switch
-            value={available}
-            onValueChange={(val) => {
-              playClickSound();
-              setAvailable(val);
-            }}
-            trackColor={{ false: colors.border, true: colors.primary }}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Phone Number *</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+            value={phone}
+            onChangeText={setPhone}
+            onFocus={expandSheet}
+            keyboardType="phone-pad"
+            maxLength={10}
+            placeholder="10-digit mobile"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
+      </View>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-          onPress={handleSave}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.saveBtnText}>Save Doctor</Text>
-        </TouchableOpacity>
-      </BottomSheetScrollView>
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Consult Fee (₹) *</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+            value={consultFee}
+            onChangeText={setConsultFee}
+            onFocus={expandSheet}
+            keyboardType="numeric"
+            placeholder="800"
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Max Patients / Day *</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+            value={maxPatientsPerDay}
+            onChangeText={setMaxPatientsPerDay}
+            onFocus={expandSheet}
+            keyboardType="numeric"
+            placeholder="15"
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
+      </View>
+
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>Location / Branch</Text>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          value={location}
+          onChangeText={setLocation}
+          onFocus={expandSheet}
+          placeholder="e.g. Guwahati Main"
+          placeholderTextColor={colors.textMuted}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>Working Days *</Text>
+        <View style={styles.daysRow}>
+          {WEEKDAYS.map((day) => {
+            const selected = selectedDays.includes(day);
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayChip,
+                  {
+                    backgroundColor: selected ? colors.primary : colors.surface,
+                    borderColor: selected ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => toggleDay(day)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dayText, { color: selected ? '#FFF' : colors.text }]}>{day}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Start Time</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+            value={startHour}
+            onChangeText={setStartHour}
+            onFocus={expandSheet}
+            placeholder="10:00"
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>End Time</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+            value={endHour}
+            onChangeText={setEndHour}
+            onFocus={expandSheet}
+            placeholder="19:00"
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
+      </View>
+
+      <View style={styles.switchRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.switchTitle, { color: colors.text }]}>Active Availability</Text>
+          <Text style={[styles.switchSub, { color: colors.textMuted }]}>
+            Enable doctor for scheduling appointments
+          </Text>
+        </View>
+        <Switch
+          value={available}
+          onValueChange={(val) => {
+            playClickSound();
+            setAvailable(val);
+          }}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={available ? '#FFFFFF' : '#F4F3F4'}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+        onPress={handleSave}
+      >
+        <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
+        <Text style={styles.saveBtnText}>Save Doctor</Text>
+      </TouchableOpacity>
+    </BottomSheetScrollView>
+  );
+}
+
+export default function AddDoctorSheet({
+  visible,
+  onClose,
+  onDoctorAdded,
+}: AddDoctorSheetProps) {
+  return (
+    <BottomSheet visible={visible} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
+      <AddDoctorForm onClose={onClose} onDoctorAdded={onDoctorAdded} />
     </BottomSheet>
   );
 }
@@ -350,6 +359,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginVertical: 12,
+  },
+  switchTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  switchSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   saveBtn: {
     height: 48,

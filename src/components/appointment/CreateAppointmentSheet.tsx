@@ -404,6 +404,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
                 style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text }]}
                 value={prePaymentAmount}
                 onChangeText={setPrePaymentAmount}
+                onFocus={expandSheet}
                 keyboardType="numeric"
                 placeholder="500"
                 placeholderTextColor={colors.textMuted}
@@ -428,6 +429,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
             ]}
             value={remark}
             onChangeText={setRemark}
+            onFocus={expandSheet}
             placeholder="Add optional clinical notes..."
             placeholderTextColor={colors.textMuted}
             multiline
@@ -559,10 +561,8 @@ export default function CreateAppointmentSheet({
   initialData,
   onClose,
 }: CreateAppointmentSheetProps) {
-  if (!visible) return null;
-
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapHeight={640}>
+    <BottomSheet visible={visible} onClose={onClose} snapHeight={640} keyboardBlurBehavior="none">
       <CreateSheetForm initialData={initialData} onClose={onClose} />
     </BottomSheet>
   );
@@ -570,7 +570,7 @@ export default function CreateAppointmentSheet({
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 28,
+    paddingBottom: 240,
   },
   topHeader: {
     flexDirection: 'row',
