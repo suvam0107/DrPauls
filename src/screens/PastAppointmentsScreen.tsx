@@ -14,16 +14,20 @@ import useUIStore from '../store/useUIStore';
 import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
+import { APPOINTMENT_STATUS, STATUS_COLORS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
 
+const STATUS_FILTERS: string[] = Object.values(APPOINTMENT_STATUS);
+
 export default function PastAppointmentsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const appointments = useAppointmentStore((s) => s.appointments);
   const activeCenterId = useUIStore((s) => s.activeCenterId);
+  const activeStatusFilters = useUIStore((s) => s.activeStatusFilters);
+  const toggleStatusFilter = useUIStore((s) => s.toggleStatusFilter);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
 
   const today = todayISO();
@@ -51,17 +55,20 @@ export default function PastAppointmentsScreen() {
           if (!matchPatient && !matchDoctor && !matchService && !matchPhone) return false;
         }
 
-        // Status tab filter
-        if (selectedStatusFilter !== 'All') {
-          if (a.status !== selectedStatusFilter) return false;
+        // Multi-select status filter chips
+        if (activeStatusFilters.length > 0) {
+          if (!activeStatusFilters.includes(a.status)) return false;
         }
 
         return true;
       })
       .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
-  }, [appointments, activeCenterId, today, currentHHMM, searchQuery, selectedStatusFilter]);
+  }, [appointments, activeCenterId, today, currentHHMM, searchQuery, activeStatusFilters]);
 
-  const statusFilterTabs = ['All', 'Confirmed', 'Paid', 'Pending', 'Cancelled'];
+  const handleFilterPress = (status: string) => {
+    playClickSound();
+    toggleStatusFilter(status);
+  };
 
   return (
     <>
@@ -102,38 +109,29 @@ export default function PastAppointmentsScreen() {
           ) : null}
         </View>
 
-        {/* Status Filter Tabs */}
+        {/* Status Filter Chips (Calendar-style) */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.tabScroll}
           contentContainerStyle={styles.tabContainer}
         >
-          {statusFilterTabs.map((tab) => {
-            const isActive = selectedStatusFilter === tab;
+          {STATUS_FILTERS.map((s) => {
+            const active = activeStatusFilters.includes(s);
+            const c = STATUS_COLORS[s] || '#2563EB';
+            const activeBg = isDark ? c + '45' : c + '25';
             return (
               <TouchableOpacity
-                key={tab}
+                key={s}
+                onPress={() => handleFilterPress(s)}
                 style={[
-                  styles.tabChip,
-                  {
-                    backgroundColor: isActive ? colors.primary : colors.surface,
-                    borderColor: isActive ? colors.primary : colors.border,
-                  },
+                  styles.filterChip,
+                  { borderColor: c, backgroundColor: active ? activeBg : 'transparent' },
                 ]}
-                onPress={() => {
-                  playClickSound();
-                  setSelectedStatusFilter(tab);
-                }}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.tabChipText,
-                    { color: isActive ? '#FFFFFF' : colors.text },
-                  ]}
-                >
-                  {tab}
+                <Text style={[styles.filterText, { color: active && isDark ? '#FFFFFF' : c }]}>
+                  {s}
                 </Text>
               </TouchableOpacity>
             );
@@ -229,14 +227,9 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14 },
   tabScroll: { marginBottom: 16 },
-  tabContainer: { gap: 8, paddingRight: 16 },
-  tabChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  tabChipText: { fontSize: 13, fontWeight: '600' },
+  tabContainer: { gap: 6, paddingRight: 16 },
+  filterChip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 4 },
+  filterText: { fontSize: 11, fontWeight: '600' },
   emptyBox: {
     padding: 32,
     borderRadius: 14,

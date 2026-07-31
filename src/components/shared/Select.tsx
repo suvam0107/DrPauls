@@ -23,6 +23,7 @@ import { playClickSound } from '../../utils/feedback';
 export interface SelectOptionObject {
   label: string;
   value: string;
+  disabled?: boolean;
 }
 
 export type SelectOption = string | SelectOptionObject;
@@ -195,7 +196,8 @@ export default function Select({
               {options.map((item, i) => {
                 const val = typeof item === 'object' ? item.value : item;
                 const lbl = typeof item === 'object' ? item.label : item;
-                const isActive = val === value;
+                const isDisabled = typeof item === 'object' ? !!item.disabled : false;
+                const isActive = val === value && !isDisabled;
                 const isLast = i === options.length - 1;
 
                 return (
@@ -204,16 +206,22 @@ export default function Select({
                     style={[
                       styles.option,
                       isActive && { backgroundColor: colors.primaryLight },
+                      isDisabled && { opacity: 0.4 },
                       !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
                     ]}
-                    onPress={() => handleClose(val)}
-                    activeOpacity={0.7}
+                    disabled={isDisabled}
+                    onPress={() => !isDisabled && handleClose(val)}
+                    activeOpacity={isDisabled ? 1 : 0.7}
                   >
                     <Text
                       style={[
                         styles.optionText,
                         {
-                          color: isActive ? colors.primary : colors.text,
+                          color: isDisabled
+                            ? colors.textMuted
+                            : isActive
+                            ? colors.primary
+                            : colors.text,
                           fontWeight: isActive ? '600' : '400',
                         },
                       ]}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,12 @@ import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
 import useDoctorStore from '../../store/useDoctorStore';
+import useCenterStore from '../../store/useCenterStore';
+import useUIStore from '../../store/useUIStore';
 import { Doctor, WeekDay } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
+import { generateDoctorWorkingHourSlots, timeToMins, formatTime } from '../../utils/dateUtils';
 
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -30,6 +33,18 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
   const { colors } = useTheme();
   const { expandSheet } = useBottomSheet();
   const addDoctor = useDoctorStore((s) => s.addDoctor);
+  const centers = useCenterStore((s) => s.centers);
+  const globalCenterId = useUIStore((s) => s.activeCenterId);
+
+  const [centerId, setCenterId] = useState(globalCenterId || centers[0]?.id || 'CC-001');
+
+  const selectedCenter = useMemo(
+    () => centers.find((c) => c.id === centerId) || centers[0],
+    [centers, centerId]
+  );
+
+  const clinicStart = selectedCenter?.openHours?.start || '10:00';
+  const clinicEnd = selectedCenter?.openHours?.end || '19:00';
 
   const [name, setName] = useState('');
   const [specialty, setSpecialty] = useState('Skin');
@@ -38,12 +53,60 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
   const [phone, setPhone] = useState('');
   const [consultFee, setConsultFee] = useState('800');
   const [maxPatientsPerDay, setMaxPatientsPerDay] = useState('15');
-  const [location, setLocation] = useState('Guwahati Main');
   const [selectedDays, setSelectedDays] = useState<WeekDay[]>(['Mon', 'Tue', 'Wed', 'Fri', 'Sat', 'Sun']);
-  const [startHour, setStartHour] = useState('10:00');
-  const [endHour, setEndHour] = useState('19:00');
+  const [startHour, setStartHour] = useState(clinicStart);
+  const [endHour, setEndHour] = useState(clinicEnd);
   const [available, setAvailable] = useState(true);
   const [error, setError] = useState('');
+
+  // Sync working hours when selected center operating hours change
+  useEffect(() => {
+    setStartHour(clinicStart);
+    setEndHour(clinicEnd);
+  }, [clinicStart, clinicEnd]);
+
+  // Generate timeslots aligned with clinic opening and closing hours
+  const timeSlots = useMemo(
+    () => generateDoctorWorkingHourSlots(clinicStart, clinicEnd),
+    [clinicStart, clinicEnd]
+  );
+
+  const startTimeOptions = useMemo(() => {
+    return timeSlots.slice(0, -1).map((s) => ({
+      label: s.label,
+      value: s.time,
+    }));
+  }, [timeSlots]);
+
+  const endTimeOptions = useMemo(() => {
+    const startMins = timeToMins(startHour);
+    const firstDisabledItem = {
+      label: formatTime(startHour),
+      value: startHour,
+      disabled: true,
+    };
+
+    const beyondSlots = timeSlots
+      .filter((s) => timeToMins(s.time) > startMins)
+      .map((s) => ({
+        label: s.label,
+        value: s.time,
+      }));
+
+    return [firstDisabledItem, ...beyondSlots];
+  }, [timeSlots, startHour]);
+
+  const handleStartHourChange = (newStart: string) => {
+    setStartHour(newStart);
+    const newStartMins = timeToMins(newStart);
+    const currentEndMins = timeToMins(endHour);
+    if (currentEndMins <= newStartMins) {
+      const nextSlot = timeSlots.find((s) => timeToMins(s.time) > newStartMins);
+      if (nextSlot) {
+        setEndHour(nextSlot.time);
+      }
+    }
+  };
 
   const toggleDay = (day: WeekDay) => {
     playClickSound();
@@ -88,15 +151,15 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
       phone: phone.trim(),
       consultFee: fee,
       maxPatientsPerDay: maxP,
-      location: location.trim() || 'Guwahati Main',
+      location: selectedCenter?.cc_name || 'Guwahati Main',
       workingDays: selectedDays,
-      workingHours: { start: startHour.trim() || '10:00', end: endHour.trim() || '19:00' },
+      workingHours: { start: startHour.trim() || clinicStart, end: endHour.trim() || clinicEnd },
       available,
       centerSchedule: [
         {
-          centerId: 'CC-001',
+          centerId: centerId,
           workingDays: selectedDays,
-          workingHours: { start: startHour.trim() || '10:00', end: endHour.trim() || '19:00' },
+          workingHours: { start: startHour.trim() || clinicStart, end: endHour.trim() || clinicEnd },
         },
       ],
     });
@@ -205,14 +268,17 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
       </View>
 
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Location / Branch</Text>
-        <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-          value={location}
-          onChangeText={setLocation}
-          onFocus={expandSheet}
-          placeholder="e.g. Guwahati Main"
-          placeholderTextColor={colors.textMuted}
+        <Select
+          label="Clinic Center *"
+          value={centerId}
+          options={centers.map((c) => ({
+            label: `${c.cc_name} (${formatTime(c.openHours?.start || '10:00')} - ${formatTime(c.openHours?.end || '19:00')})`,
+            value: c.id,
+          }))}
+          onChange={(val) => {
+            playClickSound();
+            setCenterId(val);
+          }}
         />
       </View>
 
@@ -243,25 +309,25 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
 
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Start Time</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          <Select
+            label="Start Time *"
             value={startHour}
-            onChangeText={setStartHour}
-            onFocus={expandSheet}
-            placeholder="10:00"
-            placeholderTextColor={colors.textMuted}
+            options={startTimeOptions}
+            onChange={(val) => {
+              playClickSound();
+              handleStartHourChange(val);
+            }}
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>End Time</Text>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+          <Select
+            label="End Time *"
             value={endHour}
-            onChangeText={setEndHour}
-            onFocus={expandSheet}
-            placeholder="19:00"
-            placeholderTextColor={colors.textMuted}
+            options={endTimeOptions}
+            onChange={(val) => {
+              playClickSound();
+              setEndHour(val);
+            }}
           />
         </View>
       </View>

@@ -312,4 +312,23 @@ export const getDoctorAvailableSlots = (
   return slots;
 };
 
+/**
+ * Returns array of time slots for doctor working hours setup aligned with clinic open & close hours.
+ */
+export const generateDoctorWorkingHourSlots = (
+  clinicStart: string = '10:00',
+  clinicEnd: string = '19:00'
+): TimeSlot[] => {
+  const slots: TimeSlot[] = [];
+  const startMins = timeToMins(clinicStart);
+  const endMins = timeToMins(clinicEnd);
+
+  for (let m = startMins; m <= endMins; m += SLOT_MINUTES) {
+    const tStr = minsToTime(m);
+    slots.push({ time: tStr, label: formatTime(tStr) });
+  }
+  return slots;
+};
+
+
 
