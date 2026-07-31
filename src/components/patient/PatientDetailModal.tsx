@@ -19,6 +19,8 @@ import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
 import { copyToClipboard } from '../../utils/clipboardUtils';
 
+import { formatPatientText, shareDetails } from '../../utils/shareUtils';
+
 export interface PatientDetailModalProps {
   patient: Patient | null;
   visible: boolean;
@@ -78,6 +80,18 @@ export default function PatientDetailModal({
 
   const activePat = patient || cachedPatient;
 
+  const formattedPatientProfile = activePat ? formatPatientText(activePat) : '';
+
+  const handleCopyProfile = () => {
+    if (!formattedPatientProfile) return;
+    copyToClipboard(formattedPatientProfile, 'Patient Record');
+  };
+
+  const handleShareProfile = () => {
+    if (!formattedPatientProfile) return;
+    shareDetails('Patient Record', formattedPatientProfile);
+  };
+
   const handleCall = () => {
     if (!mobile) return;
     playClickSound();
@@ -121,10 +135,10 @@ export default function PatientDetailModal({
   };
 
   return (
-    <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
+    <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={560} keyboardBlurBehavior="none">
       {activePat ? (
         <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
-        {/* Header Profile Section */}
+        {/* Header Profile Section with Copy & Share Icons */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
             <Text style={[styles.avatarText, { color: colors.primary }]}>
@@ -135,8 +149,27 @@ export default function PatientDetailModal({
           <View style={{ flex: 1 }}>
             <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
             <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-              ID: {activePat.id} • {gender || activePat.gender}
+              {gender || activePat.gender}
             </Text>
+          </View>
+
+          {/* Plain Copy & Share Icons side-by-side */}
+          <View style={styles.iconRow}>
+            <TouchableOpacity
+              onPress={handleCopyProfile}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="copy-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleShareProfile}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -186,101 +219,132 @@ export default function PatientDetailModal({
           </View>
         </View>
 
-
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {!isEditing ? (
-          /* READ-ONLY VIEW MODE */
-          <View style={styles.detailsContainer}>
-            <TouchableOpacity
-              style={[styles.infoRow, { borderBottomColor: colors.border }]}
-              onLongPress={() => mobile && copyToClipboard(mobile, 'Mobile Number')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Mobile Number</Text>
-              <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
-                {mobile}
-              </Text>
-            </TouchableOpacity>
-
-            {whatsapp ? (
+          {!isEditing ? (
+            /* READ-ONLY VIEW MODE */
+            <View style={styles.detailsContainer}>
               <TouchableOpacity
                 style={[styles.infoRow, { borderBottomColor: colors.border }]}
-                onLongPress={() => copyToClipboard(whatsapp, 'WhatsApp Number')}
+                onLongPress={() => mobile && copyToClipboard(mobile, 'Mobile Number')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>WhatsApp</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{whatsapp}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Mobile Number</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
+                  {mobile}
+                </Text>
               </TouchableOpacity>
-            ) : null}
 
-            {alternateMobile ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Alternate Phone</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{alternateMobile}</Text>
-              </View>
-            ) : null}
+              {whatsapp ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(whatsapp, 'WhatsApp Number')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>WhatsApp</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{whatsapp}</Text>
+                </TouchableOpacity>
+              ) : null}
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Gender</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>{gender}</Text>
-            </View>
+              {alternateMobile ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(alternateMobile, 'Alternate Phone')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Alternate Phone</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{alternateMobile}</Text>
+                </TouchableOpacity>
+              ) : null}
 
-            {dob ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Date of Birth</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{dob}</Text>
-              </View>
-            ) : null}
-
-            {email ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Email Address</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{email}</Text>
-              </View>
-            ) : null}
-
-            {address ? (
               <TouchableOpacity
                 style={[styles.infoRow, { borderBottomColor: colors.border }]}
-                onLongPress={() => copyToClipboard(address, 'Address')}
+                onLongPress={() => copyToClipboard(gender, 'Gender')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Address</Text>
-                <Text style={[styles.infoValue, { color: colors.text, flex: 1, textAlign: 'right' }]}>
-                  {address}
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Gender</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{gender}</Text>
+              </TouchableOpacity>
+
+              {dob ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(dob, 'Date of Birth')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Date of Birth</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{dob}</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {email ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(email, 'Email Address')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Email Address</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{email}</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {address ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(address, 'Address')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Address</Text>
+                  <Text style={[styles.infoValue, { color: colors.text, flex: 1, textAlign: 'right' }]}>
+                    {address}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {district || state || pinCode ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard([district, state, pinCode].filter(Boolean).join(', '), 'Location')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>
+                    {[district, state, pinCode].filter(Boolean).join(', ')}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => copyToClipboard(enquirySource, 'Enquiry Source')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Enquiry Source</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{enquirySource}</Text>
+              </TouchableOpacity>
+
+              {referenceDoctor ? (
+                <TouchableOpacity
+                  style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                  onLongPress={() => copyToClipboard(referenceDoctor, 'Reference Doctor')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Reference Doctor</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{referenceDoctor}</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => activePat.createdAt && copyToClipboard(new Date(activePat.createdAt).toLocaleDateString(), 'Registration Date')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Registration Date</Text>
+                <Text style={[styles.infoValue, { color: colors.textMuted, fontSize: 12 }]}>
+                  {activePat.createdAt ? new Date(activePat.createdAt).toLocaleDateString() : 'N/A'}
                 </Text>
               </TouchableOpacity>
-            ) : null}
-
-            {district || state || pinCode ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {[district, state, pinCode].filter(Boolean).join(', ')}
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Enquiry Source</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>{enquirySource}</Text>
             </View>
-
-            {referenceDoctor ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Reference Doctor</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{referenceDoctor}</Text>
-              </View>
-            ) : null}
-
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Registration Date</Text>
-              <Text style={[styles.infoValue, { color: colors.textMuted, fontSize: 12 }]}>
-                {activePat.createdAt ? new Date(activePat.createdAt).toLocaleDateString() : 'N/A'}
-              </Text>
-            </View>
-          </View>
         ) : (
           /* EDIT FORM MODE */
           <View style={{ marginTop: 8 }}>
@@ -480,6 +544,11 @@ export default function PatientDetailModal({
 }
 
 const styles = StyleSheet.create({
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

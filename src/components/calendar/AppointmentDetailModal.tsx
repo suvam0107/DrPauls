@@ -15,6 +15,11 @@ import { playAppointmentSuccessSound, playClickSound } from '../../utils/feedbac
 import PatientDetailModal from '../patient/PatientDetailModal';
 import usePatientStore from '../../store/usePatientStore';
 
+import useCenterStore from '../../store/useCenterStore';
+import useUIStore from '../../store/useUIStore';
+import { copyToClipboard } from '../../utils/clipboardUtils';
+import { formatAppointmentText, shareDetails } from '../../utils/shareUtils';
+
 export interface ModalContentProps {
   appointment: Appointment;
   onClose: () => void;
@@ -22,9 +27,17 @@ export interface ModalContentProps {
   onPatientPress: (patient: Patient) => void;
 }
 
-function ModalContent({ appointment, onClose, onEditPress, onPatientPress }: ModalContentProps) {
+function ModalContent({
+  appointment,
+  onClose,
+  onEditPress,
+  onPatientPress,
+}: ModalContentProps) {
   const { colors } = useTheme();
   const patients = usePatientStore((s) => s.patients);
+  const centers = useCenterStore((s) => s.centers);
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
+  const activeCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
 
   const patientObj: Patient = patients.find((p) => p.id === appointment.patientId || p.name.toLowerCase() === appointment.patientName.toLowerCase()) || {
     id: appointment.patientId || 'PAT-000',
@@ -84,59 +97,132 @@ function ModalContent({ appointment, onClose, onEditPress, onPatientPress }: Mod
     onClose();
   };
 
+  const formattedDetails = formatAppointmentText(appointment, patientObj, activeCenter);
+
+  const handleCopyDetails = () => {
+    copyToClipboard(formattedDetails, 'Appointment Details');
+  };
+
+  const handleShareDetails = () => {
+    shareDetails('Appointment Details', formattedDetails);
+  };
+
   return (
     <BottomSheetScrollView
       showsVerticalScrollIndicator={false}
       style={{ paddingHorizontal: 16 }}
       contentContainerStyle={{ paddingBottom: 220 }}
     >
-      <TouchableOpacity
-        style={styles.header}
-        onPress={() => {
-          playClickSound();
-          onPatientPress(patientObj);
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={{ flex: 1 }}>
+      {/* Header Profile with Patient link & plain Copy/Share icons */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => {
+            playClickSound();
+            onPatientPress(patientObj);
+          }}
+          activeOpacity={0.7}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.title, { color: colors.primary }]}>{appointment.patientName}</Text>
             <Ionicons name="open-outline" size={16} color={colors.primary} />
           </View>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {appointment.patientMobile} • ID: {appointment.patientId} (Tap for details)
+            {appointment.patientMobile} • Tap for patient details
           </Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerRightActions}>
+          <StatusChip status={appointment.status} />
+
+          {/* Plain Copy & Share Icons side-by-side */}
+          <View style={styles.iconRow}>
+            <TouchableOpacity
+              onPress={handleCopyDetails}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="copy-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleShareDetails}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <StatusChip status={appointment.status} />
-      </TouchableOpacity>
+      </View>
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
+      {/* Grid of Details with individual long-press copy */}
       <View style={styles.grid}>
-        <View style={styles.gridItem}>
+        <TouchableOpacity
+          style={styles.gridItem}
+          onLongPress={() => copyToClipboard(appointment.id, 'Appointment ID')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Appt ID</Text>
+          <Text style={[styles.metaValue, { color: colors.text }]}>#{appointment.id}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.gridItem}
+          onLongPress={() => copyToClipboard(appointment.doctorName, 'Doctor Name')}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Doctor</Text>
           <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.doctorName}</Text>
-        </View>
-        <View style={styles.gridItem}>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.gridItem}
+          onLongPress={() =>
+            copyToClipboard(
+              `${formatDate(appointment.date)}, ${formatTime(appointment.startTime)}`,
+              'Date & Time'
+            )
+          }
+          activeOpacity={0.7}
+        >
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Date & Time</Text>
           <Text style={[styles.metaValue, { color: colors.text }]}>
             {formatDate(appointment.date)}, {formatTime(appointment.startTime)}
           </Text>
-        </View>
-        <View style={styles.gridItem}>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.gridItem}
+          onLongPress={() => copyToClipboard(appointment.serviceType, 'Service')}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Service</Text>
           <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.serviceType}</Text>
-        </View>
-        <View style={styles.gridItem}>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.gridItem}
+          onLongPress={() => copyToClipboard(`${appointment.visitType} Visit`, 'Visit Type')}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Visit Type</Text>
           <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.visitType} Visit</Text>
-        </View>
+        </TouchableOpacity>
+
         {appointment.therapistName ? (
-          <View style={styles.gridItem}>
+          <TouchableOpacity
+            style={styles.gridItem}
+            onLongPress={() => copyToClipboard(appointment.therapistName || '', 'Therapist')}
+            activeOpacity={0.7}
+          >
             <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Therapist</Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>{appointment.therapistName}</Text>
-          </View>
+          </TouchableOpacity>
         ) : null}
+
         {appointment.prePaymentRequired ? (
           <View style={styles.gridItem}>
             <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Pre-payment</Text>
@@ -148,10 +234,14 @@ function ModalContent({ appointment, onClose, onEditPress, onPatientPress }: Mod
       </View>
 
       {appointment.remark ? (
-        <View style={styles.remarkBox}>
+        <TouchableOpacity
+          style={styles.remarkBox}
+          onLongPress={() => copyToClipboard(appointment.remark || '', 'Remark')}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Remark</Text>
           <Text style={[styles.remarkText, { color: colors.text }]}>{appointment.remark}</Text>
-        </View>
+        </TouchableOpacity>
       ) : null}
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -221,7 +311,7 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
 
   return (
     <>
-      <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={460} keyboardBlurBehavior="none">
+      <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={440} keyboardBlurBehavior="none">
         {appointment ? (
           <ModalContent
             appointment={appointment}
@@ -256,9 +346,44 @@ export default AppointmentDetailModal;
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 8,
+    gap: 8,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  shareBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    padding: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  shareBarBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  shareBarBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   title: {
     fontSize: 18,

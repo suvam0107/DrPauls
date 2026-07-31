@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import SearchInput from '../components/shared/SearchInput';
 import AddPatientSheet from '../components/appointment/AddPatientSheet';
 import PatientDetailModal from '../components/patient/PatientDetailModal';
@@ -26,6 +26,12 @@ export default function PatientListScreen() {
     playClickSound();
     setSelectedPatient(patient);
     setShowPatientDetail(true);
+  };
+
+  const handleCall = (phone?: string) => {
+    if (!phone) return;
+    playClickSound();
+    Linking.openURL(`tel:${phone}`);
   };
 
   return (
@@ -69,12 +75,12 @@ export default function PatientListScreen() {
             <TouchableOpacity
               style={{ flex: 1 }}
               onPress={() => handleOpenPatientDetail(item)}
-              onLongPress={() => item.mobile && copyToClipboard(item.mobile, 'Patient Mobile')}
+              onLongPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
               activeOpacity={0.8}
             >
               <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
               <Text style={[styles.meta, { color: colors.textMuted }]}>
-                {item.mobile} • {item.gender} • ID: {item.id}
+                {item.mobile} • {item.gender}
               </Text>
               {item.address ? (
                 <Text style={[styles.address, { color: colors.textMuted }]} numberOfLines={1}>
@@ -82,6 +88,29 @@ export default function PatientListScreen() {
                 </Text>
               ) : null}
             </TouchableOpacity>
+
+            {/* Action Buttons: Copy & Call */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity
+                style={styles.copyCardBtn}
+                onPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Ionicons name="copy-outline" size={16} color={colors.primary} />
+              </TouchableOpacity>
+
+              {item.mobile ? (
+                <TouchableOpacity
+                  style={styles.copyCardBtn}
+                  onPress={() => handleCall(item.mobile)}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                >
+                  <Ionicons name="call-outline" size={16} color={colors.success} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </TouchableOpacity>
         )}
       />
@@ -141,5 +170,11 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, fontWeight: '700' },
   meta: { fontSize: 12, marginTop: 2 },
   address: { fontSize: 11, marginTop: 2 },
+  copyCardBtn: {
+    padding: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 

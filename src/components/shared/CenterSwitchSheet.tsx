@@ -129,8 +129,4 @@ const styles = StyleSheet.create({
   address: {
     fontSize: 12,
   },
-  meta: {
-    fontSize: 11,
-    marginTop: 4,
-  },
 });

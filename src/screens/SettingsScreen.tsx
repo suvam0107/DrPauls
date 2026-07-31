@@ -10,6 +10,8 @@ import LogoutConfirmationModal from '../components/shared/LogoutConfirmationModa
 import { playClickSound } from '../utils/feedback';
 import { copyToClipboard } from '../utils/clipboardUtils';
 
+import { formatCenterText, shareDetails } from '../utils/shareUtils';
+
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const themeMode = useUIStore((s) => s.themeMode);
@@ -42,6 +44,18 @@ export default function SettingsScreen() {
   const displayEmail = user?.email || 'anita.reception@drpauls.com';
   const displayPhone = user?.phone || '9812345678';
 
+  const formattedCenterInfo = currentCenter ? formatCenterText(currentCenter) : '';
+
+  const handleCopyCenterDetails = () => {
+    if (!formattedCenterInfo) return;
+    copyToClipboard(formattedCenterInfo, 'Center Details');
+  };
+
+  const handleShareCenterDetails = () => {
+    if (!formattedCenterInfo) return;
+    shareDetails('Center Details', formattedCenterInfo);
+  };
+
   return (
     <>
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -57,11 +71,22 @@ export default function SettingsScreen() {
             <Text style={[styles.staffRole, { color: colors.primary }]}>
               {displayRole} • ID: {displayStaffId}
             </Text>
-            <Text style={[styles.profileMeta, { color: colors.textMuted }]}>{displayEmail}</Text>
-            <View style={styles.phoneBadgeRow}>
+
+            <TouchableOpacity
+              onLongPress={() => copyToClipboard(displayEmail, 'Staff Email')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.profileMeta, { color: colors.textMuted }]}>{displayEmail}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.phoneBadgeRow}
+              onLongPress={() => copyToClipboard(`+91 ${displayPhone}`, 'Staff Phone')}
+              activeOpacity={0.7}
+            >
               <Ionicons name="call-outline" size={13} color={colors.textMuted} />
               <Text style={[styles.phoneBadgeText, { color: colors.textMuted }]}>+91 {displayPhone}</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -90,24 +115,55 @@ export default function SettingsScreen() {
         {/* Clinic Details (Current Center) */}
         {currentCenter && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-              Center Details
-            </Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted, marginBottom: 0 }]}>
+                Center Details
+              </Text>
+
+              {/* Plain Copy & Share Icons side-by-side */}
+              <View style={styles.iconRow}>
+                <TouchableOpacity
+                  onPress={handleCopyCenterDetails}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                >
+                  <Ionicons name="copy-outline" size={18} color={colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleShareCenterDetails}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                >
+                  <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.infoRow}>
+
+              <TouchableOpacity
+                style={styles.infoRow}
+                onLongPress={() => copyToClipboard(currentCenter.cc_name, 'Center Name')}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="business-outline" size={18} color={colors.primary} />
                 <Text style={[styles.infoTitleText, { color: colors.text }]}>
                   {currentCenter.cc_name} {currentCenter.isMain ? '(Main Center)' : ''}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               {currentCenter.comp_name && (
-                <View style={styles.infoRow}>
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  onLongPress={() => copyToClipboard(currentCenter.comp_name || '', 'Company Name')}
+                  activeOpacity={0.7}
+                >
                   <Ionicons name="briefcase-outline" size={18} color={colors.primary} />
                   <Text style={[styles.infoText, { color: colors.text }]}>
                     {currentCenter.comp_name}
                   </Text>
-                </View>
+                </TouchableOpacity>
               )}
 
               <TouchableOpacity
@@ -160,7 +216,16 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               )}
 
-              <View style={styles.infoRow}>
+              <TouchableOpacity
+                style={styles.infoRow}
+                onLongPress={() =>
+                  copyToClipboard(
+                    `Hours: ${currentCenter.openHours.start} - ${currentCenter.openHours.end} (${currentCenter.openDays.join(', ')})`,
+                    'Operating Hours'
+                  )
+                }
+                activeOpacity={0.7}
+              >
                 <Ionicons name="time-outline" size={18} color={colors.primary} />
                 <Text style={[styles.infoText, { color: colors.text }]}>
                   Open: {currentCenter.openHours.start} - {currentCenter.openHours.end}{`\n`}({currentCenter.openDays.join(', ')})
@@ -168,7 +233,7 @@ export default function SettingsScreen() {
                     ? `\nClosed: ${currentCenter.closedDays.join(', ')}`
                     : ''}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </>
         )}
@@ -199,6 +264,18 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   pageTitle: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',

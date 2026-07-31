@@ -19,6 +19,8 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
 import { copyToClipboard } from '../../utils/clipboardUtils';
 
+import { formatDoctorText, shareDetails } from '../../utils/shareUtils';
+
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -80,6 +82,15 @@ export default function DoctorDetailModal({
   const activeDoc = doctor || cachedDoctor;
   if (!activeDoc) return null;
 
+  const formattedDocProfile = formatDoctorText(activeDoc);
+
+  const handleCopyProfile = () => {
+    copyToClipboard(formattedDocProfile, 'Doctor Profile');
+  };
+
+  const handleShareProfile = () => {
+    shareDetails('Doctor Profile', formattedDocProfile);
+  };
 
   const handleCall = () => {
     if (!phone) return;
@@ -145,10 +156,10 @@ export default function DoctorDetailModal({
   };
 
   return (
-    <BottomSheet visible={visible && !!activeDoc} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
+    <BottomSheet visible={visible && !!activeDoc} onClose={onClose} snapHeight={560} keyboardBlurBehavior="none">
       {activeDoc ? (
         <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
-        {/* Header Profile Section */}
+        {/* Header Profile Section with Copy & Share Icons */}
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
             <Ionicons name="medical" size={28} color={colors.primary} />
@@ -159,7 +170,25 @@ export default function DoctorDetailModal({
             <Text style={[styles.docSpec, { color: colors.primary }]}>
               {specialty || activeDoc.specialty} • {department || activeDoc.department}
             </Text>
-            <Text style={[styles.docId, { color: colors.textMuted }]}>ID: {activeDoc.id}</Text>
+          </View>
+
+          {/* Plain Copy & Share Icons side-by-side */}
+          <View style={styles.iconRow}>
+            <TouchableOpacity
+              onPress={handleCopyProfile}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="copy-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleShareProfile}
+              activeOpacity={0.7}
+              hitSlop={6}
+            >
+              <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -217,92 +246,111 @@ export default function DoctorDetailModal({
           </View>
         </View>
 
-
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {!isEditing ? (
-          /* READ-ONLY VIEW MODE */
-          <View style={styles.detailsContainer}>
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Qualification</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {qualification || 'Not specified'}
-              </Text>
-            </View>
+          {!isEditing ? (
+            /* READ-ONLY VIEW MODE */
+            <View style={styles.detailsContainer}>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => qualification && copyToClipboard(qualification, 'Qualification')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Qualification</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {qualification || 'Not specified'}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.infoRow, { borderBottomColor: colors.border }]}
-              onLongPress={() => phone && copyToClipboard(phone, 'Phone Number')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Contact Phone</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>{phone || 'N/A'}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => phone && copyToClipboard(phone, 'Phone Number')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Contact Phone</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>{phone || 'N/A'}</Text>
+              </TouchableOpacity>
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Consultation Fee</Text>
-              <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
-                ₹{consultFee}
-              </Text>
-            </View>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => consultFee && copyToClipboard(`₹${consultFee}`, 'Consultation Fee')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Consultation Fee</Text>
+                <Text style={[styles.infoValue, { color: colors.text, fontWeight: '700' }]}>
+                  ₹{consultFee}
+                </Text>
+              </TouchableOpacity>
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Max Daily Patients</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {maxPatientsPerDay} patients / day
-              </Text>
-            </View>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => maxPatientsPerDay && copyToClipboard(`${maxPatientsPerDay} patients / day`, 'Max Patients')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Max Daily Patients</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {maxPatientsPerDay} patients / day
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.infoRow, { borderBottomColor: colors.border }]}
-              onLongPress={() => location && copyToClipboard(location, 'Location')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location / Branch</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {location || 'Guwahati Main'}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => location && copyToClipboard(location, 'Location')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Location / Branch</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {location || 'Guwahati Main'}
+                </Text>
+              </TouchableOpacity>
 
-            <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Working Hours</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {startHour} – {endHour}
-              </Text>
-            </View>
+              <TouchableOpacity
+                style={[styles.infoRow, { borderBottomColor: colors.border }]}
+                onLongPress={() => copyToClipboard(`${startHour} – ${endHour}`, 'Working Hours')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Working Hours</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {startHour} – {endHour}
+                </Text>
+              </TouchableOpacity>
 
-            <View style={{ marginTop: 12 }}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted, marginBottom: 6 }]}>
-                Working Days
-              </Text>
-              <View style={styles.daysRow}>
-                {WEEKDAYS.map((day) => {
-                  const isActive = selectedDays.includes(day);
-                  return (
-                    <View
-                      key={day}
-                      style={[
-                        styles.dayChip,
-                        {
-                          backgroundColor: isActive ? colors.primaryLight : colors.surface,
-                          borderColor: isActive ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
+              <TouchableOpacity
+                style={{ marginTop: 12 }}
+                onLongPress={() => copyToClipboard(selectedDays.join(', '), 'Working Days')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.infoLabel, { color: colors.textMuted, marginBottom: 6 }]}>
+                  Working Days (Long-press to copy)
+                </Text>
+                <View style={styles.daysRow}>
+                  {WEEKDAYS.map((day) => {
+                    const isActive = selectedDays.includes(day);
+                    return (
+                      <View
+                        key={day}
                         style={[
-                          styles.dayText,
-                          { color: isActive ? colors.primary : colors.textMuted },
+                          styles.dayChip,
+                          {
+                            backgroundColor: isActive ? colors.primaryLight : colors.surface,
+                            borderColor: isActive ? colors.primary : colors.border,
+                          },
                         ]}
                       >
-                        {day}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={[
+                            styles.dayText,
+                            { color: isActive ? colors.primary : colors.textMuted },
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </TouchableOpacity>
             </View>
-          </View>
         ) : (
           /* EDIT FORM MODE */
           <View style={{ marginTop: 8 }}>
@@ -491,6 +539,11 @@ export default function DoctorDetailModal({
 }
 
 const styles = StyleSheet.create({
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

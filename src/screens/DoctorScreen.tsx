@@ -74,17 +74,28 @@ export default function DoctorScreen() {
                   <Text style={[styles.spec, { color: colors.primary }]}>{item.specialty} ({item.department})</Text>
                 </View>
 
-                {/* Call Icon Button */}
-                {item.phone && (
+                {/* Action Buttons: Copy & Call */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <TouchableOpacity
                     style={styles.callBtn}
-                    onPress={() => handleCall(item.phone)}
+                    onPress={() => copyToClipboard(`Doctor: ${item.name} (${item.specialty}) • Phone: ${item.phone || 'N/A'} • Fee: ₹${item.consultFee}`, 'Doctor Info')}
                     activeOpacity={0.7}
                     hitSlop={6}
                   >
-                    <Ionicons name="call-outline" size={18} color={colors.success} />
+                    <Ionicons name="copy-outline" size={16} color={colors.primary} />
                   </TouchableOpacity>
-                )}
+
+                  {item.phone && (
+                    <TouchableOpacity
+                      style={styles.callBtn}
+                      onPress={() => handleCall(item.phone)}
+                      activeOpacity={0.7}
+                      hitSlop={6}
+                    >
+                      <Ionicons name="call-outline" size={16} color={colors.success} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               <Text style={[styles.qual, { color: colors.textMuted }]}>{item.qualification}</Text>
