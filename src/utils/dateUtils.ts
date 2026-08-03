@@ -69,6 +69,8 @@ export const offsetDate = (dateISO: string, n: number): string => {
   return formatISODateLocal(d);
 };
 
+export const addDays = offsetDate;
+
 /** Offset date by n months, returns "YYYY-MM-DD" */
 export const offsetMonth = (dateISO: string, n: number): string => {
   const [y, m, day] = dateISO.split('-').map(Number);

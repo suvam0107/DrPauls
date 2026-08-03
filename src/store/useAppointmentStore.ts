@@ -22,7 +22,13 @@ export interface ExtendedAppointmentState {
   addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Appointment;
   updateStatus: (id: string, status: string) => void;
   updateAppointment: (id: string, updates: Partial<Appointment>) => void;
-  moveAppointment: (id: string, newDate: string, newStartTime: string, newEndTime: string) => void;
+  moveAppointment: (
+    id: string,
+    newDate: string,
+    newStartTime: string,
+    newEndTime: string,
+    newDoctorId?: string
+  ) => void;
   cancelAppointment: (id: string) => void;
   validateSlot: (
     date: string,
@@ -33,6 +39,7 @@ export interface ExtendedAppointmentState {
   ) => AppointmentValidationResult;
   isSlotFree: (date: string, startTime: string, doctorId: string, excludeId?: string) => boolean;
   forDate: (date: string) => Appointment[];
+  forRange: (startDate: string, endDate: string) => Appointment[];
   forDateFiltered: (date: string, statuses?: string[]) => Appointment[];
   forDateAndDoctor: (date: string, doctorId?: string | null) => Appointment[];
   todayCount: () => number;
@@ -104,24 +111,50 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
     });
   },
 
-  /** Move appointment to new date/time (drag-drop or reschedule) - Permanent Persistence */
-  moveAppointment: (id, newDate, newStartTime, newEndTime) => {
-    appointmentService.update(id, {
+  /** Move/reschedule appointment to new date/time - Permanent Persistence & Original Schedule Logging */
+  moveAppointment: (id, newDate, newStartTime, newEndTime, newDoctorId) => {
+    const appt = get().appointments.find((a) => a.id === id);
+    if (!appt) return;
+
+    // Preserve original schedule if not already logged
+    const originalSchedule = appt.originalSchedule || {
+      date: appt.date,
+      startTime: appt.startTime,
+      endTime: appt.endTime,
+      doctorId: appt.doctorId,
+      doctorName: appt.doctorName,
+      rescheduledAt: new Date().toISOString(),
+    };
+
+    const targetDoctorId = newDoctorId || appt.doctorId;
+    const doctorObj = useDoctorStore.getState().doctors.find((d) => d.id === targetDoctorId);
+    const targetDoctorName = doctorObj ? doctorObj.name : appt.doctorName;
+
+    const updates: Partial<Appointment> = {
       date: newDate,
       startTime: newStartTime,
       endTime: newEndTime,
+      doctorId: targetDoctorId,
+      doctorName: targetDoctorName,
       status: APPOINTMENT_STATUS.RESCHEDULED,
-    });
+      originalSchedule,
+      updatedAt: new Date().toISOString(),
+    };
+
+    appointmentService.update(id, updates);
+
+    // Increment patient reschedule count
+    if (appt.patientId) {
+      const usePatientStore = require('./usePatientStore').default;
+      usePatientStore.getState().incrementRescheduleCount(appt.patientId);
+    }
+
     set((s) => {
       const updated = s.appointments.map((a) =>
         a.id === id
           ? {
               ...a,
-              date: newDate,
-              startTime: newStartTime,
-              endTime: newEndTime,
-              status: APPOINTMENT_STATUS.RESCHEDULED,
-              updatedAt: new Date().toISOString(),
+              ...updates,
             }
           : a
       );
@@ -247,6 +280,12 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   /** Appointments for a specific date */
   forDate: (date) =>
     get().appointments.filter((a) => a.date === date && a.status !== APPOINTMENT_STATUS.CANCELLED),
+
+  /** Appointments for a date range (inclusive) */
+  forRange: (startDate, endDate) =>
+    get().appointments.filter(
+      (a) => a.date >= startDate && a.date <= endDate && a.status !== APPOINTMENT_STATUS.CANCELLED
+    ),
 
   /** Appointments for a date filtered by status list */
   forDateFiltered: (date, statuses) => {

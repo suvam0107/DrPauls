@@ -14,8 +14,9 @@ import CalendarScreen from './src/screens/CalendarScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import PatientListScreen from './src/screens/PatientListScreen';
 import DoctorScreen from './src/screens/DoctorScreen';
-import ReportsScreen from './src/screens/ReportsScreen';
-import PastAppointmentsScreen from './src/screens/PastAppointmentsScreen';
+import AppointmentsScreen from './src/screens/AppointmentsScreen';
+import PatientRecordsScreen from './src/screens/PatientRecordsScreen';
+import PackagesScreen from './src/screens/PackagesScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
 import AddPatientSheet from './src/components/appointment/AddPatientSheet';
@@ -39,6 +40,7 @@ function MainApp() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [screenHistory, setScreenHistory] = useState<string[]>(['home']);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activePatientIdForRecords, setActivePatientIdForRecords] = useState<string | undefined>(undefined);
 
   // Modal visibilities
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -56,8 +58,11 @@ function MainApp() {
   }, []);
 
   // Navigate & push to navigation history stack
-  const handleNavigate = (screen: string) => {
-    if (screen === currentScreen) return;
+  const handleNavigate = (screen: string, params?: { patientId?: string }) => {
+    if (params?.patientId) {
+      setActivePatientIdForRecords(params.patientId);
+    }
+    if (screen === currentScreen && !params?.patientId) return;
     setScreenHistory((prev) => [...prev, screen]);
     setCurrentScreen(screen);
     if (screen === 'home' || screen === 'settings') {
@@ -170,10 +175,16 @@ function MainApp() {
       <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
         {currentScreen === 'home' && <HomeScreen onNavigate={handleNavigate} />}
         {currentScreen === 'calendar' && <CalendarScreen />}
-        {currentScreen === 'patients' && <PatientListScreen />}
+        {(currentScreen === 'appointments' || currentScreen === 'past-appointments') && <AppointmentsScreen />}
+        {currentScreen === 'patients' && <PatientListScreen onNavigate={handleNavigate} />}
+        {currentScreen === 'patient-records' && (
+          <PatientRecordsScreen
+            patientId={activePatientIdForRecords}
+            onBack={() => handleNavigate('patients')}
+          />
+        )}
         {currentScreen === 'doctors' && <DoctorScreen />}
-        {currentScreen === 'reports' && <ReportsScreen />}
-        {currentScreen === 'past-appointments' && <PastAppointmentsScreen />}
+        {currentScreen === 'packages' && <PackagesScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
       </View>
 

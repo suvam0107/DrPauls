@@ -9,19 +9,42 @@ export interface ExtendedPatientState {
   fetchPatients: () => Promise<void>;
   addPatient: (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => Patient;
   updatePatient: (id: string, updates: Partial<Patient>) => void;
+  incrementRescheduleCount: (id: string) => void;
   byId: (id: string) => Patient | undefined;
   search: (query: string) => Patient[];
   count: () => number;
 }
 
-const initialSeed = dataStore.getData().patients;
+export function calculatePatientPriority(rescheduleCount: number = 0): 'High' | 'Medium' | 'Low' {
+  if (rescheduleCount === 0) return 'High';
+  if (rescheduleCount <= 2) return 'Medium';
+  return 'Low';
+}
+
+const initialSeed = dataStore.getData().patients.map((p: Patient) => {
+  const count = p.rescheduleCount || 0;
+  return {
+    ...p,
+    rescheduleCount: count,
+    priority: calculatePatientPriority(count),
+  };
+});
 
 const usePatientStore = create<ExtendedPatientState>((set, get) => ({
   patients: initialSeed,
 
   fetchPatients: async () => {
     const fetched = await patientService.getAll();
-    set({ patients: fetched });
+    set({
+      patients: fetched.map((p) => {
+        const count = p.rescheduleCount || 0;
+        return {
+          ...p,
+          rescheduleCount: count,
+          priority: calculatePatientPriority(count),
+        };
+      }),
+    });
   },
 
   /** Add new patient, returns the new patient object */
@@ -31,6 +54,8 @@ const usePatientStore = create<ExtendedPatientState>((set, get) => ({
       id: nextPatientId(get().patients),
       parentDetails: data.parentDetails || [],
       therapistDetails: data.therapistDetails || [],
+      rescheduleCount: 0,
+      priority: 'High',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -43,9 +68,38 @@ const usePatientStore = create<ExtendedPatientState>((set, get) => ({
   updatePatient: (id, updates) => {
     patientService.update(id, updates);
     set((s) => ({
-      patients: s.patients.map((p) =>
-        p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
-      ),
+      patients: s.patients.map((p) => {
+        if (p.id === id) {
+          const updated = { ...p, ...updates, updatedAt: new Date().toISOString() };
+          const count = updated.rescheduleCount || 0;
+          return {
+            ...updated,
+            rescheduleCount: count,
+            priority: calculatePatientPriority(count),
+          };
+        }
+        return p;
+      }),
+    }));
+  },
+
+  incrementRescheduleCount: (id) => {
+    set((s) => ({
+      patients: s.patients.map((p) => {
+        if (p.id === id) {
+          const newCount = (p.rescheduleCount || 0) + 1;
+          const newPriority = calculatePatientPriority(newCount);
+          const updated = {
+            ...p,
+            rescheduleCount: newCount,
+            priority: newPriority,
+            updatedAt: new Date().toISOString(),
+          };
+          patientService.update(id, { rescheduleCount: newCount });
+          return updated;
+        }
+        return p;
+      }),
     }));
   },
 

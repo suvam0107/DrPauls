@@ -57,6 +57,8 @@ export interface CreateSheetFormProps {
   onClose: () => void;
 }
 
+import usePackageStore from '../../store/usePackageStore';
+
 function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const { colors } = useTheme();
   const { expandSheet, handleScroll } = useBottomSheet();
@@ -67,9 +69,13 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const appointments = useAppointmentStore((s) => s.appointments);
   const centers = useCenterStore((s) => s.centers);
   const globalCenterId = useUIStore((s) => s.activeCenterId);
+  const packages = usePackageStore((s) => s.packages);
 
   const [centerId, setCenterId] = useState(globalCenterId);
   const [activeTab, setActiveTab] = useState('Normal'); // 'Normal' | 'Package'
+  const [selectedPackageId, setSelectedPackageId] = useState(packages[0]?.id || '');
+  const selectedPkg = packages.find((p) => p.id === selectedPackageId);
+
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
 
@@ -103,6 +109,14 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const [prePaymentAmount, setPrePaymentAmount] = useState('0');
   const [remark, setRemark] = useState('');
   const [error, setError] = useState('');
+
+  // Sync package serviceType when package selected
+  useEffect(() => {
+    if (activeTab === 'Package' && selectedPkg) {
+      setServiceType(selectedPkg.serviceType as string);
+      setAppointmentType('Package Session');
+    }
+  }, [activeTab, selectedPackageId, selectedPkg]);
 
   // Sync initialData
   useEffect(() => {
@@ -186,36 +200,59 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
       });
     }
 
-    addAppointment({
-      centerId,
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      patientMobile: selectedPatient.mobile,
-      doctorId,
-      doctorName: selectedDoctor?.name || '',
-      date,
-      startTime,
-      endTime,
-      appointmentType,
-      serviceType,
-      visitType,
-      therapistId,
-      therapistName: availableTherapists.find((t) => t.id === therapistId)?.name || '',
-      isPackage: activeTab === 'Package',
-      prePaymentRequired,
-      prePaymentAmount: prePaymentRequired ? parseFloat(prePaymentAmount) || 0 : 0,
-      status: APPOINTMENT_STATUS.SCHEDULED,
-      leadStatus: LEAD_STATUS.NEW,
-      remark,
-    });
+    if (activeTab === 'Package' && selectedPkg) {
+      // Auto-schedule package sessions
+      usePackageStore.getState().assignPackageToPatient({
+        packageId: selectedPkg.id,
+        patientId: selectedPatient.id,
+        patientName: selectedPatient.name,
+        patientMobile: selectedPatient.mobile,
+        doctorId,
+        centerId,
+        startDate: date,
+        startTime,
+      });
 
-    playAppointmentSuccessSound();
-    Toast.show({
-      type: 'success',
-      text1: 'Appointment Created',
-      text2: `${selectedPatient.name} booked with ${selectedDoctor?.name} at ${startTime}`,
-      position: 'bottom',
-    });
+      playAppointmentSuccessSound();
+      Toast.show({
+        type: 'success',
+        text1: 'Package Auto-Scheduled',
+        text2: `${selectedPkg.totalSessions} sessions scheduled weekly starting ${formatDateShort(date)}`,
+        position: 'bottom',
+      });
+    } else {
+      addAppointment({
+        centerId,
+        patientId: selectedPatient.id,
+        patientName: selectedPatient.name,
+        patientMobile: selectedPatient.mobile,
+        doctorId,
+        doctorName: selectedDoctor?.name || '',
+        date,
+        startTime,
+        endTime,
+        appointmentType,
+        serviceType,
+        visitType,
+        therapistId,
+        therapistName: availableTherapists.find((t) => t.id === therapistId)?.name || '',
+        isPackage: false,
+        prePaymentRequired,
+        prePaymentAmount: prePaymentRequired ? parseFloat(prePaymentAmount) || 0 : 0,
+        status: APPOINTMENT_STATUS.SCHEDULED,
+        leadStatus: LEAD_STATUS.NEW,
+        remark,
+      });
+
+      playAppointmentSuccessSound();
+      Toast.show({
+        type: 'success',
+        text1: 'Appointment Created',
+        text2: `${selectedPatient.name} booked with ${selectedDoctor?.name} at ${startTime}`,
+        position: 'bottom',
+      });
+    }
+
     onClose();
   };
 
@@ -281,6 +318,47 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           onAddNewPress={() => setShowAddPatient(true)}
         />
 
+        {/* Package Selector if Package Mode */}
+        {activeTab === 'Package' && (
+          <View style={styles.field}>
+            <Select
+              label="Select Package *"
+              value={selectedPackageId}
+              options={packages.map((p) => ({
+                label: `${p.name} (${p.serviceType} • ₹${p.price.toLocaleString()})`,
+                value: p.id,
+              }))}
+              onChange={(val) => {
+                playClickSound();
+                setSelectedPackageId(val);
+              }}
+            />
+          </View>
+        )}
+
+        {/* Pricing & Service Type Breakdown Card */}
+        <View style={[styles.pricingCard, { backgroundColor: colors.card, borderColor: colors.primary + '40' }]}>
+          <View style={styles.pricingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.pricingLabel, { color: colors.textMuted }]}>
+                {activeTab === 'Package' ? 'Package Pricing Breakdown' : 'Consultation Visit Fee'}
+              </Text>
+              <Text style={[styles.pricingValue, { color: colors.primary }]}>
+                {activeTab === 'Package'
+                  ? `Total: ₹${selectedPkg?.price.toLocaleString()} (${selectedPkg?.totalSessions} Sessions)`
+                  : `Doctor Consult Fee: ₹${selectedDoctor?.consultFee || 500}`}
+              </Text>
+            </View>
+            {activeTab === 'Package' && selectedPkg ? (
+              <View style={[styles.perSessionPill, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.perSessionText, { color: colors.primary }]}>
+                  ₹{selectedPkg.perSessionPrice || Math.round(selectedPkg.price / selectedPkg.totalSessions)}/session
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
         {/* Doctor & Service */}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
@@ -299,7 +377,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           </View>
           <View style={{ flex: 1 }}>
             <Select
-              label="Service Type"
+              label={activeTab === 'Package' ? 'Service Type (Packaged)' : 'Service Type'}
               value={serviceType}
               options={SERVICE_TYPES}
               onChange={setServiceType}
@@ -569,6 +647,35 @@ export default function CreateAppointmentSheet({
 }
 
 const styles = StyleSheet.create({
+  pricingCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 12,
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pricingLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  pricingValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  perSessionPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  perSessionText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   content: {
     paddingBottom: 240,
   },

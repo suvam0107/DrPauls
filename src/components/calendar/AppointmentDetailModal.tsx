@@ -233,6 +233,26 @@ function ModalContent({
         ) : null}
       </View>
 
+      {appointment.originalSchedule ? (
+        <View style={[styles.originalScheduleBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.originalScheduleTitleRow}>
+            <Ionicons name="swap-horizontal-outline" size={15} color="#D97706" />
+            <Text style={styles.originalScheduleTitle}>Original Scheduling Details</Text>
+          </View>
+          <Text style={[styles.originalScheduleText, { color: colors.text }]}>
+            Originally scheduled on: {formatDate(appointment.originalSchedule.date)} at {formatTime(appointment.originalSchedule.startTime)}
+          </Text>
+          {appointment.originalSchedule.doctorName ? (
+            <Text style={[styles.originalScheduleText, { color: colors.textMuted }]}>
+              Doctor: {appointment.originalSchedule.doctorName}
+            </Text>
+          ) : null}
+          <Text style={[styles.originalScheduleTime, { color: colors.textMuted }]}>
+            Rescheduled on {new Date(appointment.originalSchedule.rescheduledAt).toLocaleString()}
+          </Text>
+        </View>
+      ) : null}
+
       {appointment.remark ? (
         <TouchableOpacity
           style={styles.remarkBox}
@@ -416,6 +436,31 @@ const styles = StyleSheet.create({
   },
   remarkBox: {
     marginTop: 12,
+  },
+  originalScheduleBox: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  originalScheduleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  originalScheduleTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  originalScheduleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  originalScheduleTime: {
+    fontSize: 11,
   },
   remarkText: {
     fontSize: 13,

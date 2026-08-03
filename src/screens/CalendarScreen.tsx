@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import AppRefreshControl from '../components/shared/AppRefreshControl';
 import CalendarHeader from '../components/calendar/CalendarHeader';
 import CalendarGrid from '../components/calendar/CalendarGrid';
 import MonthGrid from '../components/calendar/MonthGrid';
@@ -14,9 +15,11 @@ import { useTheme } from '../theme/ThemeContext';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
 import { Ionicons } from '@expo/vector-icons';
+import { useRefresh } from '../utils/useRefresh';
 
 export default function CalendarScreen() {
   const { colors } = useTheme();
+  const { refreshing, onRefresh } = useRefresh();
 
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid');
@@ -101,7 +104,11 @@ export default function CalendarScreen() {
       {/* Main Content Area */}
       {displayMode === 'list' ? (
         /* List Mode View (view-only list, no drag-drop) */
-        <ScrollView style={styles.container} contentContainerStyle={styles.listContent}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
           <View style={styles.listHeader}>
             <Text style={[styles.listTitle, { color: colors.text }]}>
               Schedule List ({selectedDateAppts.length})

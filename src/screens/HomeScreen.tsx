@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import useAppointmentStore from '../store/useAppointmentStore';
@@ -13,6 +13,9 @@ import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
 import useDoctorStore from '../store/useDoctorStore';
+import { useRefresh } from '../utils/useRefresh';
+
+import AppRefreshControl from '../components/shared/AppRefreshControl';
 
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -20,6 +23,7 @@ export interface HomeScreenProps {
 
 export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { colors } = useTheme();
+  const { refreshing, onRefresh } = useRefresh();
   const appointments = useAppointmentStore((s) => s.appointments);
   const patientCount = usePatientStore((s) => s.count());
   const doctorCount = useDoctorStore((s) => s.count());
@@ -40,7 +44,11 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const paidCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PAID).length;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+      refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       {/* Date Banner */}
       <View style={styles.banner}>
         <View>

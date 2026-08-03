@@ -25,12 +25,14 @@ export interface PatientDetailModalProps {
   patient: Patient | null;
   visible: boolean;
   onClose: () => void;
+  onViewPastRecords?: (patientId: string) => void;
 }
 
 export default function PatientDetailModal({
   patient,
   visible,
   onClose,
+  onViewPastRecords,
 }: PatientDetailModalProps) {
   const { colors } = useTheme();
   const updatePatient = usePatientStore((s) => s.updatePatient);
@@ -79,6 +81,14 @@ export default function PatientDetailModal({
   }, [patient, visible]);
 
   const activePat = patient || cachedPatient;
+  const rescheduleCount = activePat?.rescheduleCount || 0;
+  const priority = activePat?.priority || 'High';
+
+  const priorityColor =
+    priority === 'High' ? '#10B981' : priority === 'Medium' ? '#F59E0B' : '#EF4444';
+
+  const priorityBg =
+    priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
 
   const formattedPatientProfile = activePat ? formatPatientText(activePat) : '';
 
@@ -135,43 +145,75 @@ export default function PatientDetailModal({
   };
 
   return (
-    <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={560} keyboardBlurBehavior="none">
+    <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={580} keyboardBlurBehavior="none">
       {activePat ? (
         <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
-        {/* Header Profile Section with Copy & Share Icons */}
-        <View style={styles.headerRow}>
-          <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-            <Text style={[styles.avatarText, { color: colors.primary }]}>
-              {(name || activePat.name).charAt(0).toUpperCase()}
-            </Text>
-          </View>
+        {/* Priority-Highlighted Profile Card */}
+        <View
+          style={[
+            styles.profileBorderCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: priorityColor + '40',
+              borderLeftWidth: 5,
+              borderLeftColor: priorityColor,
+            },
+          ]}
+        >
+          {/* Header Profile Section with Copy & Share Icons */}
+          <View style={styles.headerRow}>
+            <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.avatarText, { color: colors.primary }]}>
+                {(name || activePat.name).charAt(0).toUpperCase()}
+              </Text>
+            </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
-            <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-              {gender || activePat.gender}
-            </Text>
-          </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
+              <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
+                {gender || activePat.gender} • {rescheduleCount} Reschedule{rescheduleCount !== 1 ? 's' : ''} • Priority: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Priority</Text>
+              </Text>
+            </View>
 
-          {/* Plain Copy & Share Icons side-by-side */}
-          <View style={styles.iconRow}>
-            <TouchableOpacity
-              onPress={handleCopyProfile}
-              activeOpacity={0.7}
-              hitSlop={6}
-            >
-              <Ionicons name="copy-outline" size={19} color={colors.primary} />
-            </TouchableOpacity>
+            {/* Plain Copy & Share Icons side-by-side */}
+            <View style={styles.iconRow}>
+              <TouchableOpacity
+                onPress={handleCopyProfile}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Ionicons name="copy-outline" size={19} color={colors.primary} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleShareProfile}
-              activeOpacity={0.7}
-              hitSlop={6}
-            >
-              <Ionicons name="share-social-outline" size={19} color={colors.primary} />
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleShareProfile}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
+
+        {/* View Past Records Link Button */}
+        {onViewPastRecords ? (
+          <TouchableOpacity
+            style={[styles.pastRecordsBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
+            onPress={() => {
+              playClickSound();
+              onClose();
+              onViewPastRecords(activePat.id);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="document-text-outline" size={16} color={colors.primary} />
+            <Text style={[styles.pastRecordsBtnText, { color: colors.primary }]}>
+              View Patient Past Records & Medical History
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+        ) : null}
 
         {/* Quick Action Bar */}
         <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -544,6 +586,12 @@ export default function PatientDetailModal({
 }
 
 const styles = StyleSheet.create({
+  profileBorderCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 12,
+  },
   iconRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -568,6 +616,29 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: 18,
+    fontWeight: '700',
+  },
+  priorityTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  priorityTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pastRecordsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 8,
+  },
+  pastRecordsBtnText: {
+    fontSize: 13,
     fontWeight: '700',
   },
   patientMeta: {

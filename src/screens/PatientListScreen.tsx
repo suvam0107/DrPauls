@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import AppRefreshControl from '../components/shared/AppRefreshControl';
 import SearchInput from '../components/shared/SearchInput';
 import AddPatientSheet from '../components/appointment/AddPatientSheet';
 import PatientDetailModal from '../components/patient/PatientDetailModal';
@@ -9,9 +10,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Patient } from '../types';
 import { playClickSound } from '../utils/feedback';
 import { copyToClipboard } from '../utils/clipboardUtils';
+import { useRefresh } from '../utils/useRefresh';
 
-export default function PatientListScreen() {
+export interface PatientListScreenProps {
+  onNavigate?: (screen: string, params?: { patientId?: string }) => void;
+}
+
+export default function PatientListScreen({ onNavigate }: PatientListScreenProps) {
   const { colors } = useTheme();
+  const { refreshing, onRefresh } = useRefresh();
   const patients = usePatientStore((s) => s.patients);
   const search = usePatientStore((s) => s.search);
 
@@ -62,57 +69,75 @@ export default function PatientListScreen() {
         data={filteredPatients}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => handleOpenPatientDetail(item)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.avatarText, { color: colors.primary }]}>{item.name.charAt(0)}</Text>
-            </View>
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        renderItem={({ item }) => {
+          const priority = item.priority || 'High';
+          const priorityColor =
+            priority === 'High' ? '#10B981' : priority === 'Medium' ? '#F59E0B' : '#EF4444';
+          const priorityBg =
+            priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
 
+          return (
             <TouchableOpacity
-              style={{ flex: 1 }}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: priorityColor + '40',
+                  borderLeftWidth: 5,
+                  borderLeftColor: priorityColor,
+                },
+              ]}
               onPress={() => handleOpenPatientDetail(item)}
-              onLongPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
-              <Text style={[styles.meta, { color: colors.textMuted }]}>
-                {item.mobile} • {item.gender}
-              </Text>
-              {item.address ? (
-                <Text style={[styles.address, { color: colors.textMuted }]} numberOfLines={1}>
-                  {item.address}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
+              <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.avatarText, { color: colors.primary }]}>{item.name.charAt(0)}</Text>
+              </View>
 
-            {/* Action Buttons: Copy & Call */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <TouchableOpacity
-                style={styles.copyCardBtn}
-                onPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
-                activeOpacity={0.7}
-                hitSlop={6}
+                style={{ flex: 1 }}
+                onPress={() => handleOpenPatientDetail(item)}
+                onLongPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
+                activeOpacity={0.8}
               >
-                <Ionicons name="copy-outline" size={16} color={colors.primary} />
+                <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
+
+                <Text style={[styles.meta, { color: colors.textMuted }]}>
+                  {item.mobile} • {item.gender}
+                </Text>
+                {item.address ? (
+                  <Text style={[styles.address, { color: colors.textMuted }]} numberOfLines={1}>
+                    {item.address}
+                  </Text>
+                ) : null}
               </TouchableOpacity>
 
-              {item.mobile ? (
+              {/* Action Buttons: Copy & Call */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <TouchableOpacity
                   style={styles.copyCardBtn}
-                  onPress={() => handleCall(item.mobile)}
+                  onPress={() => copyToClipboard(`Patient: ${item.name} • Mobile: ${item.mobile} • Gender: ${item.gender}`, 'Patient Info')}
                   activeOpacity={0.7}
                   hitSlop={6}
                 >
-                  <Ionicons name="call-outline" size={16} color={colors.success} />
+                  <Ionicons name="copy-outline" size={16} color={colors.primary} />
                 </TouchableOpacity>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        )}
+
+                {item.mobile ? (
+                  <TouchableOpacity
+                    style={styles.copyCardBtn}
+                    onPress={() => handleCall(item.mobile)}
+                    activeOpacity={0.7}
+                    hitSlop={6}
+                  >
+                    <Ionicons name="call-outline" size={16} color={colors.success} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
 
       {/* Quick Add Patient Sheet */}
@@ -123,6 +148,9 @@ export default function PatientListScreen() {
         patient={selectedPatient}
         visible={showPatientDetail}
         onClose={() => setShowPatientDetail(false)}
+        onViewPastRecords={(pid) => {
+          if (onNavigate) onNavigate('patient-records', { patientId: pid });
+        }}
       />
     </View>
   );
@@ -168,6 +196,15 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '700' },
   name: { fontSize: 15, fontWeight: '700' },
+  priorityChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  priorityChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
   meta: { fontSize: 12, marginTop: 2 },
   address: { fontSize: 11, marginTop: 2 },
   copyCardBtn: {

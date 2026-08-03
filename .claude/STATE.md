@@ -6,32 +6,47 @@
 ---
 
 ## Last Updated
-`2026-07-31` — Major Design & UX Enhancements completed by `@Frontend` & `@UXEngineer`.
+`2026-08-03` — Appointments Directory, Patient Priority Engine, Package Directory, Auto-Scheduling, Theme-Aligned Pull-to-Refresh & ARCHITECTURE.md synchronization completed by `@UXEngineer`.
 
 ---
 
 ## Current Sprint Focus
 
-### Major Design & UX Overhaul (`@Frontend` & `@UXEngineer`)
-- **Sound/Haptic Feedback Audit (`@UXEngineer`)**:
-  - Verified and added click audio/haptic responses for day chip toggles in `AddDoctorSheet`, action buttons in `PatientDetailModal` & `AppointmentDetailModal`, and floating options in `QuickAddPopup`.
-- **Calendar Drag & Drop Safeguards (`@Frontend`)**:
-  - `DraggableChip.tsx`: Blocked drag-and-drop rescheduling for past appointments by enforcing `isPastSlot()` date/time validation in chip drag eligibility checks.
-- **Switch Track Color Visibility (`@Frontend`)**:
-  - `SettingsScreen.tsx` & `CreateAppointmentSheet.tsx`: Configured explicit `trackColor={{ false: colors.border, true: colors.primary }}` on `<Switch>` components for high-contrast visibility in light and dark modes.
-- **Calendar Disabled Timeslot Contrast (`@UXEngineer`)**:
-  - `CalendarGrid.tsx`: Adjusted disabled/past slot background overlays to `rgba(255,255,255,0.08)` in dark mode (lighter) and `rgba(0,0,0,0.08)` in light mode (darker) for distinct theme visibility across week and day views.
-- **Keyboard Handling & Form Scroll Enhancements (`@Frontend` & `@UXEngineer`)**:
-  - `AuthScreen.tsx`: Replaced `KeyboardAwareScrollView` with `KeyboardAvoidingView` + `ScrollView` (`behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`). When the keyboard opens, the container lifts the entire Sign In card above the keyboard as a single unified layout translation. Switching focus between Email and Password fields (or pressing enter/tick to navigate between inputs) inside the card produces zero scroll offset recalculations, completely eliminating field-switching jitter whether the status error banner is visible or hidden.
-  - `BottomSheet.tsx`: Refactored `BottomSheet` component lifecycle to mount `InnerSheet` with `index={0}` inside `Modal` when `visible === true`, removing `openKey` state re-mounting that was resetting bottom sheet animation frames.
-  - `CenterSwitchSheet.tsx` & `AppointmentDetailModal.tsx`: Migrated internal content scrollables from standard React Native `<ScrollView>` to `@gorhom/bottom-sheet` `<BottomSheetScrollView>`. Standard React Native `ScrollView` inside a Gorhom BottomSheet collapses or fails to layout content height; migrating to `BottomSheetScrollView` fixes content rendering and gesture scroll calculations across Center Switch dropdown and Appointment Details modals across all screens.
-  - All 8 Bottom Sheet Modals (`AddPatientSheet`, `AddDoctorSheet`, `CreateAppointmentSheet`, `CenterSwitchSheet`, `PatientDetailModal`, `DoctorDetailModal`, `RescheduleModal`, `AppointmentDetailModal`): Confirmed all 8 modals consume `BottomSheetScrollView` with proper safe-area bottom padding (`paddingBottom: 220px-240px`).
-- **Bottom Sheet Library Migration (`@Frontend`)** *(v2 — bug fixes)*:
-  - `App.tsx`: Removed `BottomSheetModalProvider` (no longer needed). `GestureHandlerRootView` at root handles app gestures.
-  - `BottomSheet.tsx`: Replaced `BottomSheetModal`+provider approach with `BottomSheet`+`Modal` pattern. Each open mounts a fresh `InnerSheet` (keyed) inside a React Native `Modal`, which owns its own `GestureHandlerRootView` (required — Modal creates a new native view tree). Fixes: reopen-after-close bug, inconsistent open failures, theming (full `colors.card` control), swipe-to-close sensitivity (`overDragResistanceFactor=10`).
-- **Long-Press Clipboard Copy (`@Frontend` & `@UXEngineer`)**:
-  - Created `src/utils/clipboardUtils.ts` wrapping `expo-clipboard` with haptic feedback and toast notification.
-  - Enabled long-press copy on phone, address, and email fields in `DoctorScreen`, `PatientListScreen`, `SettingsScreen`, `DoctorDetailModal`, and `PatientDetailModal`.
+### Appointments, Patient Priority & Package Integration (`@Frontend`)
+- **Dedicated Appointments Screen (`AppointmentsScreen.tsx`)**:
+  - Replaced `PastAppointmentsScreen.tsx` with a unified Appointments Directory.
+  - Date filtering: **Today**, **Yesterday**, and **Custom Range** (with interactive Start and End Date pickers).
+  - Grouping toggle: **Doctor-wise** vs. **Patient-wise** with total appointment count badges per section.
+  - Displays appointments sorted in **descending order of time** (newest date and latest time first).
+- **Patient Priority Engine (`usePatientStore.ts`, `PatientListScreen.tsx`, `PatientDetailModal.tsx`, `PatientRecordsScreen.tsx`, `AppointmentsScreen.tsx`)**:
+  - Dynamically calculates patient priority based on reschedule count:
+    - 0 reschedules -> 🟢 **High Priority** (`#10B981`)
+    - 1-2 reschedules -> 🟡 **Medium Priority** (`#F59E0B`)
+    - 3+ reschedules -> 🔴 **Low Priority** (`#EF4444`)
+  - Highlighted patient cards with prominent 5px left accent borders (`borderLeftWidth: 5`, `borderLeftColor: priorityColor`) and matching 1px border outlines (`borderColor: priorityColor + '40'`) across Patient Directory, Patient Detail Modal, Patient Records Page, and Grouped Appointments.
+  - Removed badge pills beside patient names; priority is displayed cleanly as text-only inside `PatientDetailModal.tsx` and `PatientRecordsScreen.tsx` (`Priority: High Priority`).
+- **Patient Past Records Screen (`PatientRecordsScreen.tsx`)**:
+  - Dedicated screen linked directly from `PatientDetailModal` (`"View Patient Past Records & History"`).
+  - Shows full patient header, priority badge, reschedule metrics, active/past packages, and complete appointment timeline.
+  - Tapping any past appointment record opens `AppointmentDetailModal.tsx` showing complete visit details and original reschedule log.
+- **Original Scheduling Details & Reschedule Confirmation (`RescheduleConfirmationModal.tsx`, `RescheduleModal.tsx`, `DraggableChip.tsx`, `AppointmentDetailModal.tsx`)**:
+  - Created reusable theme-aligned `RescheduleConfirmationModal.tsx` popup dialog matching `ExitConfirmationModal` system design.
+  - Replaced inline bottom-sheet confirmation step with `RescheduleConfirmationModal` popup overlay when saving changes in `RescheduleModal.tsx`.
+  - Integrated `RescheduleConfirmationModal` popup step on calendar Drag-and-Drop release (`DraggableChip.tsx`), prompting confirmation before committing slot moves.
+  - Preserves original schedule data (`originalSchedule: { date, startTime, doctorName, rescheduledAt }`) on appointments and increments patient reschedule count.
+  - Renders an **Original Schedule Details** log box in `AppointmentDetailModal` for rescheduled appointments.
+- **Package Directory & Automatic Multi-Session Scheduling (`PackagesScreen.tsx`, `usePackageStore.ts`, `CreateAppointmentSheet.tsx`)**:
+  - Dedicated **Available Packages** screen in the sidebar drawer showing all treatment packs with prices, per-session cost breakdown, session counts, descriptions, and included services.
+  - Automatically schedules remaining package sessions at 7-day intervals starting from the selected initial date when booking a package appointment.
+- **Updated Create Appointment Page (`CreateAppointmentSheet.tsx`)**:
+  - Shows service type auto-selected when package mode is selected.
+  - Displays clear pricing breakdown card: Doctor Consultation Fee (Normal visit) vs. Package Total Price and Cost Per Session (Package visit).
+- **Theme-Aligned Pull-To-Refresh Component (`AppRefreshControl.tsx`, `useRefresh.ts`, `HomeScreen.tsx`, `AppointmentsScreen.tsx`, `PatientListScreen.tsx`, `DoctorScreen.tsx`, `PackagesScreen.tsx`, `PatientRecordsScreen.tsx`, `CalendarGrid.tsx`)**:
+  - Built custom `AppRefreshControl.tsx` component fully aligned with Dr. Paul's Clinic active Theme Tokens (`colors.primary` spinner tint, `colors.card` background container on Android preventing dark mode backdrop bleed, and `colors.textMuted` title label).
+  - Created centralized `useRefresh` hook for smooth pull-to-refresh gesture handling and store re-synchronization (`fetchAppointments`, `fetchPatients`, `fetchDoctorsAndTherapists`, `fetchCenters`, `fetchPackages`).
+- **Navigation Cleanup (`App.tsx`, `SidebarDrawer.tsx`, `HomeScreen.tsx`)**:
+  - Removed `ReportsScreen` from navigation drawer and router as requested.
+  - Updated sidebar drawer items: Added `All Appointments` (`appointments`) and `Available Packages` (`packages`).
 
 ---
 
@@ -41,14 +56,15 @@
 - [x] Full TypeScript strict mode (`tsconfig.json`, `src/types/index.ts`)
 - [x] Expo SDK 54.0.36
 - [x] `@gorhom/bottom-sheet`, `react-native-keyboard-controller`, `expo-clipboard` installed
-- [x] Multi-Center Global State Architecture (`assets/data/centers.json`, `useCenterStore.ts`, `useUIStore.ts`)
-- [x] Native Gesture Bottom Sheet Modal System (`BottomSheet.tsx` via `@gorhom/bottom-sheet`)
-- [x] Form Keyboard Scroll Inset Engine (`react-native-keyboard-controller`)
-- [x] Long-Press Clipboard Copy (`clipboardUtils.ts` via `expo-clipboard`)
-- [x] Calendar Past-Appointment Drag-Drop Guard (`DraggableChip.tsx`)
-- [x] Calendar Disabled Slot High-Contrast Styling (`CalendarGrid.tsx`)
-- [x] Switch Track Visibility Fix in Light Mode (`SettingsScreen.tsx`, `CreateAppointmentSheet.tsx`)
-- [x] Sound & Haptic Feedback Audit (`feedback.ts`, `AddDoctorSheet.tsx`, `PatientDetailModal.tsx`)
+- [x] Dedicated Appointments Directory Screen with Today/Yesterday/Custom Range & Doctor/Patient Grouping (`AppointmentsScreen.tsx`)
+- [x] Patient Priority Engine (High/Medium/Low) based on reschedule frequency (`usePatientStore.ts`)
+- [x] Dedicated Patient Past Records Page (`PatientRecordsScreen.tsx`)
+- [x] Original Scheduling Details Log (`AppointmentDetailModal.tsx`, `useAppointmentStore.ts`)
+- [x] Reschedule Confirmation Dialog (`RescheduleModal.tsx`)
+- [x] Available Packages Directory Screen (`PackagesScreen.tsx`, `usePackageStore.ts`)
+- [x] Package Automatic Session Scheduling Engine (`usePackageStore.ts`)
+- [x] Pricing & Service Type Breakdown Card (`CreateAppointmentSheet.tsx`)
+- [x] Removed Reports screen & updated sidebar navigation (`SidebarDrawer.tsx`, `App.tsx`)
 - [x] `npx tsc --noEmit` — 0 errors
 
 ---

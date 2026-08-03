@@ -31,10 +31,10 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
 
   const menuItems: MenuItem[] = [
     { label: 'Calendar Grid', icon: 'calendar-outline', screen: 'calendar' },
-    { label: 'Past Appointments', icon: 'time-outline', screen: 'past-appointments' },
+    { label: 'All Appointments', icon: 'time-outline', screen: 'appointments' },
     { label: 'Patient Directory', icon: 'people-outline', screen: 'patients' },
     { label: 'Doctor Schedule', icon: 'medical-outline', screen: 'doctors' },
-    { label: 'Reports', icon: 'bar-chart-outline', screen: 'reports' },
+    { label: 'Available Packages', icon: 'gift-outline', screen: 'packages' },
   ];
 
   useEffect(() => {

@@ -22,6 +22,8 @@ import { Appointment } from '../../types';
 import { playAppointmentSuccessSound, playAppointmentFailureSound, playClickSound } from '../../utils/feedback';
 import { Ionicons } from '@expo/vector-icons';
 
+import RescheduleConfirmationModal from '../shared/RescheduleConfirmationModal';
+
 export interface RescheduleModalProps {
   visible: boolean;
   appointment: Appointment | null;
@@ -54,12 +56,15 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
 
   const selectedDoctor = doctors.find((d) => d.id === doctorId);
 
+  const [showConfirm, setShowConfirm] = useState(false);
+
   // Sync state on appointment change
   useEffect(() => {
     if (appointment) {
       setDoctorId(appointment.doctorId);
       setDate(appointment.date);
       setError('');
+      setShowConfirm(false);
     }
   }, [appointment]);
 
@@ -80,7 +85,7 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
 
   const isDoctorAvailableToday = isDoctorAvailableOnDate(selectedDoctor, date, apptCenterId);
 
-  const handleSave = () => {
+  const handleInitialSaveClick = () => {
     if (!doctorId) {
       setError('Please select a doctor');
       playAppointmentFailureSound();
@@ -100,13 +105,15 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
       setError('Please select a valid time slot');
       playAppointmentFailureSound();
       return;
-      setError('Please select a time slot');
-      playAppointmentFailureSound();
-      return;
     }
 
+    setError('');
+    setShowConfirm(true);
+  };
+
+  const handleConfirmReschedule = () => {
     const endTime = addMins(startTime, 30);
-    moveAppointment(appointment.id, date, startTime, endTime);
+    moveAppointment(appointment.id, date, startTime, endTime, doctorId);
 
     if (doctorId !== appointment.doctorId) {
       updateAppointment(appointment.id, {
@@ -115,201 +122,217 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
       });
     }
 
+    playAppointmentSuccessSound();
     Toast.show({
       type: 'success',
       text1: 'Appointment Rescheduled',
       text2: `${appointment.patientName} moved to ${formatDateShort(date)} at ${startTime}`,
       position: 'bottom',
     });
+    setShowConfirm(false);
     onClose();
   };
 
   const monthGridCells = getMonthGrid(pickerMonth);
 
   return (
-    <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={420} keyboardBlurBehavior="none">
-      {appointment ? (
-        <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 220 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Reschedule / Edit Appointment</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>
-          {appointment.patientName} • Current: {formatDateShort(appointment.date)} {appointment.startTime}
-        </Text>
-      </View>
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      {/* Doctor Selector */}
-      <View style={styles.field}>
-        <Select
-          label="Doctor"
-          value={doctorId}
-          options={centerDoctors.map((d) => ({
-            label: `${d.name} (${d.specialty})`,
-            value: d.id,
-          }))}
-          onChange={(val) => {
-            playClickSound();
-            setDoctorId(val);
-          }}
-        />
-      </View>
-
-      {/* Date & Time Row */}
-      <View style={styles.row}>
-        {/* Date Field */}
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Date</Text>
-          <TouchableOpacity
-            style={[styles.pickerInput, { borderColor: colors.border, backgroundColor: colors.surface }]}
-            onPress={() => {
-              playClickSound();
-              setShowDatePicker(true);
-            }}
-          >
-            <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-            <Text style={[styles.pickerValue, { color: colors.text }]}>
-              {formatDateShort(date)}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Time Slot Dropdown */}
-        <View style={{ flex: 1 }}>
-          <Select
-            label="Time Slot"
-            value={startTime}
-            options={
-              availableSlots.length > 0
-                ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
-                : [{ label: 'No slots available', value: '' }]
-            }
-            onChange={(val) => setStartTime(val)}
-          />
-        </View>
-      </View>
-
-      {!isDoctorAvailableToday && (
-        <View style={[styles.errorBox, { backgroundColor: colors.dangerBg || '#FEE2E2', borderColor: colors.danger + '40', borderWidth: 1, padding: 10, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }]}>
-          <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
-          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600', flex: 1 }}>
-            {selectedDoctor?.name || 'Doctor'} is unavailable on {formatDateShort(date)}. Rescheduling disallowed.
+    <>
+      <BottomSheet visible={visible && !showConfirm && !!appointment} onClose={onClose} snapHeight={420} keyboardBlurBehavior="none">
+        {appointment ? (
+          <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 220 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Reschedule / Edit Appointment</Text>
+          <Text style={[styles.sub, { color: colors.textMuted }]}>
+            {appointment.patientName} • Current: {formatDateShort(appointment.date)} {appointment.startTime}
           </Text>
         </View>
-      )}
 
-      {/* Action Buttons */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.cancelBtn, { backgroundColor: colors.danger }]}
-          onPress={onClose}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="close-circle-outline" size={18} color="#FFF" />
-          <Text style={[styles.cancelBtnText, { color: '#FFF' }]}>Cancel</Text>
-        </TouchableOpacity>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <TouchableOpacity
-          style={[
-            styles.saveBtn,
-            { backgroundColor: colors.primary },
-            (!isDoctorAvailableToday || availableSlots.length === 0 || !startTime) && { opacity: 0.5 },
-          ]}
-          disabled={!isDoctorAvailableToday || availableSlots.length === 0 || !startTime}
-          onPress={handleSave}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="save-outline" size={18} color="#FFF" />
-          <Text style={styles.saveBtnText}>Save Changes</Text>
-        </TouchableOpacity>
-      </View>
-      </BottomSheetScrollView>
-      ) : null}
+        {/* Doctor Selector */}
+        <View style={styles.field}>
+          <Select
+            label="Doctor"
+            value={doctorId}
+            options={centerDoctors.map((d) => ({
+              label: `${d.name} (${d.specialty})`,
+              value: d.id,
+            }))}
+            onChange={(val) => {
+              playClickSound();
+              setDoctorId(val);
+            }}
+          />
+        </View>
 
-      {/* Date Picker Modal */}
-      <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
-        <TouchableOpacity
-          style={styles.calendarModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowDatePicker(false)}
-        >
-          <TouchableWithoutFeedback>
-            <View style={[styles.calendarBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() => setPickerMonth((m) => offsetMonth(m, -1))}
-                hitSlop={8}
-              >
-                <Ionicons name="chevron-back" size={20} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={[styles.calendarMonthTitle, { color: colors.text }]}>
-                {formatMonthYear(pickerMonth)}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setPickerMonth((m) => offsetMonth(m, 1))}
-                hitSlop={8}
-              >
-                <Ionicons name="chevron-forward" size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.calendarWeekHeader}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                <Text key={d} style={[styles.calendarWeekText, { color: colors.textMuted }]}>
-                  {d}
-                </Text>
-              ))}
-            </View>
-
-            <View style={styles.calendarGrid}>
-              {monthGridCells.map((cell) => {
-                const isSelected = cell.date === date;
-                const isPast = cell.date < todayISO();
-                const isDoctorAvail = isDoctorAvailableOnDate(selectedDoctor, cell.date, apptCenterId);
-
-                return (
-                  <TouchableOpacity
-                    key={cell.date}
-                    style={[
-                      styles.calendarCell,
-                      isSelected && { backgroundColor: colors.primary, borderRadius: 8 },
-                      !cell.isCurrentMonth && { opacity: 0.3 },
-                      isDoctorAvail && !isSelected && { backgroundColor: colors.primaryLight },
-                      !isDoctorAvail && cell.isCurrentMonth && !isSelected && { backgroundColor: colors.surface },
-                    ]}
-                    disabled={isPast}
-                    onPress={() => {
-                      playClickSound();
-                      setDate(cell.date);
-                      setShowDatePicker(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.calendarCellText,
-                        { color: cell.isCurrentMonth ? colors.text : colors.textMuted },
-                        isSelected && { color: '#FFF', fontWeight: '700' },
-                        isPast && { opacity: 0.4 },
-                      ]}
-                    >
-                      {cell.dayNum}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
+        {/* Date & Time Row */}
+        <View style={styles.row}>
+          {/* Date Field */}
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Date</Text>
             <TouchableOpacity
-              style={[styles.calendarCloseBtn, { backgroundColor: colors.surface }]}
-              onPress={() => setShowDatePicker(false)}
+              style={[styles.pickerInput, { borderColor: colors.border, backgroundColor: colors.surface }]}
+              onPress={() => {
+                playClickSound();
+                setShowDatePicker(true);
+              }}
             >
-              <Text style={[styles.calendarCloseText, { color: colors.text }]}>Close</Text>
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+              <Text style={[styles.pickerValue, { color: colors.text }]}>
+                {formatDateShort(date)}
+              </Text>
             </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
-      </TouchableOpacity>
-    </Modal>
-    </BottomSheet>
+
+          {/* Time Slot Dropdown */}
+          <View style={{ flex: 1 }}>
+            <Select
+              label="Time Slot"
+              value={startTime}
+              options={
+                availableSlots.length > 0
+                  ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
+                  : [{ label: 'No slots available', value: '' }]
+              }
+              onChange={(val) => setStartTime(val)}
+            />
+          </View>
+        </View>
+
+        {!isDoctorAvailableToday && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerBg || '#FEE2E2', borderColor: colors.danger + '40', borderWidth: 1, padding: 10, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }]}>
+            <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
+            <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600', flex: 1 }}>
+              {selectedDoctor?.name || 'Doctor'} is unavailable on {formatDateShort(date)}. Rescheduling disallowed.
+            </Text>
+          </View>
+        )}
+
+        {/* Action Buttons */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.cancelBtn, { backgroundColor: colors.danger }]}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close-circle-outline" size={18} color="#FFF" />
+            <Text style={[styles.cancelBtnText, { color: '#FFF' }]}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.saveBtn,
+              { backgroundColor: colors.primary },
+              (!isDoctorAvailableToday || availableSlots.length === 0 || !startTime) && { opacity: 0.5 },
+            ]}
+            disabled={!isDoctorAvailableToday || availableSlots.length === 0 || !startTime}
+            onPress={handleInitialSaveClick}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="save-outline" size={18} color="#FFF" />
+            <Text style={styles.saveBtnText}>Save Changes</Text>
+          </TouchableOpacity>
+        </View>
+        </BottomSheetScrollView>
+        ) : null}
+
+        {/* Date Picker Modal */}
+        <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+          <TouchableOpacity
+            style={styles.calendarModalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          >
+            <TouchableWithoutFeedback>
+              <View style={[styles.calendarBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity
+                  onPress={() => setPickerMonth((m) => offsetMonth(m, -1))}
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={[styles.calendarMonthTitle, { color: colors.text }]}>
+                  {formatMonthYear(pickerMonth)}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setPickerMonth((m) => offsetMonth(m, 1))}
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-forward" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.calendarWeekHeader}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                  <Text key={d} style={[styles.calendarWeekText, { color: colors.textMuted }]}>
+                    {d}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.calendarGrid}>
+                {monthGridCells.map((cell) => {
+                  const isSelected = cell.date === date;
+                  const isPast = cell.date < todayISO();
+                  const isDoctorAvail = isDoctorAvailableOnDate(selectedDoctor, cell.date, apptCenterId);
+
+                  return (
+                    <TouchableOpacity
+                      key={cell.date}
+                      style={[
+                        styles.calendarCell,
+                        isSelected && { backgroundColor: colors.primary, borderRadius: 8 },
+                        !cell.isCurrentMonth && { opacity: 0.3 },
+                        isDoctorAvail && !isSelected && { backgroundColor: colors.primaryLight },
+                        !isDoctorAvail && cell.isCurrentMonth && !isSelected && { backgroundColor: colors.surface },
+                      ]}
+                      disabled={isPast}
+                      onPress={() => {
+                        playClickSound();
+                        setDate(cell.date);
+                        setShowDatePicker(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.calendarCellText,
+                          { color: cell.isCurrentMonth ? colors.text : colors.textMuted },
+                          isSelected && { color: '#FFF', fontWeight: '700' },
+                          isPast && { opacity: 0.4 },
+                        ]}
+                      >
+                        {cell.dayNum}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.calendarCloseBtn, { backgroundColor: colors.surface }]}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={[styles.calendarCloseText, { color: colors.text }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
+      </BottomSheet>
+
+      {/* Standalone Reschedule Confirmation Popup Modal */}
+      <RescheduleConfirmationModal
+        visible={showConfirm}
+        patientName={appointment.patientName}
+        fromDate={appointment.date}
+        fromTime={appointment.startTime}
+        toDate={date}
+        toTime={startTime}
+        onCancel={() => setShowConfirm(false)}
+        onConfirm={handleConfirmReschedule}
+      />
+    </>
   );
 }
 

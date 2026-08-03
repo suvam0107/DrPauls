@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import AppRefreshControl from '../components/shared/AppRefreshControl';
 import useDoctorStore from '../store/useDoctorStore';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,11 +8,12 @@ import { Doctor } from '../types';
 import { playClickSound } from '../utils/feedback';
 import DoctorDetailModal from '../components/doctor/DoctorDetailModal';
 import AddDoctorSheet from '../components/doctor/AddDoctorSheet';
-
 import { copyToClipboard } from '../utils/clipboardUtils';
+import { useRefresh } from '../utils/useRefresh';
 
 export default function DoctorScreen() {
   const { colors } = useTheme();
+  const { refreshing, onRefresh } = useRefresh();
   const doctors = useDoctorStore((s) => s.doctors);
 
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -57,6 +59,7 @@ export default function DoctorScreen() {
         data={doctors}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }: { item: Doctor }) => (
           <TouchableOpacity
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}

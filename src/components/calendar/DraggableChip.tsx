@@ -64,6 +64,14 @@ function snapOffsetToTime(offsetY: number): string {
   return minsToTime(clamped);
 }
 
+import RescheduleConfirmationModal from '../shared/RescheduleConfirmationModal';
+
+export interface PendingMoveData {
+  newDate: string;
+  newStartTime: string;
+  newEndTime: string;
+}
+
 export default function DraggableChip({
   appointment,
   onPress,
@@ -82,6 +90,7 @@ export default function DraggableChip({
 }: DraggableChipProps) {
   const pan = useRef(new Animated.ValueXY()).current;
   const [isDragging, setIsDragging] = useState(false);
+  const [pendingMove, setPendingMove] = useState<PendingMoveData | null>(null);
 
   const isPast = isPastSlot(appointment.date, appointment.startTime);
   const isEligible = ELIGIBLE_STATUSES.includes(appointment.status) && !isPast;
@@ -262,19 +271,8 @@ export default function DraggableChip({
           pan.setValue({ x: 0, y: 0 });
 
           if (validation.valid) {
-            // Success: move appointment in store (old slot freed, mock data synced)
-            useAppointmentStore
-              .getState()
-              .moveAppointment(appt.id, newDate, newStartTime, newEndTime);
-
-            playAppointmentSuccessSound();
-            Toast.show({
-              type: 'success',
-              text1: 'Appointment Rescheduled',
-              text2: `${appt.patientName} moved to ${formatTime(newStartTime)} (${formatDateShort(newDate)})`,
-              position: 'bottom',
-              visibilityTime: 3000,
-            });
+            // Trigger confirmation popup modal for drag-and-drop reschedule
+            setPendingMove({ newDate, newStartTime, newEndTime });
           } else {
             playAppointmentFailureSound();
             Toast.show({
@@ -301,28 +299,64 @@ export default function DraggableChip({
   const leftPct = `${(100 / count) * overlapIndex}%`;
 
   return (
-    <Animated.View
-      style={[
-        styles.positioner,
-        {
-          top,
-          height,
-          width: widthPct as any,
-          left: leftPct as any,
-          transform: [{ translateX: pan.x }, { translateY: pan.y }],
-          zIndex: isDragging ? 999 : 10 + overlapIndex,
-          elevation: isDragging ? 12 : 2 + overlapIndex,
-          opacity: isDragging ? 0.85 : 1,
-        },
-      ]}
-      {...panResponder.panHandlers}
-    >
-      <AppointmentChip
-        appointment={appointment}
-        onPress={onPress}
-        isCompact={isCompact}
-      />
-    </Animated.View>
+    <>
+      <Animated.View
+        style={[
+          styles.positioner,
+          {
+            top,
+            height,
+            width: widthPct as any,
+            left: leftPct as any,
+            transform: [{ translateX: pan.x }, { translateY: pan.y }],
+            zIndex: isDragging ? 999 : 10 + overlapIndex,
+            elevation: isDragging ? 12 : 2 + overlapIndex,
+            opacity: isDragging ? 0.85 : 1,
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <AppointmentChip
+          appointment={appointment}
+          onPress={onPress}
+          isCompact={isCompact}
+        />
+      </Animated.View>
+
+      {/* D&D Reschedule Confirmation Popup Modal */}
+      {pendingMove ? (
+        <RescheduleConfirmationModal
+          visible={!!pendingMove}
+          patientName={appointment.patientName}
+          fromDate={appointment.date}
+          fromTime={appointment.startTime}
+          toDate={pendingMove.newDate}
+          toTime={pendingMove.newStartTime}
+          doctorName={appointment.doctorName}
+          onCancel={() => setPendingMove(null)}
+          onConfirm={() => {
+            useAppointmentStore
+              .getState()
+              .moveAppointment(
+                appointment.id,
+                pendingMove.newDate,
+                pendingMove.newStartTime,
+                pendingMove.newEndTime
+              );
+
+            playAppointmentSuccessSound();
+            Toast.show({
+              type: 'success',
+              text1: 'Appointment Rescheduled',
+              text2: `${appointment.patientName} moved to ${formatTime(pendingMove.newStartTime)} (${formatDateShort(pendingMove.newDate)})`,
+              position: 'bottom',
+              visibilityTime: 3000,
+            });
+            setPendingMove(null);
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 

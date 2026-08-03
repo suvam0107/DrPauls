@@ -28,6 +28,9 @@ import { Appointment, CalendarView, Doctor } from '../../types';
 const WEEK_COL_MIN_WIDTH = 76;
 const HEADER_HEIGHT = 44;
 
+import AppRefreshControl from '../shared/AppRefreshControl';
+import { useRefresh } from '../../utils/useRefresh';
+
 export interface CalendarGridProps {
   selectedDate: string;
   weekDates: string[];
@@ -52,6 +55,7 @@ export default function CalendarGrid({
   onDateSelect,
 }: CalendarGridProps) {
   const { colors, isDark } = useTheme();
+  const { refreshing, onRefresh } = useRefresh();
   const timeSlots = generateTimeSlots();
 
   const verticalScrollRef = useRef<ScrollView>(null);
@@ -112,6 +116,7 @@ export default function CalendarGrid({
       scrollEnabled={!isDraggingChip}
       onScroll={handleScroll}
       scrollEventThrottle={16}
+      refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.gridWrapper}>
         {/* Fixed Left Time Labels Column */}

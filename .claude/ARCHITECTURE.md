@@ -79,13 +79,20 @@ DrPauls/
     │   │   ├── AppointmentChip.tsx# Individual appointment card component
     │   │   ├── MonthGrid.tsx      # 7x5 month view matrix with out-of-month navigation
     │   │   ├── RescheduleModal.tsx# Validated appointment edit modal (date, doctor, slot)
-    │   │   └── AppointmentDetailModal.tsx # Appointment detail sheet with Edit action button
+    │   │   └── AppointmentDetailModal.tsx # Appointment detail sheet with Edit action button & reschedule log
+    │   ├── doctor/
+    │   │   ├── AddDoctorSheet.tsx # Doctor creation bottom sheet
+    │   │   └── DoctorDetailModal.tsx # Doctor schedule & contact details sheet
+    │   ├── patient/
+    │   │   └── PatientDetailModal.tsx # Patient detail sheet with priority metadata & past records link
     │   └── shared/
+    │       ├── AppRefreshControl.tsx # Theme-aligned pull-to-refresh control component matching dark/light mode
     │       ├── BottomSheet.tsx    # @gorhom/bottom-sheet wrapper with dual snap points & backdrop
     │       ├── CenterSwitchSheet.tsx # Bottom sheet for switching clinic center
     │       ├── QuickAddPopup.tsx  # Floating popup above navbar with New Appt & New Patient options
     │       ├── ExitConfirmationModal.tsx  # Theme-aligned exit confirmation modal dialog
     │       ├── LogoutConfirmationModal.tsx# Theme-aligned sign out confirmation modal dialog
+    │       ├── RescheduleConfirmationModal.tsx # Theme-aligned popup dialog for appointment reschedule confirmation
     │       ├── SearchInput.tsx    # Debounced search bar with clear button
     │       ├── Select.tsx         # Custom dropdown selector
     │       └── StatusChip.tsx     # Color-coded status badge
@@ -95,16 +102,19 @@ DrPauls/
     │   ├── AuthScreen.tsx         # Dedicated Sign In page with Quick Demo pills
     │   ├── HomeScreen.tsx         # Main clinic overview dashboard with 2x2 stat grid & today's schedule
     │   ├── CalendarScreen.tsx     # Appointment calendar screen (grid & list display modes)
-    │   ├── PatientListScreen.tsx  # Patient directory screen
+    │   ├── AppointmentsScreen.tsx # Dedicated Appointments Directory screen with date filters & grouping
+    │   ├── PatientListScreen.tsx  # Patient directory screen with priority border highlights
+    │   ├── PatientRecordsScreen.tsx # Patient Past Records & History timeline screen
     │   ├── DoctorScreen.tsx       # Doctor schedule screen with phone & direct system dialer call icon
-    │   ├── ReportsScreen.tsx      # Reports & analytics screen
+    │   ├── PackagesScreen.tsx     # Available Treatment Packages directory & details
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile & Sign Out
     ├── store/
     │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine & 24-hour mock JWT issuance
     │   ├── useAppointmentStore.ts# State management routed through appointmentService
     │   ├── useCenterStore.ts      # Clinic center state management routed through centerService
-    │   ├── usePatientStore.ts     # Patient directory state routed through patientService
+    │   ├── usePatientStore.ts     # Patient directory state routed through patientService & priority calculation
     │   ├── useDoctorStore.ts      # Doctor schedule state routed through doctorService & therapistService
+    │   ├── usePackageStore.ts     # Treatment package state management & multi-session auto-scheduling
     │   └── useUIStore.ts          # UI theme, layout & activeCenterId state
     ├── theme/
     │   ├── colors.ts              # Dark & light color tokens
@@ -114,7 +124,9 @@ DrPauls/
         ├── clipboardUtils.ts     # Centralized expo-clipboard long-press copy helper with toast & haptics
         ├── dateUtils.ts          # ISO date formatting, slot calculators & doctor availability helpers
         ├── feedback.ts           # Centralized audio & haptic feedback controller
-        └── searchUtils.ts        # Patient search & ID generation logic
+        ├── searchUtils.ts        # Patient search & ID generation logic
+        ├── shareUtils.ts         # Utility for sharing appointment details via system share sheet
+        └── useRefresh.ts         # Custom hook for pull-to-refresh store re-hydration
 ```
 
 ---
@@ -150,9 +162,11 @@ App Root (SafeAreaProvider)
     ├── Active Screen Container (History Stack)
     │   ├── HomeScreen
     │   ├── CalendarScreen (List & Grid modes)
-    │   ├── PatientListScreen
+    │   ├── AppointmentsScreen (Directory with Today/Yesterday/Custom filters & Doctor/Patient grouping)
+    │   ├── PatientListScreen (Priority card border highlights)
+    │   ├── PatientRecordsScreen (Past records & interactive timeline)
     │   ├── DoctorScreen
-    │   ├── ReportsScreen
+    │   ├── PackagesScreen (Available treatment packages)
     │   └── SettingsScreen
     └── Bottom Nav Bar (Home | Quick Add [+] | Settings)
 ```
@@ -166,3 +180,48 @@ App Root (SafeAreaProvider)
 6. Sidebar Drawer open → Close drawer.
 7. Screen History length > 1 → Pop top screen (`router.back()`).
 8. On `HomeScreen` → Show `ExitConfirmationModal`.
+
+---
+
+## 6. Patient Priority Calculation & Visual Accent Engine
+
+1. **Priority Formula (`usePatientStore.ts`)**:
+   - Evaluated dynamically via `calculatePatientPriority(rescheduleCount)`:
+     - `0 reschedules` -> 🟢 **High Priority** (`#10B981`)
+     - `1–2 reschedules` -> 🟡 **Medium Priority** (`#F59E0B`)
+     - `3+ reschedules` -> 🔴 **Low Priority** (`#EF4444`)
+2. **Visual Highlight Format**:
+   - Cards across `PatientListScreen`, `PatientDetailModal`, `PatientRecordsScreen`, and `AppointmentsScreen` are highlighted with prominent 5px left accent borders (`borderLeftWidth: 5`, `borderLeftColor: priorityColor`) and subtle 1px outlines (`borderColor: priorityColor + '40'`).
+   - Priority metadata is rendered as text-only (`Priority: High Priority`) inside detail sheets and headers without badge pills.
+
+---
+
+## 7. Reschedule Confirmation & Audit Log
+
+1. **Standalone Confirmation Dialog (`RescheduleConfirmationModal.tsx`)**:
+   - Theme-aligned modal dialog triggered during both update modal edits (`RescheduleModal.tsx`) and calendar Drag-and-Drop releases (`DraggableChip.tsx`).
+   - Prompts receptionists to review date/time changes, doctor assignments, and priority impacts before committing slot moves.
+2. **Original Schedule Details Log**:
+   - Preserves original schedule data (`originalSchedule: { date, startTime, doctorName, rescheduledAt }`) and increments patient reschedule count.
+   - Renders an **Original Schedule Details** log box inside `AppointmentDetailModal.tsx`.
+
+---
+
+## 8. Treatment Packages & Multi-Session Auto-Scheduling
+
+1. **Package State (`usePackageStore.ts`)**:
+   - Manages treatment package offerings (`PKG-001`, `PKG-002`) with session tracking, pricing breakdowns, included services, and patient package assignments.
+2. **Multi-Session Auto-Scheduling Engine**:
+   - Booking a package appointment automatically generates remaining package sessions scheduled at 7-day intervals starting from the selected initial date.
+3. **Pricing Breakdown**:
+   - `CreateAppointmentSheet.tsx` displays clear cost comparison: Normal Visit (Consultation Fee) vs. Package Visit (Total Package Price & Per-Session Cost).
+
+---
+
+## 9. Centralized Pull-To-Refresh Architecture
+
+1. **Re-hydration Hook (`useRefresh.ts`)**:
+   - Centralized hook managing loading state, click sound feedback, and concurrent re-fetch of all Zustand stores (`appointments`, `patients`, `doctors`, `centers`, `packages`).
+2. **Theme-Aligned Refresh Component (`AppRefreshControl.tsx`)**:
+   - Encapsulates native `RefreshControl` with active theme tokens (`colors.primary` tint, `colors.card` Android background container, `colors.textMuted` title label) integrated across all scrollable screens and lists.
+

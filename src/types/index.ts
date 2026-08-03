@@ -87,6 +87,16 @@ export interface Center {
   openHours: { start: string; end: string };
 }
 
+export interface OriginalSchedule {
+  date: string;
+  startTime: string;
+  endTime: string;
+  doctorId?: string;
+  doctorName?: string;
+  rescheduledAt: string;
+  rescheduledReason?: string;
+}
+
 export interface Patient {
   id: string; // "PAT-001"
   name: string;
@@ -105,6 +115,8 @@ export interface Patient {
   referenceDoctor?: string;
   parentDetails: ParentDetail[];
   therapistDetails: TherapistAssignment[];
+  rescheduleCount?: number;
+  priority?: 'High' | 'Medium' | 'Low';
   createdAt: string;
   updatedAt: string;
 }
@@ -150,6 +162,7 @@ export interface Appointment {
   status: AppointmentStatus | string;
   leadStatus: LeadStatus | string;
   remark?: string;
+  originalSchedule?: OriginalSchedule;
   createdAt: string;
   updatedAt: string;
 }
@@ -161,9 +174,12 @@ export interface Package {
   totalSessions: number;
   usedSessions: number;
   price: number;
-  patientId: string;
+  patientId?: string;
   validUntil?: string;
   status: PackageStatus;
+  description?: string;
+  includedServices?: string[];
+  perSessionPrice?: number;
 }
 
 export interface Therapist {
