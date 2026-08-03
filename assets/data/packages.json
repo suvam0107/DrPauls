@@ -20,5 +20,60 @@
     "patientId": "PAT-002",
     "dayOffset": -10,
     "status": "Completed"
+  },
+  {
+    "id": "PKG-003",
+    "name": "Scalp Revitalize Package",
+    "serviceType": "Hair",
+    "totalSessions": 8,
+    "usedSessions": 2,
+    "price": 12000,
+    "patientId": "PAT-003",
+    "dayOffset": 60,
+    "status": "Active"
+  },
+  {
+    "id": "PKG-004",
+    "name": "Anti-Aging Glow Package",
+    "serviceType": "Skin",
+    "totalSessions": 5,
+    "usedSessions": 1,
+    "price": 10000,
+    "patientId": "PAT-004",
+    "dayOffset": 120,
+    "status": "Active"
+  },
+  {
+    "id": "PKG-005",
+    "name": "Laser Hair Reduction Pack",
+    "serviceType": "Laser",
+    "totalSessions": 6,
+    "usedSessions": 3,
+    "price": 18000,
+    "patientId": "PAT-006",
+    "dayOffset": 90,
+    "status": "Active"
+  },
+  {
+    "id": "PKG-006",
+    "name": "Follicular Growth Pack",
+    "serviceType": "Hair Transplant",
+    "totalSessions": 4,
+    "usedSessions": 1,
+    "price": 25000,
+    "patientId": "PAT-008",
+    "dayOffset": 150,
+    "status": "Active"
+  },
+  {
+    "id": "PKG-007",
+    "name": "Laser Smooth Pack",
+    "serviceType": "Laser",
+    "totalSessions": 6,
+    "usedSessions": 2,
+    "price": 16000,
+    "patientId": "PAT-011",
+    "dayOffset": 90,
+    "status": "Active"
   }
 ]

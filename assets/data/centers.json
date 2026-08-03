@@ -9,9 +9,21 @@
     "phone": "9000000001",
     "email": "main@drpaulsclinic.com",
     "isMain": true,
-    "openDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-    "closedDays": ["Thu"],
-    "openHours": { "start": "10:00", "end": "19:00" }
+    "openDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "closedDays": [
+      "Thu"
+    ],
+    "openHours": {
+      "start": "10:00",
+      "end": "19:00"
+    }
   },
   {
     "id": "CC-002",
@@ -23,9 +35,21 @@
     "phone": "9000000002",
     "email": "dispur@drpaulsclinic.com",
     "isMain": false,
-    "openDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    "closedDays": ["Sun"],
-    "openHours": { "start": "10:00", "end": "18:00" }
+    "openDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "closedDays": [
+      "Sun"
+    ],
+    "openHours": {
+      "start": "10:00",
+      "end": "18:00"
+    }
   },
   {
     "id": "CC-003",
@@ -37,8 +61,46 @@
     "phone": "9000000003",
     "email": "silchar@drpaulsclinic.com",
     "isMain": false,
-    "openDays": ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    "closedDays": ["Mon"],
-    "openHours": { "start": "11:00", "end": "19:00" }
+    "openDays": [
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "closedDays": [
+      "Mon"
+    ],
+    "openHours": {
+      "start": "11:00",
+      "end": "19:00"
+    }
+  },
+  {
+    "id": "CC-004",
+    "cc_name": "Dr. Paul's Jorhat Branch",
+    "comp_name": "DR PAULS MULTISPECIALITY CLINIC PVT LTD",
+    "bill_address": "AT Road, Near ASTC Bus Stand, Jorhat",
+    "bill_state": "ASSAM",
+    "bill_pin": 785001,
+    "phone": "9000000004",
+    "email": "jorhat@drpaulsclinic.com",
+    "isMain": false,
+    "openDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "closedDays": [
+      "Thu"
+    ],
+    "openHours": {
+      "start": "10:00",
+      "end": "18:00"
+    }
   }
 ]

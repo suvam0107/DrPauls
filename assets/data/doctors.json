@@ -10,18 +10,56 @@
     "available": true,
     "consultFee": 500,
     "location": "Room 1, 2nd Floor",
-    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-    "workingHours": { "start": "10:00", "end": "19:00" },
+    "workingDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "workingHours": {
+      "start": "10:00",
+      "end": "19:00"
+    },
     "centerSchedule": [
       {
         "centerId": "CC-001",
-        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-        "workingHours": { "start": "10:00", "end": "19:00" }
+        "workingDays": [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Fri",
+          "Sat",
+          "Sun"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "19:00"
+        }
       },
       {
         "centerId": "CC-002",
-        "workingDays": ["Mon", "Wed", "Fri"],
-        "workingHours": { "start": "10:00", "end": "17:00" }
+        "workingDays": [
+          "Mon",
+          "Wed",
+          "Fri"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "17:00"
+        }
+      },
+      {
+        "centerId": "CC-004",
+        "workingDays": [
+          "Tue",
+          "Sat"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "16:00"
+        }
       }
     ]
   },
@@ -36,18 +74,57 @@
     "available": true,
     "consultFee": 600,
     "location": "Room 2, 2nd Floor",
-    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-    "workingHours": { "start": "10:00", "end": "19:00" },
+    "workingDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "workingHours": {
+      "start": "10:00",
+      "end": "19:00"
+    },
     "centerSchedule": [
       {
         "centerId": "CC-001",
-        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat", "Sun"],
-        "workingHours": { "start": "10:00", "end": "19:00" }
+        "workingDays": [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Fri",
+          "Sat",
+          "Sun"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "19:00"
+        }
       },
       {
         "centerId": "CC-003",
-        "workingDays": ["Tue", "Thu", "Sat"],
-        "workingHours": { "start": "11:00", "end": "18:00" }
+        "workingDays": [
+          "Tue",
+          "Thu",
+          "Sat"
+        ],
+        "workingHours": {
+          "start": "11:00",
+          "end": "18:00"
+        }
+      },
+      {
+        "centerId": "CC-004",
+        "workingDays": [
+          "Wed",
+          "Sun"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "17:00"
+        }
       }
     ]
   },
@@ -62,23 +139,183 @@
     "available": true,
     "consultFee": 1000,
     "location": "Room 3, 2nd Floor",
-    "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat"],
-    "workingHours": { "start": "11:00", "end": "18:00" },
+    "workingDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "workingHours": {
+      "start": "11:00",
+      "end": "19:00"
+    },
     "centerSchedule": [
       {
         "centerId": "CC-001",
-        "workingDays": ["Mon", "Tue", "Wed", "Fri", "Sat"],
-        "workingHours": { "start": "11:00", "end": "18:00" }
+        "workingDays": [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Fri",
+          "Sat"
+        ],
+        "workingHours": {
+          "start": "11:00",
+          "end": "18:00"
+        }
       },
       {
         "centerId": "CC-002",
-        "workingDays": ["Tue", "Thu"],
-        "workingHours": { "start": "11:00", "end": "16:00" }
+        "workingDays": [
+          "Tue",
+          "Thu"
+        ],
+        "workingHours": {
+          "start": "11:00",
+          "end": "16:00"
+        }
       },
       {
         "centerId": "CC-003",
-        "workingDays": ["Fri", "Sun"],
-        "workingHours": { "start": "12:00", "end": "19:00" }
+        "workingDays": [
+          "Fri",
+          "Sun"
+        ],
+        "workingHours": {
+          "start": "12:00",
+          "end": "19:00"
+        }
+      },
+      {
+        "centerId": "CC-004",
+        "workingDays": [
+          "Mon"
+        ],
+        "workingHours": {
+          "start": "11:00",
+          "end": "16:00"
+        }
+      }
+    ]
+  },
+  {
+    "id": "DOC-004",
+    "name": "Dr. Vikram Sethi",
+    "specialty": "Hair Transplant Specialist",
+    "department": "Hair",
+    "qualification": "MBBS, MS (General Surgery), Hair Transplant Fellow",
+    "phone": "9876543213",
+    "maxPatientsPerDay": 10,
+    "available": true,
+    "consultFee": 800,
+    "location": "Room 4, 1st Floor",
+    "workingDays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Fri",
+      "Sat"
+    ],
+    "workingHours": {
+      "start": "10:00",
+      "end": "18:00"
+    },
+    "centerSchedule": [
+      {
+        "centerId": "CC-001",
+        "workingDays": [
+          "Mon",
+          "Wed",
+          "Fri"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "18:00"
+        }
+      },
+      {
+        "centerId": "CC-002",
+        "workingDays": [
+          "Tue",
+          "Sat"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "16:00"
+        }
+      },
+      {
+        "centerId": "CC-004",
+        "workingDays": [
+          "Mon",
+          "Fri"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "17:00"
+        }
+      }
+    ]
+  },
+  {
+    "id": "DOC-005",
+    "name": "Dr. Ritu Sharma",
+    "specialty": "Aesthetic Dermatologist",
+    "department": "Skin",
+    "qualification": "MBBS, MD (Dermatology), FAM",
+    "phone": "9876543214",
+    "maxPatientsPerDay": 15,
+    "available": true,
+    "consultFee": 700,
+    "location": "Room 5, 2nd Floor",
+    "workingDays": [
+      "Tue",
+      "Wed",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
+    "workingHours": {
+      "start": "10:00",
+      "end": "18:00"
+    },
+    "centerSchedule": [
+      {
+        "centerId": "CC-001",
+        "workingDays": [
+          "Tue",
+          "Fri",
+          "Sun"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "18:00"
+        }
+      },
+      {
+        "centerId": "CC-003",
+        "workingDays": [
+          "Wed",
+          "Sat"
+        ],
+        "workingHours": {
+          "start": "11:00",
+          "end": "18:00"
+        }
+      },
+      {
+        "centerId": "CC-004",
+        "workingDays": [
+          "Tue",
+          "Fri"
+        ],
+        "workingHours": {
+          "start": "10:00",
+          "end": "16:00"
+        }
       }
     ]
   }
