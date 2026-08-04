@@ -14,6 +14,7 @@ interface PackageSessionCardProps {
   onMarkAttended: (sessionId: string) => void;
   onCancel: (sessionId: string) => void;
   onReschedule: (appointment: Appointment) => void;
+  onViewSessionDetails?: (appointment: Appointment) => void;
 }
 
 export default function PackageSessionCard({
@@ -23,6 +24,7 @@ export default function PackageSessionCard({
   onMarkAttended,
   onCancel,
   onReschedule,
+  onViewSessionDetails,
 }: PackageSessionCardProps) {
   const { colors } = useTheme();
 
@@ -45,93 +47,139 @@ export default function PackageSessionCard({
   const isToday = appointment.date === today;
   const isPast = appointment.date < today;
 
+  // Show action buttons only for future/today sessions that aren't settled
+  const showActions = !isCancelled && !isPaid && !isPast;
+
+  const dotColor = isCancelled
+    ? colors.danger
+    : isPaid
+    ? colors.success
+    : isToday
+    ? colors.primary
+    : colors.textMuted;
+
+  const handleCardPress = () => {
+    if (onViewSessionDetails) {
+      playClickSound();
+      onViewSessionDetails(appointment);
+    }
+  };
+
   return (
     <View
       style={[
         styles.card,
         { backgroundColor: colors.card, borderColor: colors.border },
         isToday && { borderColor: colors.primary, borderWidth: 1.5 },
-        isCancelled && { opacity: 0.6 },
+        isCancelled && { opacity: 0.55 },
+        isPast && !isPaid && !isCancelled && { opacity: 0.75 },
       ]}
     >
-      <View style={styles.header}>
-        <View style={styles.sessionPill}>
-          <Ionicons name="ellipse" size={8} color={isCancelled ? colors.danger : isPaid ? colors.success : colors.primary} />
-          <Text style={[styles.sessionTitle, { color: colors.text }]}>
-            Session {sessionNumber} of {totalSessions}
-          </Text>
+      <TouchableOpacity
+        onPress={handleCardPress}
+        disabled={!onViewSessionDetails}
+        activeOpacity={0.7}
+      >
+        <View style={styles.header}>
+          <View style={styles.sessionPill}>
+            <Ionicons name="ellipse" size={8} color={dotColor} />
+            <Text style={[styles.sessionTitle, { color: isPast && !isPaid ? colors.textMuted : colors.text }]}>
+              Session {sessionNumber} of {totalSessions}
+            </Text>
+            {isToday && (
+              <View style={[styles.todayBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.todayBadgeText}>Today</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.headerRight}>
+            <StatusChip status={appointment.status} small />
+            {onViewSessionDetails && (
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+            )}
+          </View>
         </View>
 
-        <StatusChip status={appointment.status} small />
-      </View>
-
-      <View style={styles.detailsRow}>
-        <View style={styles.infoCol}>
-          <View style={styles.iconText}>
-            <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.text }, isCancelled && styles.strikethrough]}>
-              {formatDateShort(appointment.date)}
-            </Text>
-          </View>
-          <View style={styles.iconText}>
-            <Ionicons name="time-outline" size={14} color={colors.textMuted} />
-            <Text style={[styles.infoText, { color: colors.textMuted }]}>
-              {formatTime(appointment.startTime)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.infoCol}>
-          <View style={styles.iconText}>
-            <Ionicons name="person-outline" size={14} color={colors.textMuted} />
-            <Text style={[styles.infoText, { color: colors.textMuted }]}>
-              {appointment.doctorName}
-            </Text>
-          </View>
-          {appointment.therapistName ? (
+        <View style={styles.detailsRow}>
+          <View style={styles.infoCol}>
             <View style={styles.iconText}>
-              <Ionicons name="sparkles-outline" size={14} color={colors.textMuted} />
-              <Text style={[styles.infoText, { color: colors.textMuted }]}>
-                {appointment.therapistName}
+              <Ionicons name="calendar-outline" size={14} color={isToday ? colors.primary : colors.textMuted} />
+              <Text
+                style={[
+                  styles.infoText,
+                  { color: colors.text },
+                  isCancelled && styles.strikethrough,
+                  isPast && !isPaid && { color: colors.textMuted },
+                ]}
+              >
+                {formatDateShort(appointment.date)}
               </Text>
             </View>
-          ) : null}
-        </View>
-      </View>
+            <View style={styles.iconText}>
+              <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+              <Text style={[styles.infoText, { color: colors.textMuted }]}>
+                {formatTime(appointment.startTime)}
+              </Text>
+            </View>
+          </View>
 
-      {!isCancelled && !isPaid && (
+          <View style={styles.infoCol}>
+            <View style={styles.iconText}>
+              <Ionicons name="person-outline" size={14} color={colors.textMuted} />
+              <Text style={[styles.infoText, { color: colors.textMuted }]}>
+                {appointment.doctorName}
+              </Text>
+            </View>
+            {appointment.therapistName ? (
+              <View style={styles.iconText}>
+                {/* body-outline used for therapist — sparkles-outline not in Ionicons v5 */}
+                <Ionicons name="body-outline" size={14} color={colors.textMuted} />
+                <Text style={[styles.infoText, { color: colors.textMuted }]}>
+                  {appointment.therapistName}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {showActions && (
         <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.success + '15' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.success }]}
             onPress={() => {
               playClickSound();
               onMarkAttended(appointment.id);
             }}
+            activeOpacity={0.8}
           >
-            <Ionicons name="checkmark-circle-outline" size={15} color={colors.success} />
-            <Text style={[styles.actionBtnText, { color: colors.success }]}>Mark Attended</Text>
+            <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Attended</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primary + '15' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.primary }]}
             onPress={() => {
               playClickSound();
               onReschedule(appointment);
             }}
+            activeOpacity={0.8}
           >
-            <Ionicons name="calendar-clear-outline" size={15} color={colors.primary} />
-            <Text style={[styles.actionBtnText, { color: colors.primary }]}>Reschedule</Text>
+            <Ionicons name="create-outline" size={16} color="#FFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Reschedule</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.danger + '15' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.danger }]}
             onPress={() => {
               playClickSound();
               onCancel(appointment.id);
             }}
+            activeOpacity={0.8}
           >
-            <Ionicons name="close-circle-outline" size={15} color={colors.danger} />
-            <Text style={[styles.actionBtnText, { color: colors.danger }]}>Cancel</Text>
+            <Ionicons name="close-circle-outline" size={16} color="#FFF" />
+            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -141,25 +189,42 @@ export default function PackageSessionCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 12,
-    marginBottom: 10,
-    gap: 8,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sessionPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   sessionTitle: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  todayBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  todayBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: 0.3,
   },
   unScheduledText: {
     fontSize: 12,
@@ -169,9 +234,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    marginTop: 2,
   },
   infoCol: {
-    gap: 4,
+    gap: 6,
   },
   iconText: {
     flexDirection: 'row',
@@ -180,7 +246,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   strikethrough: {
     textDecorationLine: 'line-through',
@@ -189,21 +255,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: 10,
+    marginTop: 4,
     borderTopWidth: 1,
-    gap: 6,
+    gap: 8,
   },
   actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    borderRadius: 8,
+    gap: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   actionBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
 });

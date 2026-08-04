@@ -55,11 +55,12 @@ export default function LogoutConfirmationModal({ visible, onCancel, onConfirm }
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface }]}
+              style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
               onPress={handleCancel}
               activeOpacity={0.7}
             >
-              <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+              <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   dialogCard: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 20,
     alignItems: 'center',
@@ -101,6 +102,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     zIndex: 100,
+    gap: 4,
   },
   title: {
     fontSize: 18,
@@ -130,6 +132,7 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {},
   cancelText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },

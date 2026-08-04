@@ -63,11 +63,6 @@ export default function RescheduleConfirmationModal({
         </TouchableWithoutFeedback>
 
         <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {/* Header Icon */}
-          <View style={[styles.iconCircle, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="swap-horizontal" size={24} color={colors.primary} />
-          </View>
-
           {/* Title & Patient Subtitle */}
           <Text style={[styles.title, { color: colors.text }]}>Confirm Reschedule</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
@@ -98,22 +93,15 @@ export default function RescheduleConfirmationModal({
             ) : null}
           </View>
 
-          {/* Priority Tally Warning */}
-          <View style={[styles.warningBox, { backgroundColor: colors.surface }]}>
-            <Ionicons name="warning-outline" size={14} color="#D97706" />
-            <Text style={styles.warningText}>
-              Rescheduling increments reschedule count & may lower patient priority tier.
-            </Text>
-          </View>
-
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+              style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
               onPress={handleCancel}
               activeOpacity={0.7}
             >
-              <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+              <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -121,7 +109,7 @@ export default function RescheduleConfirmationModal({
               onPress={handleConfirm}
               activeOpacity={0.8}
             >
-              <Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />
+              <Ionicons name="swap-horizontal" size={14} color="white" />
               <Text style={styles.confirmText}>Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -156,14 +144,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     zIndex: 1000,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
   title: {
     fontSize: 18,
     fontWeight: '700',
@@ -197,21 +177,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  warningBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '100%',
-  },
-  warningText: {
-    fontSize: 11,
-    color: '#D97706',
-    fontWeight: '600',
-    flex: 1,
-  },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
@@ -228,6 +193,7 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {},
   cancelText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },

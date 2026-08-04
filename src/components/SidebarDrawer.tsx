@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,19 +9,137 @@ import { playClickSound } from '../utils/feedback';
 
 const DRAWER_WIDTH = 280;
 
-export interface MenuItem {
+export interface SubMenuItem {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   screen: string;
+}
+
+export interface MenuItem {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  screen?: string;
+  subItems?: SubMenuItem[];
 }
 
 export interface SidebarDrawerProps {
   visible: boolean;
   onClose: () => void;
   onNavigate: (screen: string) => void;
+  currentScreen?: string;
 }
 
-export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarDrawerProps) {
+/** Multi-level expandable menu group with smooth Reanimated chevron rotation & height transition */
+function CollapsibleMenuGroup({
+  item,
+  currentScreen,
+  onNavigate,
+  onCloseDrawer,
+}: {
+  item: MenuItem;
+  currentScreen?: string;
+  onNavigate: (screen: string) => void;
+  onCloseDrawer: () => void;
+}) {
+  const { colors } = useTheme();
+  const isChildActive = item.subItems?.some((sub) => sub.screen === currentScreen);
+  const [isOpen, setIsOpen] = useState(isChildActive || false);
+
+  const animation = useSharedValue(isChildActive || false ? 1 : 0);
+
+  useEffect(() => {
+    animation.value = withTiming(isOpen ? 1 : 0, {
+      duration: 180,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [isOpen]);
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${animation.value * 90}deg` }],
+  }));
+
+  const subMenuContainerStyle = useAnimatedStyle(() => ({
+    opacity: animation.value,
+    maxHeight: animation.value * 140,
+    overflow: 'hidden',
+  }));
+
+  return (
+    <View style={styles.collapsibleWrapper}>
+      <TouchableOpacity
+        style={[
+          styles.menuItem,
+          { borderBottomColor: colors.border },
+          isChildActive && { backgroundColor: colors.surface },
+        ]}
+        onPress={() => {
+          playClickSound();
+          setIsOpen((prev) => !prev);
+        }}
+        activeOpacity={0.7}
+      >
+        <Ionicons name={item.icon} size={20} color={colors.primary} />
+        <Text style={[styles.menuLabel, { color: colors.text, fontWeight: '700' }]}>{item.label}</Text>
+        <Animated.View style={[{ marginLeft: 'auto' }, chevronStyle]}>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+
+      <Animated.View style={subMenuContainerStyle}>
+        <View style={styles.subMenuListContainer}>
+          {/* Vertical tree hierarchy line matching IDE tree view style */}
+          <View style={[styles.treeGuideLine, { backgroundColor: colors.border }]} />
+
+          {item.subItems?.map((sub) => {
+            const isActive = currentScreen === sub.screen;
+            return (
+              <TouchableOpacity
+                key={sub.screen}
+                style={[
+                  styles.subMenuItemFullWidth,
+                  isActive
+                    ? {
+                      backgroundColor: colors.primaryLight,
+                      borderLeftColor: colors.primary,
+                    }
+                    : {
+                      backgroundColor: 'transparent',
+                      borderLeftColor: 'transparent',
+                    },
+                ]}
+                onPress={() => {
+                  playClickSound();
+                  onNavigate(sub.screen);
+                  onCloseDrawer();
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={sub.icon}
+                  size={17}
+                  color={isActive ? colors.primary : colors.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.subMenuLabel,
+                    {
+                      color: isActive ? colors.primary : colors.text,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {sub.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+export default function SidebarDrawer({ visible, onClose, onNavigate, currentScreen }: SidebarDrawerProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
@@ -34,7 +152,14 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
     { label: 'All Appointments', icon: 'time-outline', screen: 'appointments' },
     { label: 'Patient Directory', icon: 'people-outline', screen: 'patients' },
     { label: 'Doctor Schedule', icon: 'medical-outline', screen: 'doctors' },
-    { label: 'Available Packages', icon: 'gift-outline', screen: 'packages' },
+    {
+      label: 'Packages',
+      icon: 'gift-outline',
+      subItems: [
+        { label: 'Available Packages', icon: 'pricetag-outline', screen: 'available-packages' },
+        { label: 'Patient Enrollments', icon: 'layers-outline', screen: 'patient-enrollments' },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -96,21 +221,41 @@ export default function SidebarDrawer({ visible, onClose, onNavigate }: SidebarD
 
           {/* Navigation Items List */}
           <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
-            {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.screen}
-                style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  playClickSound();
-                  onNavigate(item.screen);
-                  handleClose();
-                }}
-              >
-                <Ionicons name={item.icon} size={20} color={colors.primary} />
-                <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
-            ))}
+            {menuItems.map((item) => {
+              if (item.subItems) {
+                return (
+                  <CollapsibleMenuGroup
+                    key={item.label}
+                    item={item}
+                    currentScreen={currentScreen}
+                    onNavigate={onNavigate}
+                    onCloseDrawer={handleClose}
+                  />
+                );
+              }
+
+              const isActive = currentScreen === item.screen;
+              return (
+                <TouchableOpacity
+                  key={item.screen}
+                  style={[
+                    styles.menuItem,
+                    { borderBottomColor: colors.border },
+                    isActive && { backgroundColor: colors.primaryLight },
+                  ]}
+                  onPress={() => {
+                    playClickSound();
+                    if (item.screen) onNavigate(item.screen);
+                    handleClose();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={item.icon} size={20} color={colors.primary} />
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
 
           {/* Footer Clinic Info */}
@@ -181,6 +326,7 @@ const styles = StyleSheet.create({
   menuList: {
     paddingVertical: 12,
   },
+  collapsibleWrapper: {},
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,6 +337,34 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  subMenuListContainer: {
+    position: 'relative',
+    width: '100%',
+    paddingVertical: 2,
+  },
+  treeGuideLine: {
+    position: 'absolute',
+    left: 26,
+    top: 0,
+    bottom: 6,
+    width: 1.5,
+    borderRadius: 1,
+    opacity: 0.7,
+    zIndex: 10
+  },
+  subMenuItemFullWidth: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 44,
+    paddingRight: 16,
+    gap: 10,
+    borderLeftWidth: 3,
+  },
+  subMenuLabel: {
+    fontSize: 13,
   },
   footer: {
     padding: 16,

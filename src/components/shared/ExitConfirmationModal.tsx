@@ -46,6 +46,11 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
         </TouchableWithoutFeedback>
 
         <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Icon Badge */}
+          <View style={[styles.iconCircle, { backgroundColor: colors.dangerBg }]}>
+            <Ionicons name="power-outline" size={26} color={colors.danger} />
+          </View>
+
           {/* Text Content */}
           <Text style={[styles.title, { color: colors.text }]}>Close Dr. Paul's Clinic?</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
@@ -55,11 +60,12 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface }]}
+              style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
               onPress={handleCancel}
               activeOpacity={0.7}
             >
-              <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+              <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -91,7 +97,7 @@ const styles = StyleSheet.create({
   dialogCard: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 20,
     alignItems: 'center',
@@ -101,6 +107,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     zIndex: 100,
+    gap: 4,
+  },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   title: {
     fontSize: 18,
@@ -128,8 +143,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  cancelBtn: {},
   cancelText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },

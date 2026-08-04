@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../shared/BottomSheet';
@@ -20,11 +20,15 @@ import useUIStore from '../../store/useUIStore';
 import { copyToClipboard } from '../../utils/clipboardUtils';
 import { formatAppointmentText, shareDetails } from '../../utils/shareUtils';
 
+import Toast from 'react-native-toast-message';
+import usePackageStore from '../../store/usePackageStore';
+
 export interface ModalContentProps {
   appointment: Appointment;
   onClose: () => void;
   onEditPress: () => void;
   onPatientPress: (patient: Patient) => void;
+  onOpenEnrollmentTimeline?: (enrollmentId: string) => void;
 }
 
 function ModalContent({
@@ -32,18 +36,32 @@ function ModalContent({
   onClose,
   onEditPress,
   onPatientPress,
+  onOpenEnrollmentTimeline,
 }: ModalContentProps) {
   const { colors } = useTheme();
   const patients = usePatientStore((s) => s.patients);
   const centers = useCenterStore((s) => s.centers);
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const activeCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
+  const enrollments = usePackageStore((s) => s.enrollments);
+
+  const matchedEnrollment = enrollments.find(
+    (e) =>
+      (appointment.enrollmentId && e.enrollmentId === appointment.enrollmentId) ||
+      e.sessionIds.includes(appointment.id) ||
+      (e.patientId === appointment.patientId && e.serviceType === appointment.serviceType && e.status !== 'Completed')
+  );
+
+  const isPackagedVisit = appointment.isPackage || !!appointment.enrollmentId || !!matchedEnrollment;
+  const targetEnrollmentId = appointment.enrollmentId || matchedEnrollment?.enrollmentId;
 
   const patientObj: Patient = patients.find((p) => p.id === appointment.patientId || p.name.toLowerCase() === appointment.patientName.toLowerCase()) || {
     id: appointment.patientId || 'PAT-000',
     name: appointment.patientName,
     mobile: appointment.patientMobile || '9000000000',
     gender: 'Male' as const,
+    email: '',
+    address: '',
     enquirySource: 'Walk-in',
     parentDetails: [],
     therapistDetails: [],
@@ -234,22 +252,52 @@ function ModalContent({
       </View>
 
       {/* Package Session Banner */}
-      {appointment.isPackage && (
-        <View style={[styles.packageBand, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
+      {isPackagedVisit && (
+        <TouchableOpacity
+          style={[styles.packageBand, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
+          onPress={() => {
+            if (targetEnrollmentId && onOpenEnrollmentTimeline) {
+              playClickSound();
+              onOpenEnrollmentTimeline(targetEnrollmentId);
+            } else if (targetEnrollmentId) {
+              playClickSound();
+              Toast.show({
+                type: 'info',
+                text1: 'Package Enrollment',
+                text2: `Linked to Enrollment ID: ${targetEnrollmentId}`,
+                position: 'bottom',
+              });
+            } else {
+              playClickSound();
+              Toast.show({
+                type: 'info',
+                text1: 'Packaged Treatment Visit',
+                text2: 'Treatment visit logged under patient ERP package.',
+                position: 'bottom',
+              });
+            }
+          }}
+          activeOpacity={0.8}
+        >
           <View style={styles.packageBandRow}>
-            <Ionicons name="layers" size={18} color={colors.primary} />
+            <View style={[styles.packageIconBadge, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="layers" size={18} color={colors.primary} />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.packageBandTitle, { color: colors.primary }]}>
-                {appointment.sessionNumber ? `Session ${appointment.sessionNumber} (Packaged Visit)` : 'Packaged Treatment Visit'}
+                {matchedEnrollment
+                  ? matchedEnrollment.packageName
+                  : appointment.sessionNumber
+                  ? `Session ${appointment.sessionNumber} (Packaged Visit)`
+                  : 'Packaged Treatment Visit'}
               </Text>
-              {appointment.enrollmentId ? (
-                <Text style={[styles.packageBandSub, { color: colors.text }]}>
-                  Enrollment ID: {appointment.enrollmentId}
-                </Text>
-              ) : null}
+              <Text style={[styles.packageBandSub, { color: colors.text }]}>
+                {targetEnrollmentId ? `ID: ${targetEnrollmentId} • ` : ''}View ERP Session Timeline
+              </Text>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </View>
-        </View>
+        </TouchableOpacity>
       )}
 
       {appointment.originalSchedule ? (
@@ -338,30 +386,40 @@ export interface AppointmentDetailModalProps {
   visible: boolean;
   appointment: Appointment | null;
   onClose: () => void;
+  /** Called when user taps the package band — parent screen handles the sheet */
+  onOpenEnrollmentTimeline?: (enrollmentId: string) => void;
 }
 
 const AppointmentDetailModal = memo(function AppointmentDetailModal({
   visible,
   appointment,
   onClose,
+  onOpenEnrollmentTimeline,
 }: AppointmentDetailModalProps) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
 
+  // Reset child modal states when the parent appointment changes
+  useEffect(() => {
+    setShowReschedule(false);
+    setSelectedPatientForDetail(null);
+  }, [appointment]);
+
   return (
     <>
-      <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={440} keyboardBlurBehavior="none">
+      <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={560} keyboardBlurBehavior="none">
         {appointment ? (
           <ModalContent
             appointment={appointment}
             onClose={onClose}
             onEditPress={() => setShowReschedule(true)}
             onPatientPress={(pat) => setSelectedPatientForDetail(pat)}
+            onOpenEnrollmentTimeline={onOpenEnrollmentTimeline}
           />
         ) : null}
       </BottomSheet>
 
-      {/* Reschedule / Edit Modal */}
+      {/* Reschedule / Edit Modal — sibling to parent BottomSheet */}
       <RescheduleModal
         visible={showReschedule}
         appointment={appointment}
@@ -370,7 +428,7 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
         }}
       />
 
-      {/* Patient Detail Modal */}
+      {/* Patient Detail Modal — sibling */}
       <PatientDetailModal
         patient={selectedPatientForDetail}
         visible={!!selectedPatientForDetail}
@@ -472,7 +530,14 @@ const styles = StyleSheet.create({
   packageBandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  packageIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   packageBandTitle: {
     fontSize: 13,

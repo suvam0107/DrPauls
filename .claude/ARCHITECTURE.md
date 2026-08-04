@@ -108,7 +108,8 @@ DrPauls/
     │   ├── PatientListScreen.tsx  # Patient directory screen with priority border highlights
     │   ├── PatientRecordsScreen.tsx # Patient Past Records, timeline, active enrollments
     │   ├── DoctorScreen.tsx       # Doctor schedule screen with phone & direct system dialer call icon
-    │   ├── PackagesScreen.tsx     # Catalog tab + Enrollments tab with ERP detail sheet
+    │   ├── AvailablePackagesScreen.tsx # Dedicated Available Packages catalog screen
+    │   ├── PatientEnrollmentsScreen.tsx # Dedicated Patient Package Enrollments screen
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile & Sign Out
     ├── store/
     │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine & 24-hour mock JWT issuance
@@ -168,7 +169,9 @@ App Root (SafeAreaProvider)
     │   ├── PatientListScreen (Priority card border highlights)
     │   ├── PatientRecordsScreen (Past records & interactive timeline)
     │   ├── DoctorScreen
-    │   ├── PackagesScreen (Available treatment packages)
+    │   ├── Packages (Multi-level Collapsible Sidebar Group)
+    │   │   ├── AvailablePackagesScreen (Catalog & booking)
+    │   │   └── PatientEnrollmentsScreen (Live ERP enrollments & timelines)
     │   └── SettingsScreen
     └── Bottom Nav Bar (Home | Quick Add [+] | Settings)
 ```

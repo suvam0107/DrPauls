@@ -6,49 +6,25 @@
 ---
 
 ## Last Updated
-`2026-08-04` — Packaged Sessions ERP System (full lifecycle) implemented by `@DataEngineer`, `@Frontend`, `@UXEngineer`. `npx tsc --noEmit` passes with 0 errors.
+`2026-08-04` — Multi-level Sidebar Drawer & Dedicated Package Screens implemented by `@Frontend`. `npx tsc --noEmit` passes with 0 errors.
 
 ---
 
 ## Current Sprint Focus
 
-### Packaged Sessions ERP System (`@DataEngineer` + `@Frontend` + `@UXEngineer`)
+### Multi-Level Sidebar Drawer & Package Screen Split (`@Frontend`)
+- **`SidebarDrawer.tsx`**: Updated sub-menu item layout so the active selection highlight background stretches edge-to-edge across the **entire width of the drawer** while maintaining exact icon indentation (`paddingLeft: 44`). Added a vertical tree hierarchy guide line (`left: 26`) matching IDE file tree design, smooth Reanimated chevron rotation (`0deg` -> `90deg`), and active accent border highlighting (`borderLeftWidth: 3`).
+- **`AvailablePackagesScreen.tsx`** [NEW]: Dedicated treatment packs & subscriptions catalog screen with service filter chips, search bar, and booking sheet integration.
+- **`PatientEnrollmentsScreen.tsx`** [NEW]: Dedicated live patient package enrollments screen with status filter chips, progress rings, search bar, and ERP detail sheet integration.
+- **`App.tsx`**: Updated router configuration to route `'available-packages'` and `'patient-enrollments'` to their respective screens and pass `currentScreen` state to `SidebarDrawer`.
+- **`.claude/ARCHITECTURE.md`**: Updated directory structure tree and Section 5 Navigation Hierarchy documentation.
 
-#### Data & Store Layer (`@DataEngineer`)
-- **`PackageEnrollment` entity** added to `src/types/index.ts`:
-  - Fields: `enrollmentId`, `patientId`, `patientName`, `packageId`, `packageName`, `totalSessions`, `completedSessions`, `sessionInterval`, `sessionIds`, `status` (`Active` | `Paused` | `Completed` | `Cancelled`), `enrolledAt`, `therapistId?`, `therapistName?`, `startDate`, `notes?`, `cancelledAt?`, `pausedAt?`, `resumedAt?`.
-  - `Appointment` extended with `enrollmentId?` and `sessionNumber?` fields.
-- **`assets/data/enrollments.json`** — seed file with realistic clinic enrollment records.
-- **`src/api/dataStore.ts`** — `enrollments` collection hydrated from seed.
-- **`src/api/handlers/nonnestedHandlers.ts`** — CRUD handlers: `get_all_enrollments`, `get_enrollments_by_patient`, `get_enrollment_by_id`, `add_enrollment`, `update_enrollment`.
-- **`src/api/services/packageEnrollmentService.ts`** [NEW] — enrollment API service layer.
-- **`src/api/index.ts`** — barrel exports `packageEnrollmentService`.
-- **`src/store/usePackageStore.ts`** — fully re-architected with full enrollment lifecycle:
-  - `enrollPatientInPackage`, `assignPackageToPatient`
-  - `markSessionCompleted`, `cancelSession` (with optional `shiftRemaining`)
-  - `rescheduleSession` (with optional `shiftRemaining`)
-  - `pauseEnrollment`, `resumeEnrollment`
-  - `getEnrollmentById`, `getEnrollmentsByPatient`
-- **`src/utils/dateUtils.ts`** — `getNextSessionAppointment` utility added.
-
-#### UX & Interaction Layer (`@UXEngineer`)
-- **`src/utils/feedback.ts`** — 3 new haptic+sound functions:
-  - `playSessionMarkedSound()` — session marked attended.
-  - `playSessionCancelledSound()` — session cancelled.
-  - `playEnrollmentCreatedSound()` — patient enrolled in package.
-- **`src/components/package/SessionProgressRing.tsx`** [NEW] — Reanimated SVG progress ring (react-native-svg + Reanimated).
-
-#### Frontend Components & Screens (`@Frontend`)
-- **`src/components/package/PackageSessionCard.tsx`** [NEW] — session card with Ionicons, status chip, action buttons (Mark Attended, Reschedule, Cancel).
-- **`src/components/package/PackageEnrollmentDetailSheet.tsx`** [NEW] — full ERP bottom sheet: progress ring, session timeline, pause/resume, "shift remaining sessions" modal dialog.
-- **`src/components/package/UpcomingSessionsWidget.tsx`** [NEW] — horizontal scrollable dashboard widget for `HomeScreen`.
-- **`src/screens/PackagesScreen.tsx`** — dual top tabs: **Catalog** vs **Enrollments**, status filter chips, patient search, `PackageEnrollmentDetailSheet` integration.
-- **`src/screens/HomeScreen.tsx`** — `UpcomingSessionsWidget` inserted between Quick Nav and Today's Schedule; `PackageEnrollmentDetailSheet` mounted.
-- **`src/components/appointment/CreateAppointmentSheet.tsx`** — Session Interval picker (7/14/21/30 days), `enrollPatientInPackage` call, `playEnrollmentCreatedSound()`.
-- **`src/screens/PatientRecordsScreen.tsx`** — active enrollments list, progress bars, `PackageEnrollmentDetailSheet` integration.
-- **`src/components/calendar/AppointmentDetailModal.tsx`** — packaged session banner ("Session X of Y", Enrollment ID).
-
-#### Bug Fixes Completed This Session
+#### Bug Fixes & UX Enhancements Completed This Session
+- `AppointmentDetailModal.tsx` & Packaged Visit Linkage: Implemented automatic package enrollment resolution using `usePackageStore`. Tapping the **"Packaged Treatment Visit" / Package Banner** now dynamically resolves the parent ERP package enrollment record and opens the `PackageEnrollmentDetailSheet` timeline modal directly. Increased `snapHeight` to `560` for spacious layout.
+- `PackageEnrollmentDetailSheet.tsx`: Added dedicated **Pause / Resume Confirmation Modal** dialog (`confirmPauseResume`) with warning/success icon badges, explicit confirmation message text, and touch feedback before modifying package state.
+- `PackageSessionCard.tsx`: Re-aligned action buttons (**Attended**, **Reschedule**, **Cancel**) and card layout (`borderRadius: 16`, `borderWidth: 1`, `paddingVertical: 9`) to match the exact button styling, color scheme, and typography of `AppointmentDetailModal.tsx`.
+- `RescheduleModal.tsx`: Increased `snapHeight` to `580` for comfortable date, doctor, and time slot selection.
+- `BottomSheet.tsx`: Fixed modal visibility bug where `@gorhom/bottom-sheet` initialized with index `-1` on mount inside `Modal`, triggering premature `onClose()` calls and preventing modals/sheets from opening. Added `hasOpenedRef` state tracking and delayed mount index snapping.
 - `HomeScreen.tsx`: replaced stale `AppRefreshControl` ref with standard `RefreshControl`.
 - `PackageSessionCard.tsx`: `StatusChip size="sm"` → `StatusChip small` (correct prop).
 - `PatientRecordsScreen.tsx`: `patientPackages` → `patientEnrollments` (correct variable).

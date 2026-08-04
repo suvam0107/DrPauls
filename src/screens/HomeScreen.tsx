@@ -7,6 +7,7 @@ import usePatientStore from '../store/usePatientStore';
 import useUIStore from '../store/useUIStore';
 import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
+import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
 import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
@@ -33,6 +34,9 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+  // Lifted modal states for package session actions — flat sibling stack
+  const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
+  const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   const today = todayISO();
   // Filter appointments for active center and today's date
@@ -163,6 +167,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
       />
 
       {/* Create Appointment Sheet */}
@@ -171,11 +179,31 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         onClose={() => setShowCreate(false)}
       />
 
-      {/* Package Enrollment Detail Sheet */}
+      {/* Package Enrollment Detail Sheet — callbacks lifted */}
       <PackageEnrollmentDetailSheet
         visible={!!selectedEnrollmentId}
         enrollmentId={selectedEnrollmentId}
         onClose={() => setSelectedEnrollmentId(null)}
+        onRescheduleSession={(appt) => setRescheduleTargetAppt(appt)}
+        onViewSessionDetails={(appt) => setSelectedSessionAppt(appt)}
+      />
+
+      {/* Reschedule Modal — screen-level sibling */}
+      <RescheduleModal
+        visible={!!rescheduleTargetAppt}
+        appointment={rescheduleTargetAppt}
+        onClose={() => setRescheduleTargetAppt(null)}
+      />
+
+      {/* Session Appointment Detail Modal — screen-level sibling */}
+      <AppointmentDetailModal
+        visible={!!selectedSessionAppt}
+        appointment={selectedSessionAppt}
+        onClose={() => setSelectedSessionAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedSessionAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
       />
     </ScrollView>
   );

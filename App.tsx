@@ -16,7 +16,8 @@ import PatientListScreen from './src/screens/PatientListScreen';
 import DoctorScreen from './src/screens/DoctorScreen';
 import AppointmentsScreen from './src/screens/AppointmentsScreen';
 import PatientRecordsScreen from './src/screens/PatientRecordsScreen';
-import PackagesScreen from './src/screens/PackagesScreen';
+import AvailablePackagesScreen from './src/screens/AvailablePackagesScreen';
+import PatientEnrollmentsScreen from './src/screens/PatientEnrollmentsScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
 import AddPatientSheet from './src/components/appointment/AddPatientSheet';
@@ -184,7 +185,10 @@ function MainApp() {
           />
         )}
         {currentScreen === 'doctors' && <DoctorScreen />}
-        {currentScreen === 'packages' && <PackagesScreen />}
+        {(currentScreen === 'packages' || currentScreen === 'available-packages') && (
+          <AvailablePackagesScreen />
+        )}
+        {currentScreen === 'patient-enrollments' && <PatientEnrollmentsScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
       </View>
 
@@ -215,6 +219,7 @@ function MainApp() {
         visible={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onNavigate={handleNavigate}
+        currentScreen={currentScreen}
       />
 
       {/* Create Appointment Modal */}

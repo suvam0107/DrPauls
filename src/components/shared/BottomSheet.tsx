@@ -63,6 +63,7 @@ function InnerSheet({
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<GorhomBottomSheet>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const hasOpenedRef = useRef(false);
 
   const maxPct = useMemo(() => {
     const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : (insets.top || 44);
@@ -76,6 +77,14 @@ function InnerSheet({
     const minPct = Math.min(maxPct - 5, Math.max(35, Math.round((snapHeight / SCREEN_H) * 100)));
     return [`${minPct}%`, `${maxPct}%`];
   }, [snapHeight, maxPct]);
+
+  // Ensure sheet snaps to index 0 on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      sheetRef.current?.snapToIndex(0);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle keyboard hide restoration if keyboardBlurBehavior === 'restore'
   useEffect(() => {
@@ -95,7 +104,9 @@ function InnerSheet({
   const handleChange = useCallback(
     (index: number) => {
       setCurrentIndex(index);
-      if (index === -1) {
+      if (index >= 0) {
+        hasOpenedRef.current = true;
+      } else if (index === -1 && hasOpenedRef.current) {
         // Sheet has fully closed via gesture — notify parent
         onClose();
       }
@@ -128,7 +139,7 @@ function InnerSheet({
     // GestureHandlerRootView is REQUIRED inside React Native Modal —
     // Modal creates a new native view tree that doesn't inherit the
     // GestureHandlerRootView at the app root.
-    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+    <GestureHandlerRootView style={styles.rootView}>
       <BottomSheetContext.Provider
         value={{
           expandSheet,
@@ -184,8 +195,9 @@ export default function BottomSheet({
   snapHeight = SCREEN_H * 0.6,
   keyboardBlurBehavior = 'none',
 }: BottomSheetProps) {
-  if (!visible) return null;
-
+  // Always render the Modal wrapper so React Native doesn't rip out the
+  // native view tree mid-animation. InnerSheet mounts only when visible=true,
+  // giving the Gorhom sheet a clean unmount after its close animation ends.
   return (
     <Modal
       visible={visible}
@@ -194,20 +206,27 @@ export default function BottomSheet({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <InnerSheet
-        onClose={onClose}
-        snapHeight={snapHeight}
-        keyboardBlurBehavior={keyboardBlurBehavior}
-      >
-        {children}
-      </InnerSheet>
+      {visible ? (
+        <InnerSheet
+          onClose={onClose}
+          snapHeight={snapHeight}
+          keyboardBlurBehavior={keyboardBlurBehavior}
+        >
+          {children}
+        </InnerSheet>
+      ) : null}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  rootView: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 2,
   },
 });
