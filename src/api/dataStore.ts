@@ -11,8 +11,9 @@ import packagesRaw from '../../assets/data/packages.json';
 import appointmentsRaw from '../../assets/data/appointments.json';
 import staffRaw from '../../assets/data/staff.json';
 import centersRaw from '../../assets/data/centers.json';
+import enrollmentsRaw from '../../assets/data/enrollments.json';
 
-import { Patient, Doctor, Therapist, Package, Appointment, StaffUser, Center } from '../types';
+import { Patient, Doctor, Therapist, Package, PackageEnrollment, Appointment, StaffUser, Center } from '../types';
 import { todayISO, offsetDate } from '../utils/dateUtils';
 
 export interface InMemoryStoreData {
@@ -20,6 +21,7 @@ export interface InMemoryStoreData {
   doctors: Doctor[];
   therapists: Therapist[];
   packages: Package[];
+  enrollments: PackageEnrollment[];
   appointments: Appointment[];
   staff: StaffUser;
   centers: Center[];
@@ -50,11 +52,14 @@ const buildInitialStore = (): InMemoryStoreData => {
     };
   });
 
+  const enrollments: PackageEnrollment[] = [...(enrollmentsRaw as PackageEnrollment[])];
+
   return {
     patients: [...(patientsRaw as Patient[])],
     doctors: [...(doctorsRaw as Doctor[])],
     therapists: [...(therapistsRaw as Therapist[])],
     packages,
+    enrollments,
     appointments,
     staff: { ...(staffRaw as StaffUser) },
     centers: [...(centersRaw as Center[])],

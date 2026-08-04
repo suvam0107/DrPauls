@@ -10,4 +10,5 @@ export * from './services/patientService';
 export * from './services/doctorService';
 export * from './services/therapistService';
 export * from './services/packageService';
+export * from './services/packageEnrollmentService';
 export * from './services/staffService';

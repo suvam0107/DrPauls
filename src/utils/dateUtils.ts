@@ -332,5 +332,23 @@ export const generateDoctorWorkingHourSlots = (
   return slots;
 };
 
+/**
+ * Returns the upcoming session appointment for an enrollment, or null if all completed/cancelled.
+ */
+export const getNextSessionAppointment = (
+  sessionIds: string[] | undefined,
+  appointments: Appointment[]
+): Appointment | null => {
+  if (!sessionIds || sessionIds.length === 0) return null;
+  const today = todayISO();
+  const enrollmentAppts = appointments.filter((a) => sessionIds.includes(a.id));
+  const upcoming = enrollmentAppts
+    .filter((a) => a.status !== APPOINTMENT_STATUS.CANCELLED && a.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return upcoming[0] || null;
+};
+
+
 
 

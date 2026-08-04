@@ -15,7 +15,8 @@ import { playClickSound } from '../utils/feedback';
 import useDoctorStore from '../store/useDoctorStore';
 import { useRefresh } from '../utils/useRefresh';
 
-import AppRefreshControl from '../components/shared/AppRefreshControl';
+import UpcomingSessionsWidget from '../components/package/UpcomingSessionsWidget';
+import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
 
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -31,6 +32,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
 
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
 
   const today = todayISO();
   // Filter appointments for active center and today's date
@@ -47,7 +49,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
-      refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Date Banner */}
       <View style={styles.banner}>
@@ -115,6 +117,9 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         </TouchableOpacity>
       </View>
 
+      {/* Upcoming Packaged Sessions ERP Widget */}
+      <UpcomingSessionsWidget onSelectEnrollment={(id) => setSelectedEnrollmentId(id)} />
+
       {/* Today's Appointments List */}
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Schedule</Text>
@@ -164,6 +169,13 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       <CreateAppointmentSheet
         visible={showCreate}
         onClose={() => setShowCreate(false)}
+      />
+
+      {/* Package Enrollment Detail Sheet */}
+      <PackageEnrollmentDetailSheet
+        visible={!!selectedEnrollmentId}
+        enrollmentId={selectedEnrollmentId}
+        onClose={() => setSelectedEnrollmentId(null)}
       />
     </ScrollView>
   );

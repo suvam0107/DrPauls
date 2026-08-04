@@ -34,10 +34,11 @@ DrPauls/
 │   ├── audio/                     # UI sound assets (.wav)
 │   ├── images/                    # Visual assets & logos
 │   └── data/                      # JSON File-System Seed Database
-│       ├── appointments.json      # 30 appointment seed records (with centerId)
+│       ├── appointments.json      # Appointment seed records (with centerId, enrollmentId, sessionNumber)
 │       ├── centers.json           # Clinic centers seed data (Guwahati Main, Dispur, Silchar)
 │       ├── doctors.json           # Doctor records with phone, maxPatientsPerDay, centerSchedule
-│       ├── packages.json          # 2 package records
+│       ├── enrollments.json       # Package enrollment seed records (PackageEnrollment[])
+│       ├── packages.json          # Static package catalog records (Package[])
 │       ├── patients.json          # 7 patient records
 │       ├── staff.json             # 1 staff user record
 │       └── therapists.json        # 3 therapist records
@@ -58,7 +59,8 @@ DrPauls/
     │       ├── appointmentService.ts # Appointment API operations
     │       ├── centerService.ts      # Clinic Center API operations
     │       ├── doctorService.ts     # Doctor API operations
-    │       ├── packageService.ts    # Package API operations
+    │       ├── packageEnrollmentService.ts # PackageEnrollment CRUD API operations [NEW]
+    │       ├── packageService.ts    # Package catalog API operations
     │       ├── patientService.ts    # Patient API operations
     │       ├── staffService.ts      # Staff API operations
     │       └── therapistService.ts  # Therapist API operations
@@ -100,21 +102,21 @@ DrPauls/
     │   └── index.ts               # Status definitions & status color tokens
     ├── screens/
     │   ├── AuthScreen.tsx         # Dedicated Sign In page with Quick Demo pills
-    │   ├── HomeScreen.tsx         # Main clinic overview dashboard with 2x2 stat grid & today's schedule
+    │   ├── HomeScreen.tsx         # Dashboard: stat grid, UpcomingSessionsWidget, today's schedule
     │   ├── CalendarScreen.tsx     # Appointment calendar screen (grid & list display modes)
-    │   ├── AppointmentsScreen.tsx # Dedicated Appointments Directory screen with date filters & grouping
+    │   ├── AppointmentsScreen.tsx # Appointments Directory with date filters & grouping
     │   ├── PatientListScreen.tsx  # Patient directory screen with priority border highlights
-    │   ├── PatientRecordsScreen.tsx # Patient Past Records & History timeline screen
+    │   ├── PatientRecordsScreen.tsx # Patient Past Records, timeline, active enrollments
     │   ├── DoctorScreen.tsx       # Doctor schedule screen with phone & direct system dialer call icon
-    │   ├── PackagesScreen.tsx     # Available Treatment Packages directory & details
+    │   ├── PackagesScreen.tsx     # Catalog tab + Enrollments tab with ERP detail sheet
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile & Sign Out
     ├── store/
     │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine & 24-hour mock JWT issuance
-    │   ├── useAppointmentStore.ts# State management routed through appointmentService
+    │   ├── useAppointmentStore.ts# State routed through appointmentService; API: updateStatus, updateAppointment, moveAppointment, cancelAppointment
     │   ├── useCenterStore.ts      # Clinic center state management routed through centerService
     │   ├── usePatientStore.ts     # Patient directory state routed through patientService & priority calculation
     │   ├── useDoctorStore.ts      # Doctor schedule state routed through doctorService & therapistService
-    │   ├── usePackageStore.ts     # Treatment package state management & multi-session auto-scheduling
+    │   ├── usePackageStore.ts     # Package catalog + PackageEnrollment lifecycle (enroll, mark, cancel, reschedule, pause, resume)
     │   └── useUIStore.ts          # UI theme, layout & activeCenterId state
     ├── theme/
     │   ├── colors.ts              # Dark & light color tokens
@@ -207,14 +209,52 @@ App Root (SafeAreaProvider)
 
 ---
 
-## 8. Treatment Packages & Multi-Session Auto-Scheduling
+## 8. Packaged Sessions ERP — Enrollment Lifecycle
 
-1. **Package State (`usePackageStore.ts`)**:
-   - Manages treatment package offerings (`PKG-001`, `PKG-002`) with session tracking, pricing breakdowns, included services, and patient package assignments.
-2. **Multi-Session Auto-Scheduling Engine**:
-   - Booking a package appointment automatically generates remaining package sessions scheduled at 7-day intervals starting from the selected initial date.
-3. **Pricing Breakdown**:
-   - `CreateAppointmentSheet.tsx` displays clear cost comparison: Normal Visit (Consultation Fee) vs. Package Visit (Total Package Price & Per-Session Cost).
+### Core Data Model
+
+| Entity | File | Owner |
+|---|---|---|
+| `Package` (catalog) | `assets/data/packages.json` | Static — read-only |
+| `PackageEnrollment` | `assets/data/enrollments.json` | `usePackageStore.ts` |
+
+**`PackageEnrollment` fields**: `enrollmentId`, `patientId`, `patientName`, `packageId`, `packageName`, `totalSessions`, `completedSessions`, `sessionInterval` (days), `sessionIds` (Appointment IDs), `status` (`Active` | `Paused` | `Completed` | `Cancelled`), `enrolledAt`, `therapistId?`, `therapistName?`, `startDate`, `notes?`.
+
+**`Appointment` fields** (extended): `enrollmentId?` links to parent enrollment; `sessionNumber?` (1-based index).
+
+### Enrollment Flow
+
+1. Receptionist selects a package in `CreateAppointmentSheet` → picks interval (7/14/21/30 days) → selects therapist.
+2. `enrollPatientInPackage()` in `usePackageStore` creates a `PackageEnrollment` and generates `totalSessions` Appointment records spaced by `sessionInterval` days.
+3. `playEnrollmentCreatedSound()` fires haptic + audio feedback.
+
+### Session Lifecycle Actions
+
+| Action | Store Method | Appointment Effect |
+|---|---|---|
+| Mark Attended | `markSessionCompleted` | Status → `Paid` |
+| Cancel Session | `cancelSession(shiftRemaining?)` | Status → `Cancelled`; optional: shift all future sessions forward |
+| Reschedule Session | `rescheduleSession(shiftRemaining?)` | `moveAppointment`; optional: shift all future sessions by day delta |
+| Pause Enrollment | `pauseEnrollment` | All future sessions → `Pending` |
+| Resume Enrollment | `resumeEnrollment(newStartDate)` | Reschedules remaining sessions from newStartDate at original interval |
+
+### Shift Remaining Sessions Option
+When cancelling or rescheduling, the receptionist is presented a modal dialog:
+- **Keep dates** — only the current session is affected.
+- **Shift all remaining** — all subsequent non-cancelled sessions are shifted forward.
+
+### Therapist Assignment
+Therapist is assigned **at enrollment level** (`therapistId` / `therapistName` on `PackageEnrollment`), not per individual session appointment.
+
+### Icon Policy
+No emojis anywhere in the UI. All icons use `@expo/vector-icons` Ionicons.
+
+### UI Components
+- `SessionProgressRing.tsx` — Reanimated SVG circular progress.
+- `PackageSessionCard.tsx` — Action card per session (Mark / Reschedule / Cancel).
+- `PackageEnrollmentDetailSheet.tsx` — Full ERP bottom sheet with timeline, pause/resume, shift dialog.
+- `UpcomingSessionsWidget.tsx` — Dashboard horizontal scrollable widget on `HomeScreen`.
+- `PackagesScreen.tsx` — Dual tabs: **Catalog** (static) / **Enrollments** (live ERP).
 
 ---
 
@@ -224,4 +264,3 @@ App Root (SafeAreaProvider)
    - Centralized hook managing loading state, click sound feedback, and concurrent re-fetch of all Zustand stores (`appointments`, `patients`, `doctors`, `centers`, `packages`).
 2. **Theme-Aligned Refresh Component (`AppRefreshControl.tsx`)**:
    - Encapsulates native `RefreshControl` with active theme tokens (`colors.primary` tint, `colors.card` Android background container, `colors.textMuted` title label) integrated across all scrollable screens and lists.
-

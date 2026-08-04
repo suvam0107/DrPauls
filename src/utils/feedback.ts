@@ -134,3 +134,25 @@ export function playAppointmentSuccessSound() {
 export function playAppointmentFailureSound() {
   playAudioAndHaptic(appointmentFailurePlayer, 'medium', 3, 200);
 }
+
+/**
+ * 8. Session marked attended sound
+ */
+export function playSessionMarkedSound() {
+  playAudioAndHaptic(appointmentSuccessPlayer, 'medium', 3, 150);
+}
+
+/**
+ * 9. Session cancelled sound
+ */
+export function playSessionCancelledSound() {
+  playAudioAndHaptic(appointmentFailurePlayer, 'medium', 3, 150);
+}
+
+/**
+ * 10. Package enrollment created sound
+ */
+export function playEnrollmentCreatedSound() {
+  playAudioAndHaptic(confirmationPlayer, 'medium', 3, 200);
+}
+

@@ -3,7 +3,7 @@
  */
 
 import { dataStore } from '../dataStore';
-import { Patient, Doctor, Therapist, Package, Appointment, StaffUser } from '../../types';
+import { Patient, Doctor, Therapist, Package, PackageEnrollment, Appointment, StaffUser } from '../../types';
 import { nextPatientId, nextAppointmentId, nextDoctorId } from '../../utils/searchUtils';
 
 export const nonnestedHandlers = {
@@ -137,6 +137,43 @@ export const nonnestedHandlers = {
     if (index === -1) throw new Error(`Package ${payload.id} not found`);
     const updated = { ...store.packages[index], ...payload.updates };
     store.packages[index] = updated;
+    return updated;
+  },
+
+  // --- Package Enrollments ---
+  get_all_enrollments: () => {
+    return dataStore.getData().enrollments;
+  },
+
+  get_enrollments_by_patient: (payload: { patientId: string }) => {
+    return dataStore.getData().enrollments.filter((e) => e.patientId === payload.patientId);
+  },
+
+  get_enrollment_by_id: (payload: { enrollmentId: string }) => {
+    return dataStore.getData().enrollments.find((e) => e.enrollmentId === payload.enrollmentId);
+  },
+
+  add_enrollment: (payload: Omit<PackageEnrollment, 'enrollmentId' | 'enrolledAt'>) => {
+    const store = dataStore.getData();
+    const maxId = store.enrollments.reduce((m, e) => {
+      const n = parseInt(e.enrollmentId.replace('ENR-', ''), 10);
+      return !isNaN(n) && n > m ? n : m;
+    }, 0);
+    const newEnrollment: PackageEnrollment = {
+      ...payload,
+      enrollmentId: `ENR-${String(maxId + 1).padStart(3, '0')}`,
+      enrolledAt: new Date().toISOString(),
+    };
+    store.enrollments.unshift(newEnrollment);
+    return newEnrollment;
+  },
+
+  update_enrollment: (payload: { enrollmentId: string; updates: Partial<PackageEnrollment> }) => {
+    const store = dataStore.getData();
+    const index = store.enrollments.findIndex((e) => e.enrollmentId === payload.enrollmentId);
+    if (index === -1) throw new Error(`Enrollment ${payload.enrollmentId} not found`);
+    const updated = { ...store.enrollments[index], ...payload.updates };
+    store.enrollments[index] = updated;
     return updated;
   },
 

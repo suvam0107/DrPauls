@@ -42,6 +42,7 @@ import { Patient, Doctor } from '../../types';
 import {
   playAppointmentSuccessSound,
   playAppointmentFailureSound,
+  playEnrollmentCreatedSound,
   playClickSound,
 } from '../../utils/feedback';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,6 +105,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
   const [therapistId, setTherapistId] = useState('');
   const [visitType, setVisitType] = useState(VISIT_TYPES[0]);
+  const [sessionInterval, setSessionInterval] = useState<number>(7);
 
   const [prePaymentRequired, setPrePaymentRequired] = useState(false);
   const [prePaymentAmount, setPrePaymentAmount] = useState('0');
@@ -201,23 +203,26 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
     }
 
     if (activeTab === 'Package' && selectedPkg) {
-      // Auto-schedule package sessions
-      usePackageStore.getState().assignPackageToPatient({
+      // Auto-schedule package sessions and create enrollment
+      const enrollment = usePackageStore.getState().enrollPatientInPackage({
         packageId: selectedPkg.id,
         patientId: selectedPatient.id,
         patientName: selectedPatient.name,
         patientMobile: selectedPatient.mobile,
         doctorId,
         centerId,
+        therapistId,
+        therapistName: availableTherapists.find((t) => t.id === therapistId)?.name || '',
         startDate: date,
         startTime,
+        sessionInterval,
       });
 
-      playAppointmentSuccessSound();
+      playEnrollmentCreatedSound();
       Toast.show({
         type: 'success',
-        text1: 'Package Auto-Scheduled',
-        text2: `${selectedPkg.totalSessions} sessions scheduled weekly starting ${formatDateShort(date)}`,
+        text1: 'Package Enrollment Created',
+        text2: `${selectedPkg.totalSessions} sessions auto-scheduled every ${sessionInterval} days (${enrollment.enrollmentId})`,
         position: 'bottom',
       });
     } else {
@@ -318,21 +323,37 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           onAddNewPress={() => setShowAddPatient(true)}
         />
 
-        {/* Package Selector if Package Mode */}
+        {/* Package Selector & Interval if Package Mode */}
         {activeTab === 'Package' && (
-          <View style={styles.field}>
-            <Select
-              label="Select Package *"
-              value={selectedPackageId}
-              options={packages.map((p) => ({
-                label: `${p.name} (${p.serviceType} • ₹${p.price.toLocaleString()})`,
-                value: p.id,
-              }))}
-              onChange={(val) => {
-                playClickSound();
-                setSelectedPackageId(val);
-              }}
-            />
+          <View style={styles.row}>
+            <View style={{ flex: 2 }}>
+              <Select
+                label="Select Package *"
+                value={selectedPackageId}
+                options={packages.map((p) => ({
+                  label: `${p.name} (${p.serviceType} • ₹${p.price.toLocaleString()})`,
+                  value: p.id,
+                }))}
+                onChange={(val) => {
+                  playClickSound();
+                  setSelectedPackageId(val);
+                }}
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Select
+                label="Session Interval"
+                value={String(sessionInterval)}
+                options={[
+                  { label: 'Every 7 Days', value: '7' },
+                  { label: 'Every 14 Days', value: '14' },
+                  { label: 'Every 21 Days', value: '21' },
+                  { label: 'Every 30 Days', value: '30' },
+                ]}
+                onChange={(val) => setSessionInterval(parseInt(val, 10))}
+              />
+            </View>
           </View>
         )}
 

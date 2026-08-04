@@ -36,6 +36,8 @@ export type Gender = 'Male' | 'Female' | 'Other';
 
 export type PackageStatus = 'Active' | 'Completed' | 'Expired';
 
+export type EnrollmentStatus = 'Active' | 'Completed' | 'Expired' | 'Paused';
+
 export type StaffRole = 'Receptionist' | 'Manager' | 'Admin' | 'Doctor';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -157,6 +159,8 @@ export interface Appointment {
   therapistName?: string;
   isPackage: boolean;
   packageId?: string;
+  enrollmentId?: string;
+  sessionNumber?: number;
   prePaymentRequired: boolean;
   prePaymentAmount: number;
   status: AppointmentStatus | string;
@@ -172,7 +176,7 @@ export interface Package {
   name: string;
   serviceType: ServiceType | string;
   totalSessions: number;
-  usedSessions: number;
+  usedSessions?: number;
   price: number;
   patientId?: string;
   validUntil?: string;
@@ -180,6 +184,28 @@ export interface Package {
   description?: string;
   includedServices?: string[];
   perSessionPrice?: number;
+}
+
+export interface PackageEnrollment {
+  enrollmentId: string; // "ENR-001"
+  packageId: string; // "PKG-001"
+  packageName: string;
+  serviceType: ServiceType | string;
+  patientId: string;
+  patientName: string;
+  patientMobile: string;
+  centerId: string;
+  doctorId: string;
+  doctorName: string;
+  therapistId?: string;
+  therapistName?: string;
+  startDate: string; // "YYYY-MM-DD"
+  sessionInterval: number; // days between sessions (default 7)
+  totalSessions: number;
+  completedSessions: number;
+  status: EnrollmentStatus;
+  enrolledAt: string;
+  sessionIds: string[]; // ordered list of Appointment IDs
 }
 
 export interface Therapist {

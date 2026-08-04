@@ -6,47 +6,67 @@
 ---
 
 ## Last Updated
-`2026-08-03` — Appointments Directory, Patient Priority Engine, Package Directory, Auto-Scheduling, Theme-Aligned Pull-to-Refresh & ARCHITECTURE.md synchronization completed by `@UXEngineer`.
+`2026-08-04` — Packaged Sessions ERP System (full lifecycle) implemented by `@DataEngineer`, `@Frontend`, `@UXEngineer`. `npx tsc --noEmit` passes with 0 errors.
 
 ---
 
 ## Current Sprint Focus
 
+### Packaged Sessions ERP System (`@DataEngineer` + `@Frontend` + `@UXEngineer`)
+
+#### Data & Store Layer (`@DataEngineer`)
+- **`PackageEnrollment` entity** added to `src/types/index.ts`:
+  - Fields: `enrollmentId`, `patientId`, `patientName`, `packageId`, `packageName`, `totalSessions`, `completedSessions`, `sessionInterval`, `sessionIds`, `status` (`Active` | `Paused` | `Completed` | `Cancelled`), `enrolledAt`, `therapistId?`, `therapistName?`, `startDate`, `notes?`, `cancelledAt?`, `pausedAt?`, `resumedAt?`.
+  - `Appointment` extended with `enrollmentId?` and `sessionNumber?` fields.
+- **`assets/data/enrollments.json`** — seed file with realistic clinic enrollment records.
+- **`src/api/dataStore.ts`** — `enrollments` collection hydrated from seed.
+- **`src/api/handlers/nonnestedHandlers.ts`** — CRUD handlers: `get_all_enrollments`, `get_enrollments_by_patient`, `get_enrollment_by_id`, `add_enrollment`, `update_enrollment`.
+- **`src/api/services/packageEnrollmentService.ts`** [NEW] — enrollment API service layer.
+- **`src/api/index.ts`** — barrel exports `packageEnrollmentService`.
+- **`src/store/usePackageStore.ts`** — fully re-architected with full enrollment lifecycle:
+  - `enrollPatientInPackage`, `assignPackageToPatient`
+  - `markSessionCompleted`, `cancelSession` (with optional `shiftRemaining`)
+  - `rescheduleSession` (with optional `shiftRemaining`)
+  - `pauseEnrollment`, `resumeEnrollment`
+  - `getEnrollmentById`, `getEnrollmentsByPatient`
+- **`src/utils/dateUtils.ts`** — `getNextSessionAppointment` utility added.
+
+#### UX & Interaction Layer (`@UXEngineer`)
+- **`src/utils/feedback.ts`** — 3 new haptic+sound functions:
+  - `playSessionMarkedSound()` — session marked attended.
+  - `playSessionCancelledSound()` — session cancelled.
+  - `playEnrollmentCreatedSound()` — patient enrolled in package.
+- **`src/components/package/SessionProgressRing.tsx`** [NEW] — Reanimated SVG progress ring (react-native-svg + Reanimated).
+
+#### Frontend Components & Screens (`@Frontend`)
+- **`src/components/package/PackageSessionCard.tsx`** [NEW] — session card with Ionicons, status chip, action buttons (Mark Attended, Reschedule, Cancel).
+- **`src/components/package/PackageEnrollmentDetailSheet.tsx`** [NEW] — full ERP bottom sheet: progress ring, session timeline, pause/resume, "shift remaining sessions" modal dialog.
+- **`src/components/package/UpcomingSessionsWidget.tsx`** [NEW] — horizontal scrollable dashboard widget for `HomeScreen`.
+- **`src/screens/PackagesScreen.tsx`** — dual top tabs: **Catalog** vs **Enrollments**, status filter chips, patient search, `PackageEnrollmentDetailSheet` integration.
+- **`src/screens/HomeScreen.tsx`** — `UpcomingSessionsWidget` inserted between Quick Nav and Today's Schedule; `PackageEnrollmentDetailSheet` mounted.
+- **`src/components/appointment/CreateAppointmentSheet.tsx`** — Session Interval picker (7/14/21/30 days), `enrollPatientInPackage` call, `playEnrollmentCreatedSound()`.
+- **`src/screens/PatientRecordsScreen.tsx`** — active enrollments list, progress bars, `PackageEnrollmentDetailSheet` integration.
+- **`src/components/calendar/AppointmentDetailModal.tsx`** — packaged session banner ("Session X of Y", Enrollment ID).
+
+#### Bug Fixes Completed This Session
+- `HomeScreen.tsx`: replaced stale `AppRefreshControl` ref with standard `RefreshControl`.
+- `PackageSessionCard.tsx`: `StatusChip size="sm"` → `StatusChip small` (correct prop).
+- `PatientRecordsScreen.tsx`: `patientPackages` → `patientEnrollments` (correct variable).
+- `usePackageStore.ts`: `updateAppointmentStatus` → `updateStatus`, `rescheduleAppointment` → `moveAppointment` (correct `useAppointmentStore` API).
+
+---
+
+## Previous Sprint Focus
+
 ### Appointments, Patient Priority & Package Integration (`@Frontend`)
-- **Dedicated Appointments Screen (`AppointmentsScreen.tsx`)**:
-  - Replaced `PastAppointmentsScreen.tsx` with a unified Appointments Directory.
-  - Date filtering: **Today**, **Yesterday**, and **Custom Range** (with interactive Start and End Date pickers).
-  - Grouping toggle: **Doctor-wise** vs. **Patient-wise** with total appointment count badges per section.
-  - Displays appointments sorted in **descending order of time** (newest date and latest time first).
-- **Patient Priority Engine (`usePatientStore.ts`, `PatientListScreen.tsx`, `PatientDetailModal.tsx`, `PatientRecordsScreen.tsx`, `AppointmentsScreen.tsx`)**:
-  - Dynamically calculates patient priority based on reschedule count:
-    - 0 reschedules -> 🟢 **High Priority** (`#10B981`)
-    - 1-2 reschedules -> 🟡 **Medium Priority** (`#F59E0B`)
-    - 3+ reschedules -> 🔴 **Low Priority** (`#EF4444`)
-  - Highlighted patient cards with prominent 5px left accent borders (`borderLeftWidth: 5`, `borderLeftColor: priorityColor`) and matching 1px border outlines (`borderColor: priorityColor + '40'`) across Patient Directory, Patient Detail Modal, Patient Records Page, and Grouped Appointments.
-  - Removed badge pills beside patient names; priority is displayed cleanly as text-only inside `PatientDetailModal.tsx` and `PatientRecordsScreen.tsx` (`Priority: High Priority`).
-- **Patient Past Records Screen (`PatientRecordsScreen.tsx`)**:
-  - Dedicated screen linked directly from `PatientDetailModal` (`"View Patient Past Records & History"`).
-  - Shows full patient header, priority badge, reschedule metrics, active/past packages, and complete appointment timeline.
-  - Tapping any past appointment record opens `AppointmentDetailModal.tsx` showing complete visit details and original reschedule log.
-- **Original Scheduling Details & Reschedule Confirmation (`RescheduleConfirmationModal.tsx`, `RescheduleModal.tsx`, `DraggableChip.tsx`, `AppointmentDetailModal.tsx`)**:
-  - Created reusable theme-aligned `RescheduleConfirmationModal.tsx` popup dialog matching `ExitConfirmationModal` system design.
-  - Replaced inline bottom-sheet confirmation step with `RescheduleConfirmationModal` popup overlay when saving changes in `RescheduleModal.tsx`.
-  - Integrated `RescheduleConfirmationModal` popup step on calendar Drag-and-Drop release (`DraggableChip.tsx`), prompting confirmation before committing slot moves.
-  - Preserves original schedule data (`originalSchedule: { date, startTime, doctorName, rescheduledAt }`) on appointments and increments patient reschedule count.
-  - Renders an **Original Schedule Details** log box in `AppointmentDetailModal` for rescheduled appointments.
-- **Package Directory & Automatic Multi-Session Scheduling (`PackagesScreen.tsx`, `usePackageStore.ts`, `CreateAppointmentSheet.tsx`)**:
-  - Dedicated **Available Packages** screen in the sidebar drawer showing all treatment packs with prices, per-session cost breakdown, session counts, descriptions, and included services.
-  - Automatically schedules remaining package sessions at 7-day intervals starting from the selected initial date when booking a package appointment.
-- **Updated Create Appointment Page (`CreateAppointmentSheet.tsx`)**:
-  - Shows service type auto-selected when package mode is selected.
-  - Displays clear pricing breakdown card: Doctor Consultation Fee (Normal visit) vs. Package Total Price and Cost Per Session (Package visit).
-- **Theme-Aligned Pull-To-Refresh Component (`AppRefreshControl.tsx`, `useRefresh.ts`, `HomeScreen.tsx`, `AppointmentsScreen.tsx`, `PatientListScreen.tsx`, `DoctorScreen.tsx`, `PackagesScreen.tsx`, `PatientRecordsScreen.tsx`, `CalendarGrid.tsx`)**:
-  - Built custom `AppRefreshControl.tsx` component fully aligned with Dr. Paul's Clinic active Theme Tokens (`colors.primary` spinner tint, `colors.card` background container on Android preventing dark mode backdrop bleed, and `colors.textMuted` title label).
-  - Created centralized `useRefresh` hook for smooth pull-to-refresh gesture handling and store re-synchronization (`fetchAppointments`, `fetchPatients`, `fetchDoctorsAndTherapists`, `fetchCenters`, `fetchPackages`).
-- **Navigation Cleanup (`App.tsx`, `SidebarDrawer.tsx`, `HomeScreen.tsx`)**:
-  - Removed `ReportsScreen` from navigation drawer and router as requested.
-  - Updated sidebar drawer items: Added `All Appointments` (`appointments`) and `Available Packages` (`packages`).
+- Dedicated Appointments Screen (`AppointmentsScreen.tsx`) — Today/Yesterday/Custom Range, Doctor/Patient grouping.
+- Patient Priority Engine (High/Medium/Low) from reschedule count.
+- Patient Past Records Screen (`PatientRecordsScreen.tsx`) with full timeline.
+- Original Scheduling Details log + Reschedule Confirmation Dialog.
+- Available Packages Directory Screen + Automatic multi-session scheduling.
+- Pricing & Service Type Breakdown Card in `CreateAppointmentSheet.tsx`.
+- Theme-Aligned `AppRefreshControl` + `useRefresh` hook.
+- Navigation cleanup: removed Reports, added `All Appointments` & `Available Packages` in drawer.
 
 ---
 
@@ -56,16 +76,25 @@
 - [x] Full TypeScript strict mode (`tsconfig.json`, `src/types/index.ts`)
 - [x] Expo SDK 54.0.36
 - [x] `@gorhom/bottom-sheet`, `react-native-keyboard-controller`, `expo-clipboard` installed
-- [x] Dedicated Appointments Directory Screen with Today/Yesterday/Custom Range & Doctor/Patient Grouping (`AppointmentsScreen.tsx`)
-- [x] Patient Priority Engine (High/Medium/Low) based on reschedule frequency (`usePatientStore.ts`)
-- [x] Dedicated Patient Past Records Page (`PatientRecordsScreen.tsx`)
-- [x] Original Scheduling Details Log (`AppointmentDetailModal.tsx`, `useAppointmentStore.ts`)
-- [x] Reschedule Confirmation Dialog (`RescheduleModal.tsx`)
-- [x] Available Packages Directory Screen (`PackagesScreen.tsx`, `usePackageStore.ts`)
-- [x] Package Automatic Session Scheduling Engine (`usePackageStore.ts`)
-- [x] Pricing & Service Type Breakdown Card (`CreateAppointmentSheet.tsx`)
-- [x] Removed Reports screen & updated sidebar navigation (`SidebarDrawer.tsx`, `App.tsx`)
-- [x] `npx tsc --noEmit` — 0 errors
+- [x] `react-native-svg` (required by `SessionProgressRing.tsx`)
+- [x] `npx tsc --noEmit` — **0 errors** ✓
+
+### Packaged Sessions ERP
+- [x] `PackageEnrollment` type & `EnrollmentStatus` union in `src/types/index.ts`
+- [x] Enrollment seed data (`assets/data/enrollments.json`)
+- [x] API layer: dataStore, handlers, service, barrel export
+- [x] `usePackageStore.ts` full lifecycle store
+- [x] `SessionProgressRing.tsx` Reanimated SVG component
+- [x] `PackageSessionCard.tsx` session action card
+- [x] `PackageEnrollmentDetailSheet.tsx` ERP management bottom sheet
+- [x] `UpcomingSessionsWidget.tsx` dashboard widget
+- [x] `PackagesScreen.tsx` Catalog/Enrollments tabs
+- [x] `HomeScreen.tsx` widget + detail sheet integration
+- [x] `CreateAppointmentSheet.tsx` enrollment on booking
+- [x] `PatientRecordsScreen.tsx` enrollment progress display
+- [x] `AppointmentDetailModal.tsx` packaged session banner
+- [x] Haptic + sound feedback for session lifecycle events
+- [x] All icons via `@expo/vector-icons` Ionicons — no emojis
 
 ---
 
@@ -73,4 +102,8 @@
 _None_
 
 ## Notes
-- `npx tsc --noEmit`: 0 errors.
+- `npx tsc --noEmit`: **0 errors**.
+- No emoji used anywhere in UI — all icons are Ionicons.
+- Shift-remaining-sessions behavior is user-selectable (modal prompt on cancel/reschedule).
+- Therapist assignment is per-enrollment (set at `enrollPatientInPackage` call time).
+- Package catalog is static (read from `packages.json`, no write API needed).

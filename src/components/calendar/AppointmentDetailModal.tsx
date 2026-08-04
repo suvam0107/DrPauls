@@ -233,6 +233,25 @@ function ModalContent({
         ) : null}
       </View>
 
+      {/* Package Session Banner */}
+      {appointment.isPackage && (
+        <View style={[styles.packageBand, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
+          <View style={styles.packageBandRow}>
+            <Ionicons name="layers" size={18} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.packageBandTitle, { color: colors.primary }]}>
+                {appointment.sessionNumber ? `Session ${appointment.sessionNumber} (Packaged Visit)` : 'Packaged Treatment Visit'}
+              </Text>
+              {appointment.enrollmentId ? (
+                <Text style={[styles.packageBandSub, { color: colors.text }]}>
+                  Enrollment ID: {appointment.enrollmentId}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      )}
+
       {appointment.originalSchedule ? (
         <View style={[styles.originalScheduleBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.originalScheduleTitleRow}>
@@ -443,6 +462,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
     gap: 4,
+  },
+  packageBand: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  packageBandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  packageBandTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  packageBandSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
   originalScheduleTitleRow: {
     flexDirection: 'row',

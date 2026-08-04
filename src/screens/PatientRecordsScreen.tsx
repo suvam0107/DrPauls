@@ -21,6 +21,7 @@ import { copyToClipboard } from '../utils/clipboardUtils';
 import { useRefresh } from '../utils/useRefresh';
 
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
+import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
 import { Appointment } from '../types';
 
 export interface PatientRecordsScreenProps {
@@ -52,10 +53,13 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
       .sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
   }, [appointments, targetPatient]);
 
-  const patientPackages = useMemo(() => {
+  const enrollments = usePackageStore((s) => s.enrollments);
+  const patientEnrollments = useMemo(() => {
     if (!targetPatient) return [];
-    return packages.filter((p) => p.patientId === targetPatient.id);
-  }, [packages, targetPatient]);
+    return enrollments.filter((e) => e.patientId === targetPatient.id);
+  }, [enrollments, targetPatient]);
+
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
 
   const rescheduleCount = targetPatient?.rescheduleCount || 0;
   const priority = calculatePatientPriority(rescheduleCount);
@@ -141,7 +145,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
             <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
 
             <View style={styles.metricCol}>
-              <Text style={[styles.metricVal, { color: colors.text }]}>{patientPackages.length}</Text>
+              <Text style={[styles.metricVal, { color: colors.text }]}>{patientEnrollments.length}</Text>
               <Text style={[styles.metricLbl, { color: colors.textMuted }]}>Packages</Text>
             </View>
           </View>
@@ -175,17 +179,25 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
         </View>
 
         {/* Packages Subscriptions Section */}
-        {patientPackages.length > 0 && (
+        {patientEnrollments.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active & Past Packages</Text>
-            {patientPackages.map((pkg) => (
-              <View key={pkg.id} style={[styles.packageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active & Past Package Enrollments</Text>
+            {patientEnrollments.map((e) => (
+              <TouchableOpacity
+                key={e.enrollmentId}
+                style={[styles.packageCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  playClickSound();
+                  setSelectedEnrollmentId(e.enrollmentId);
+                }}
+                activeOpacity={0.8}
+              >
                 <View style={styles.packageHeader}>
-                  <Text style={[styles.pkgName, { color: colors.text }]}>{pkg.name}</Text>
-                  <StatusChip status={pkg.status} />
+                  <Text style={[styles.pkgName, { color: colors.text }]}>{e.packageName}</Text>
+                  <StatusChip status={e.status} />
                 </View>
                 <Text style={[styles.pkgSub, { color: colors.textMuted }]}>
-                  {pkg.serviceType} • {pkg.usedSessions}/{pkg.totalSessions} Sessions Completed • Total: ₹{pkg.price.toLocaleString()}
+                  {e.serviceType} • {e.completedSessions}/{e.totalSessions} Sessions Completed • Dr. {e.doctorName}
                 </Text>
                 <View style={[styles.progressBar, { backgroundColor: colors.surface }]}>
                   <View
@@ -193,12 +205,17 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
                       styles.progressFill,
                       {
                         backgroundColor: colors.primary,
-                        width: `${Math.min(100, (pkg.usedSessions / pkg.totalSessions) * 100)}%`,
+                        width: `${Math.min(100, (e.completedSessions / e.totalSessions) * 100)}%`,
                       },
                     ]}
                   />
                 </View>
-              </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 6 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>
+                    View Session Timeline →
+                  </Text>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -228,7 +245,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.historyDoctor, { color: colors.text }]}>Dr. {appt.doctorName}</Text>
                     <Text style={[styles.historyService, { color: colors.textMuted }]}>
-                      {appt.serviceType} • {appt.appointmentType} {appt.isPackage ? '📦' : ''}
+                      {appt.serviceType} • {appt.appointmentType} {appt.isPackage ? '(Packaged)' : ''}
                     </Text>
                   </View>
                   <StatusChip status={appt.status} />
@@ -256,10 +273,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
                       <Text style={styles.originalScheduleTitle}>Original Schedule Details</Text>
                     </View>
                     <Text style={[styles.originalScheduleText, { color: colors.text }]}>
-                      Originally booked on: {formatDate(appt.originalSchedule.date)} at {formatTime(appt.originalSchedule.startTime)} with {appt.originalSchedule.doctorName || appt.doctorName}
-                    </Text>
-                    <Text style={[styles.originalScheduleTime, { color: colors.textMuted }]}>
-                      Rescheduled on {new Date(appt.originalSchedule.rescheduledAt).toLocaleString()}
+                      Rescheduled on {formatDateShort(appt.originalSchedule.rescheduledAt)} from {formatDateShort(appt.originalSchedule.date)} ({formatTime(appt.originalSchedule.startTime)})
                     </Text>
                   </View>
                 ) : null}
@@ -280,6 +294,13 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+      />
+
+      {/* Package Enrollment Detail Sheet */}
+      <PackageEnrollmentDetailSheet
+        visible={!!selectedEnrollmentId}
+        enrollmentId={selectedEnrollmentId}
+        onClose={() => setSelectedEnrollmentId(null)}
       />
     </View>
   );
