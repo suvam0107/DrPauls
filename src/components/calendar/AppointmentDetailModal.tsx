@@ -5,7 +5,7 @@ import BottomSheet from '../shared/BottomSheet';
 import StatusChip from '../shared/StatusChip';
 import RescheduleModal from './RescheduleModal';
 import { useTheme } from '../../theme/ThemeContext';
-import { formatDate, formatTime, todayISO } from '../../utils/dateUtils';
+import { formatDate, formatDateShort, formatTime, todayISO } from '../../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -315,7 +315,7 @@ function ModalContent({
             </Text>
           ) : null}
           <Text style={[styles.originalScheduleTime, { color: colors.textMuted }]}>
-            Rescheduled on {new Date(appointment.originalSchedule.rescheduledAt).toLocaleString()}
+            Rescheduled on {formatDateShort(appointment.originalSchedule.rescheduledAt)}
           </Text>
         </View>
       ) : null}

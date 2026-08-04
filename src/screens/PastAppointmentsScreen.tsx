@@ -171,7 +171,7 @@ export default function PastAppointmentsScreen() {
               <View style={styles.cardBody}>
                 <Text style={[styles.patientName, { color: colors.text }]}>{appt.patientName}</Text>
                 <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                  {appt.serviceType} • Dr. {appt.doctorName}
+                  {appt.serviceType} • {appt.doctorName}
                 </Text>
 
                 {appt.patientMobile ? (

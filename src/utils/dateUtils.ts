@@ -35,27 +35,42 @@ export const formatTime = (t: string): string => {
   return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
 };
 
-/** "YYYY-MM-DD" → "28 Jul 2026" */
+/** "YYYY-MM-DD" or ISO timestamp string → "28 Jul 2026" */
 export const formatDate = (d: string): string => {
   if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
+  const dateOnly = d.split('T')[0].split(' ')[0];
+  const parts = dateOnly.split('-');
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts.map(Number);
+  if (isNaN(y) || isNaN(m) || isNaN(day)) return d;
   const dt = new Date(y, m - 1, day);
+  if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-/** "YYYY-MM-DD" → "Mon, 28 Jul" */
+/** "YYYY-MM-DD" or ISO timestamp string → "Mon, 28 Jul" */
 export const formatDateShort = (d: string): string => {
   if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
+  const dateOnly = d.split('T')[0].split(' ')[0];
+  const parts = dateOnly.split('-');
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts.map(Number);
+  if (isNaN(y) || isNaN(m) || isNaN(day)) return d;
   const dt = new Date(y, m - 1, day);
+  if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
 };
 
-/** "YYYY-MM-DD" → "July 2026" */
+/** "YYYY-MM-DD" or ISO timestamp string → "July 2026" */
 export const formatMonthYear = (d: string): string => {
   if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
+  const dateOnly = d.split('T')[0].split(' ')[0];
+  const parts = dateOnly.split('-');
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts.map(Number);
+  if (isNaN(y) || isNaN(m) || isNaN(day)) return d;
   const dt = new Date(y, m - 1, day);
+  if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 };
 

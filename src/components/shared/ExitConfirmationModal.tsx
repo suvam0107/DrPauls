@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  cancelBtn: {},
   cancelText: {
     color: '#FFFFFF',
     fontSize: 14,

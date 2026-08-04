@@ -350,7 +350,7 @@ export default function AppointmentsScreen() {
                         {appt.originalSchedule ? (
                           <View style={styles.rescheduledBadgeRow}>
                             <Ionicons name="swap-horizontal-outline" size={12} color="#D97706" />
-                            <Text style={styles.rescheduledBadgeText}>Rescheduled from {appt.originalSchedule.date}</Text>
+                            <Text style={styles.rescheduledBadgeText}>Rescheduled from {formatDateShort(appt.originalSchedule.date)}</Text>
                           </View>
                         ) : null}
                       </View>

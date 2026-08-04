@@ -197,7 +197,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
                   <StatusChip status={e.status} />
                 </View>
                 <Text style={[styles.pkgSub, { color: colors.textMuted }]}>
-                  {e.serviceType} • {e.completedSessions}/{e.totalSessions} Sessions Completed • Dr. {e.doctorName}
+                  {e.serviceType} • {e.completedSessions}/{e.totalSessions} Sessions Completed • {e.doctorName}
                 </Text>
                 <View style={[styles.progressBar, { backgroundColor: colors.surface }]}>
                   <View
@@ -243,7 +243,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
               >
                 <View style={styles.historyTopRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.historyDoctor, { color: colors.text }]}>Dr. {appt.doctorName}</Text>
+                    <Text style={[styles.historyDoctor, { color: colors.text }]}>{appt.doctorName}</Text>
                     <Text style={[styles.historyService, { color: colors.textMuted }]}>
                       {appt.serviceType} • {appt.appointmentType} {appt.isPackage ? '(Packaged)' : ''}
                     </Text>
