@@ -5,6 +5,8 @@ import CalendarHeader from '../components/calendar/CalendarHeader';
 import CalendarGrid from '../components/calendar/CalendarGrid';
 import MonthGrid from '../components/calendar/MonthGrid';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
+import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet, { InitialData } from '../components/appointment/CreateAppointmentSheet';
 import StatusChip from '../components/shared/StatusChip';
 import useAppointmentStore from '../store/useAppointmentStore';
@@ -41,6 +43,9 @@ export default function CalendarScreen() {
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [createData, setCreateData] = useState<InitialData | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+  const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
+  const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   const handleDateChange = (directionOrIso: number | string) => {
     if (typeof directionOrIso === 'number') {
@@ -144,7 +149,7 @@ export default function CalendarScreen() {
                   </Text>
                 </View>
 
-                <StatusChip status={appt.status} small />
+                <StatusChip status={appt.status} date={appt.date} small />
               </TouchableOpacity>
             ))
           )}
@@ -177,6 +182,34 @@ export default function CalendarScreen() {
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
+      />
+
+      {/* Package Enrollment Detail Sheet */}
+      <PackageEnrollmentDetailSheet
+        visible={!!selectedEnrollmentId}
+        enrollmentId={selectedEnrollmentId}
+        onClose={() => setSelectedEnrollmentId(null)}
+        onRescheduleSession={(appt) => setRescheduleTargetAppt(appt)}
+        onViewSessionDetails={(appt) => setSelectedSessionAppt(appt)}
+      />
+
+      {/* Reschedule Modal — screen-level sibling */}
+      <RescheduleModal
+        visible={!!rescheduleTargetAppt}
+        appointment={rescheduleTargetAppt}
+        onClose={() => setRescheduleTargetAppt(null)}
+      />
+
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      <AppointmentDetailModal
+        visible={!!selectedSessionAppt}
+        appointment={selectedSessionAppt}
+        onClose={() => setSelectedSessionAppt(null)}
+        hidePackageTimelineLink
       />
 
       {/* Create Appointment Modal */}

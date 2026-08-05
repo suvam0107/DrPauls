@@ -202,15 +202,12 @@ export default function PatientEnrollmentsScreen() {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — screen-level sibling */}
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}
         onClose={() => setSelectedSessionAppt(null)}
-        onOpenEnrollmentTimeline={(enrollmentId) => {
-          setSelectedSessionAppt(null);
-          setSelectedEnrollmentId(enrollmentId);
-        }}
+        hidePackageTimelineLink
       />
     </View>
   );

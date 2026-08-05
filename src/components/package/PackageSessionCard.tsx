@@ -46,6 +46,7 @@ export default function PackageSessionCard({
   const today = todayISO();
   const isToday = appointment.date === today;
   const isPast = appointment.date < today;
+  const isOverdue = isPast && !isPaid && !isCancelled;
 
   // Show action buttons only for future/today sessions that aren't settled
   const showActions = !isCancelled && !isPaid && !isPast;
@@ -56,6 +57,8 @@ export default function PackageSessionCard({
     ? colors.success
     : isToday
     ? colors.primary
+    : isOverdue
+    ? colors.danger
     : colors.textMuted;
 
   const handleCardPress = () => {
@@ -72,7 +75,7 @@ export default function PackageSessionCard({
         { backgroundColor: colors.card, borderColor: colors.border },
         isToday && { borderColor: colors.primary, borderWidth: 1.5 },
         isCancelled && { opacity: 0.55 },
-        isPast && !isPaid && !isCancelled && { opacity: 0.75 },
+        isOverdue && { opacity: 0.75 },
       ]}
     >
       <TouchableOpacity
@@ -83,7 +86,7 @@ export default function PackageSessionCard({
         <View style={styles.header}>
           <View style={styles.sessionPill}>
             <Ionicons name="ellipse" size={8} color={dotColor} />
-            <Text style={[styles.sessionTitle, { color: isPast && !isPaid ? colors.textMuted : colors.text }]}>
+            <Text style={[styles.sessionTitle, { color: isOverdue ? colors.textMuted : colors.text }]}>
               Session {sessionNumber} of {totalSessions}
             </Text>
             {isToday && (
@@ -94,7 +97,7 @@ export default function PackageSessionCard({
           </View>
 
           <View style={styles.headerRight}>
-            <StatusChip status={appointment.status} small />
+            <StatusChip status={appointment.status} date={appointment.date} small />
             {onViewSessionDetails && (
               <Ionicons name="chevron-forward" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
             )}

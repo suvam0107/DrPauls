@@ -6,11 +6,28 @@
 ---
 
 ## Last Updated
-`2026-08-04` — Complete Modal Architecture & Dialog UI Overhaul, Solid Button Styling, and ISO Date Parsing Bug Fixes completed by `@Frontend`, `@UXEngineer`, and `@DataEngineer`.
+`2026-08-05` — Overdue / Unattended Past Sessions Status Chip Evaluation completed by `@Frontend`.
 
 ---
 
 ## Current Sprint Focus
+
+### Overdue / Unattended Past Sessions Status Chip (`@Frontend`)
+- **Automatic Overdue Evaluation (`StatusChip.tsx`)**: Enhanced `StatusChip` to accept an optional `date` prop. When an appointment date is in the past (`date < today`) and its status is unsettled (not `Paid` and not `Cancelled`), `StatusChip` dynamically renders an **`Overdue`** badge chip with high-visibility red highlight (`#EF4444` text with tinted background).
+- **Constants & Type System (`types/index.ts` & `constants/index.ts`)**: Added `'Overdue'` and `'Unattended'` to `AppointmentStatus` type, `APPOINTMENT_STATUS` constant object, and `STATUS_COLORS` token dictionary.
+- **Card & Modal Synchronization ([PackageSessionCard.tsx](file:///c:/Iconwizard/DrPauls/src/components/package/PackageSessionCard.tsx) & [AppointmentDetailModal.tsx](file:///c:/Iconwizard/DrPauls/src/components/calendar/AppointmentDetailModal.tsx))**: Past non-settled session cards in package timelines and appointment detail modals now display the red **`Overdue`** chip with red indicator dots instead of conflicting chips like "Confirmed" or "Scheduled".
+- **App-Wide Propagation**: Passed `date={appt.date}` to `StatusChip` across `AppointmentsScreen`, `PatientRecordsScreen`, `PastAppointmentsScreen`, `HomeScreen`, and `CalendarScreen`.
+
+### Patient Past Records & Package Session Timeline Discrepancy Fix (`@Frontend`, `@DataEngineer`)
+- **Complete Session Timeline Resolution (`PackageEnrollmentDetailSheet.tsx`)**: Overhauled session list generation logic. Instead of mapping strictly over `enrollment.sessionIds` (which previously left incomplete/generic session cards), `sessionsList` now constructs a complete 1-to-`totalSessions` sequence for every enrollment. Each session looks up its store appointment or dynamically constructs a fallback appointment object with correct dates (spaced by `sessionInterval`), status (`Paid` for completed sessions, `Scheduled`/`Confirmed` for future sessions), therapist, doctor, and service details.
+- **Seed Database Hydration (`enrollments.json` & `appointments.json`)**: Populated full `sessionIds` arrays for seed package enrollments (`ENR-001` through `ENR-005`) and added explicit package session appointment records for Ravi Sharma (10 sessions, 4 completed `Paid`), Priya Das (6 completed `Paid`), Amit Bora (8 sessions, 2 `Paid`), Sunita Kalita (5 sessions, 1 `Paid`), and Neha Gogoi (6 sessions, 3 `Paid`).
+- **Individual Session Detail Modals**: Tapping on ANY session card in the timeline (past completed sessions or upcoming sessions) triggers `onViewSessionDetails(appointment)`, opening `AppointmentDetailModal` with complete details for that specific session.
+- **Patient Past Records Timeline (`PatientRecordsScreen.tsx`)**: In Patient Past Records, the appointment timeline now lists all past completed package sessions along with regular appointments, matching patient history accurately.
+
+### Appointments Directory & Packaged Timeline Navigation Fix (`@Frontend`)
+- **Appointments Directory (`AppointmentsScreen.tsx`)**: Fixed packaged appointment banner click behavior. Previously, clicking the packaged treatment banner inside `AppointmentDetailModal` on the Appointments Directory page fell back to showing a Toast (`"Package Enrollment: Linked to Enrollment ID..."`) because `onOpenEnrollmentTimeline` callback was missing and `PackageEnrollmentDetailSheet` was not rendered.
+- **Lifted ERP Timeline & Reschedule Modals**: Integrated `PackageEnrollmentDetailSheet` and `RescheduleModal` into `AppointmentsScreen.tsx`, `CalendarScreen.tsx`, `PatientRecordsScreen.tsx`, and `PastAppointmentsScreen.tsx`.
+- **Seamless Navigation**: Passing `onOpenEnrollmentTimeline` callback to `AppointmentDetailModal` allows clicking any packaged appointment across all directory screens to seamlessly transition to the full interactive Package ERP Session Timeline sheet (`PackageEnrollmentDetailSheet.tsx`).
 
 ### Modal Architecture & Dialog UI Overhaul (`@Frontend`, `@UXEngineer`)
 - **Flattened Modal Stack**: Lifted `RescheduleModal` and `AppointmentDetailModal` to screen level as siblings in `PatientEnrollmentsScreen.tsx` and `HomeScreen.tsx`, eliminating 3-level deep Modal nesting bugs.

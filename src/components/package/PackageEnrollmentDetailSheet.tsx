@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import usePackageStore from '../../store/usePackageStore';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { PackageEnrollment, Appointment } from '../../types';
-import { formatDateShort } from '../../utils/dateUtils';
+import { formatDateShort, addDays } from '../../utils/dateUtils';
 import { copyToClipboard } from '../../utils/clipboardUtils';
 import {
   playClickSound,
@@ -60,6 +60,74 @@ export default function PackageEnrollmentDetailSheet({
     sessionId: '',
   });
 
+  // Construct complete sessions list from 1 to enrollment.totalSessions
+  const sessionsList = useMemo(() => {
+    if (!enrollment) return [];
+
+    const list: { sessionNumber: number; appointment: Appointment }[] = [];
+
+    for (let sNum = 1; sNum <= enrollment.totalSessions; sNum++) {
+      // 1. Try finding by enrollmentId and sessionNumber
+      let appt = appointments.find(
+        (a) => a.enrollmentId === enrollment.enrollmentId && a.sessionNumber === sNum
+      );
+
+      // 2. Try finding by matching sessionIds[sNum - 1]
+      if (!appt && enrollment.sessionIds && enrollment.sessionIds[sNum - 1]) {
+        const sId = enrollment.sessionIds[sNum - 1];
+        appt = appointments.find((a) => a.id === sId);
+      }
+
+      // 3. Fallback: Generate dynamic Appointment object for this session if not in store
+      if (!appt) {
+        const isCompleted = sNum <= enrollment.completedSessions;
+        const sessionDate = addDays(enrollment.startDate, (sNum - 1) * enrollment.sessionInterval);
+
+        const status = isCompleted
+          ? 'Paid'
+          : enrollment.status === 'Paused'
+          ? 'Pending'
+          : sNum === enrollment.completedSessions + 1
+          ? 'Scheduled'
+          : 'Confirmed';
+
+        const nowISO = new Date().toISOString();
+        appt = {
+          id: `${enrollment.enrollmentId}-S${sNum}`,
+          centerId: enrollment.centerId || 'CC-001',
+          patientId: enrollment.patientId,
+          patientName: enrollment.patientName,
+          patientMobile: enrollment.patientMobile,
+          doctorId: enrollment.doctorId,
+          doctorName: enrollment.doctorName,
+          therapistId: enrollment.therapistId,
+          therapistName: enrollment.therapistName,
+          date: sessionDate,
+          startTime: '10:30',
+          endTime: '11:00',
+          appointmentType: 'Package Session',
+          serviceType: enrollment.serviceType,
+          visitType: 'Clinic',
+          isPackage: true,
+          packageId: enrollment.packageId,
+          enrollmentId: enrollment.enrollmentId,
+          sessionNumber: sNum,
+          prePaymentRequired: false,
+          prePaymentAmount: 0,
+          status: status,
+          leadStatus: 'Registered',
+          remark: `Session ${sNum} of ${enrollment.totalSessions} (${enrollment.packageName})`,
+          createdAt: nowISO,
+          updatedAt: nowISO,
+        };
+      }
+
+      list.push({ sessionNumber: sNum, appointment: appt });
+    }
+
+    return list;
+  }, [enrollment, appointments]);
+
   if (!enrollment) {
     return (
       <BottomSheet visible={visible} onClose={onClose} snapHeight={300}>
@@ -69,8 +137,6 @@ export default function PackageEnrollmentDetailSheet({
       </BottomSheet>
     );
   }
-
-  const enrollmentAppts = appointments.filter((a) => enrollment.sessionIds.includes(a.id));
 
   const handleMarkAttended = (sessionId: string) => {
     markSessionCompleted(enrollment.enrollmentId, sessionId);
@@ -198,8 +264,8 @@ export default function PackageEnrollmentDetailSheet({
                         enrollment.status === 'Active'
                           ? colors.success
                           : enrollment.status === 'Paused'
-                            ? colors.warning
-                            : colors.textMuted,
+                          ? colors.warning
+                          : colors.textMuted,
                     },
                   ]}
                 >
@@ -252,22 +318,19 @@ export default function PackageEnrollmentDetailSheet({
             </View>
           </View>
 
-          {/* Session Cards List — callbacks lifted to parent screen */}
-          {enrollment.sessionIds.map((sId, idx) => {
-            const appt = enrollmentAppts.find((a) => a.id === sId);
-            return (
-              <PackageSessionCard
-                key={sId}
-                sessionNumber={idx + 1}
-                totalSessions={enrollment.totalSessions}
-                appointment={appt}
-                onMarkAttended={handleMarkAttended}
-                onCancel={(sessionId) => setShowCancelPrompt({ visible: true, sessionId })}
-                onReschedule={(appointment) => onRescheduleSession && onRescheduleSession(appointment)}
-                onViewSessionDetails={onViewSessionDetails ? (appointment) => onViewSessionDetails(appointment) : undefined}
-              />
-            );
-          })}
+          {/* Session Cards List — renders complete sessions list from 1 to totalSessions */}
+          {sessionsList.map(({ sessionNumber, appointment }) => (
+            <PackageSessionCard
+              key={appointment.id}
+              sessionNumber={sessionNumber}
+              totalSessions={enrollment.totalSessions}
+              appointment={appointment}
+              onMarkAttended={handleMarkAttended}
+              onCancel={(sessionId) => setShowCancelPrompt({ visible: true, sessionId })}
+              onReschedule={(appt) => onRescheduleSession && onRescheduleSession(appt)}
+              onViewSessionDetails={onViewSessionDetails ? (appt) => onViewSessionDetails(appt) : undefined}
+            />
+          ))}
         </BottomSheetScrollView>
       </BottomSheet>
 

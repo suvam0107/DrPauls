@@ -18,6 +18,8 @@ import usePatientStore, { calculatePatientPriority } from '../store/usePatientSt
 import { Appointment } from '../types';
 import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
+import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import RescheduleModal from '../components/calendar/RescheduleModal';
 import {
   todayISO,
   offsetDate,
@@ -59,6 +61,10 @@ export default function AppointmentsScreen() {
 
   // Selected appointment for detail modal
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  // Lifted ERP Package Enrollment timeline & session modals
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+  const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
+  const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   // Compute effective date range
   const { effectiveStart, effectiveEnd } = useMemo(() => {
@@ -356,7 +362,7 @@ export default function AppointmentsScreen() {
                       </View>
 
                       <View style={styles.statusCol}>
-                        <StatusChip status={appt.status} />
+                        <StatusChip status={appt.status} date={appt.date} />
                         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginTop: 4 }} />
                       </View>
                     </TouchableOpacity>
@@ -373,6 +379,34 @@ export default function AppointmentsScreen() {
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
+      />
+
+      {/* Package Enrollment Detail Sheet (ERP Timeline) */}
+      <PackageEnrollmentDetailSheet
+        visible={!!selectedEnrollmentId}
+        enrollmentId={selectedEnrollmentId}
+        onClose={() => setSelectedEnrollmentId(null)}
+        onRescheduleSession={(appt) => setRescheduleTargetAppt(appt)}
+        onViewSessionDetails={(appt) => setSelectedSessionAppt(appt)}
+      />
+
+      {/* Reschedule Modal — screen-level sibling */}
+      <RescheduleModal
+        visible={!!rescheduleTargetAppt}
+        appointment={rescheduleTargetAppt}
+        onClose={() => setRescheduleTargetAppt(null)}
+      />
+
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      <AppointmentDetailModal
+        visible={!!selectedSessionAppt}
+        appointment={selectedSessionAppt}
+        onClose={() => setSelectedSessionAppt(null)}
+        hidePackageTimelineLink
       />
 
       {/* Interactive Date Picker Modal for Custom Range */}

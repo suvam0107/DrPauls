@@ -157,7 +157,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
               </Text>
             </View>
 
-            <StatusChip status={appt.status} small />
+            <StatusChip status={appt.status} date={appt.date} small />
           </TouchableOpacity>
         ))
       )}
@@ -195,15 +195,12 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — screen-level sibling */}
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}
         onClose={() => setSelectedSessionAppt(null)}
-        onOpenEnrollmentTimeline={(enrollmentId) => {
-          setSelectedSessionAppt(null);
-          setSelectedEnrollmentId(enrollmentId);
-        }}
+        hidePackageTimelineLink
       />
     </ScrollView>
   );

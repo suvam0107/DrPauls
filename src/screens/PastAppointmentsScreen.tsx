@@ -13,6 +13,8 @@ import useAppointmentStore from '../store/useAppointmentStore';
 import useUIStore from '../store/useUIStore';
 import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
+import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import RescheduleModal from '../components/calendar/RescheduleModal';
 import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS, STATUS_COLORS } from '../constants';
 import { Appointment } from '../types';
@@ -29,6 +31,9 @@ export default function PastAppointmentsScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+  const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
+  const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   const today = todayISO();
   const now = new Date();
@@ -165,7 +170,7 @@ export default function PastAppointmentsScreen() {
                     {formatDateShort(appt.date)} • {formatTime(appt.startTime)}
                   </Text>
                 </View>
-                <StatusChip status={appt.status} small />
+                <StatusChip status={appt.status} date={appt.date} small />
               </View>
 
               <View style={styles.cardBody}>
@@ -193,6 +198,34 @@ export default function PastAppointmentsScreen() {
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
+      />
+
+      {/* Package Enrollment Detail Sheet */}
+      <PackageEnrollmentDetailSheet
+        visible={!!selectedEnrollmentId}
+        enrollmentId={selectedEnrollmentId}
+        onClose={() => setSelectedEnrollmentId(null)}
+        onRescheduleSession={(appt) => setRescheduleTargetAppt(appt)}
+        onViewSessionDetails={(appt) => setSelectedSessionAppt(appt)}
+      />
+
+      {/* Reschedule Modal — screen-level sibling */}
+      <RescheduleModal
+        visible={!!rescheduleTargetAppt}
+        appointment={rescheduleTargetAppt}
+        onClose={() => setRescheduleTargetAppt(null)}
+      />
+
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      <AppointmentDetailModal
+        visible={!!selectedSessionAppt}
+        appointment={selectedSessionAppt}
+        onClose={() => setSelectedSessionAppt(null)}
+        hidePackageTimelineLink
       />
     </>
   );

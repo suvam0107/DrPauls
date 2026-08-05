@@ -17,6 +17,8 @@ export const APPOINTMENT_STATUS = {
   PENDING: 'Pending',
   CANCELLED: 'Cancelled',
   RESCHEDULED: 'Rescheduled',
+  OVERDUE: 'Overdue',
+  UNATTENDED: 'Unattended',
 } as const satisfies Record<string, AppointmentStatus>;
 
 export const APPOINTMENT_TYPE = {
@@ -67,6 +69,8 @@ export const STATUS_COLORS: Record<string, string> = {
   [APPOINTMENT_STATUS.PENDING]: '#D97706',
   [APPOINTMENT_STATUS.CANCELLED]: '#DC2626',
   [APPOINTMENT_STATUS.RESCHEDULED]: '#0891B2',
+  [APPOINTMENT_STATUS.OVERDUE]: '#EF4444',
+  [APPOINTMENT_STATUS.UNATTENDED]: '#E11D48',
 };
 
 // --- Staff roles ---

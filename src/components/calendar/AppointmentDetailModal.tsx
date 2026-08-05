@@ -29,6 +29,7 @@ export interface ModalContentProps {
   onEditPress: () => void;
   onPatientPress: (patient: Patient) => void;
   onOpenEnrollmentTimeline?: (enrollmentId: string) => void;
+  hidePackageTimelineLink?: boolean;
 }
 
 function ModalContent({
@@ -37,6 +38,7 @@ function ModalContent({
   onEditPress,
   onPatientPress,
   onOpenEnrollmentTimeline,
+  hidePackageTimelineLink,
 }: ModalContentProps) {
   const { colors } = useTheme();
   const patients = usePatientStore((s) => s.patients);
@@ -151,7 +153,7 @@ function ModalContent({
         </TouchableOpacity>
 
         <View style={styles.headerRightActions}>
-          <StatusChip status={appointment.status} />
+          <StatusChip status={appointment.status} date={appointment.date} />
 
           {/* Plain Copy & Share Icons side-by-side */}
           <View style={styles.iconRow}>
@@ -251,8 +253,8 @@ function ModalContent({
         ) : null}
       </View>
 
-      {/* Package Session Banner */}
-      {isPackagedVisit && (
+      {/* Package Session Banner — hidden if hidePackageTimelineLink is true */}
+      {isPackagedVisit && !hidePackageTimelineLink && (
         <TouchableOpacity
           style={[styles.packageBand, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
           onPress={() => {
@@ -388,6 +390,8 @@ export interface AppointmentDetailModalProps {
   onClose: () => void;
   /** Called when user taps the package band — parent screen handles the sheet */
   onOpenEnrollmentTimeline?: (enrollmentId: string) => void;
+  /** Set to true when opened from PackageEnrollmentDetailSheet to suppress redundant timeline link button */
+  hidePackageTimelineLink?: boolean;
 }
 
 const AppointmentDetailModal = memo(function AppointmentDetailModal({
@@ -395,6 +399,7 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
   appointment,
   onClose,
   onOpenEnrollmentTimeline,
+  hidePackageTimelineLink,
 }: AppointmentDetailModalProps) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
@@ -415,6 +420,7 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
             onEditPress={() => setShowReschedule(true)}
             onPatientPress={(pat) => setSelectedPatientForDetail(pat)}
             onOpenEnrollmentTimeline={onOpenEnrollmentTimeline}
+            hidePackageTimelineLink={hidePackageTimelineLink}
           />
         ) : null}
       </BottomSheet>

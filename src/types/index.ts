@@ -10,7 +10,9 @@ export type AppointmentStatus =
   | 'Paid'
   | 'Pending'
   | 'Cancelled'
-  | 'Rescheduled';
+  | 'Rescheduled'
+  | 'Overdue'
+  | 'Unattended';
 
 export type AppointmentType =
   | 'New Consultation'

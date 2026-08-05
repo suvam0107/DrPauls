@@ -1,22 +1,30 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { STATUS_COLORS } from '../../constants';
+import { todayISO } from '../../utils/dateUtils';
 
 const BG_ALPHA = '20'; // hex opacity for background tint
 
 export interface StatusChipProps {
   status: string;
+  date?: string;
   small?: boolean;
 }
 
 /** Color-coded status badge chip */
-export default function StatusChip({ status, small = false }: StatusChipProps) {
-  const color = STATUS_COLORS[status] || '#6B7280';
+export default function StatusChip({ status, date, small = false }: StatusChipProps) {
+  const today = todayISO();
+  const isPast = date ? date < today : false;
+  const isFinal = status === 'Paid' || status === 'Cancelled' || status === 'Overdue' || status === 'Unattended';
+
+  const effectiveStatus = isPast && !isFinal ? 'Overdue' : status;
+
+  const color = STATUS_COLORS[effectiveStatus] || '#6B7280';
   const bgColor = color + BG_ALPHA;
 
   return (
     <View style={[styles.chip, { backgroundColor: bgColor }, small && styles.small]}>
-      <Text style={[styles.text, { color }, small && styles.smallText]}>{status}</Text>
+      <Text style={[styles.text, { color }, small && styles.smallText]}>{effectiveStatus}</Text>
     </View>
   );
 }

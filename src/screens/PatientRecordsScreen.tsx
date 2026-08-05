@@ -22,6 +22,7 @@ import { useRefresh } from '../utils/useRefresh';
 
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import RescheduleModal from '../components/calendar/RescheduleModal';
 import { Appointment } from '../types';
 
 export interface PatientRecordsScreenProps {
@@ -60,6 +61,8 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   }, [enrollments, targetPatient]);
 
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+  const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
+  const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   const rescheduleCount = targetPatient?.rescheduleCount || 0;
   const priority = calculatePatientPriority(rescheduleCount);
@@ -248,7 +251,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
                       {appt.serviceType} • {appt.appointmentType} {appt.isPackage ? '(Packaged)' : ''}
                     </Text>
                   </View>
-                  <StatusChip status={appt.status} />
+                  <StatusChip status={appt.status} date={appt.date} />
                 </View>
 
                 <View style={styles.historyMetaRow}>
@@ -294,6 +297,10 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
         visible={!!selectedAppt}
         appointment={selectedAppt}
         onClose={() => setSelectedAppt(null)}
+        onOpenEnrollmentTimeline={(enrollmentId) => {
+          setSelectedAppt(null);
+          setSelectedEnrollmentId(enrollmentId);
+        }}
       />
 
       {/* Package Enrollment Detail Sheet */}
@@ -301,6 +308,23 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
         visible={!!selectedEnrollmentId}
         enrollmentId={selectedEnrollmentId}
         onClose={() => setSelectedEnrollmentId(null)}
+        onRescheduleSession={(appt) => setRescheduleTargetAppt(appt)}
+        onViewSessionDetails={(appt) => setSelectedSessionAppt(appt)}
+      />
+
+      {/* Reschedule Modal — screen-level sibling */}
+      <RescheduleModal
+        visible={!!rescheduleTargetAppt}
+        appointment={rescheduleTargetAppt}
+        onClose={() => setRescheduleTargetAppt(null)}
+      />
+
+      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      <AppointmentDetailModal
+        visible={!!selectedSessionAppt}
+        appointment={selectedSessionAppt}
+        onClose={() => setSelectedSessionAppt(null)}
+        hidePackageTimelineLink
       />
     </View>
   );
