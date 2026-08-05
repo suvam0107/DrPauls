@@ -6,11 +6,25 @@
 ---
 
 ## Last Updated
-`2026-08-05` — Overdue / Unattended Past Sessions Status Chip Evaluation completed by `@Frontend`.
+`2026-08-05` — Reports & Analytics Screen & Sidebar Drawer Integration completed by `@Frontend`.
 
 ---
 
 ## Current Sprint Focus
+
+### Reports & Analytics Dashboard (`@Frontend`)
+- **Full Data Analytics Dashboard (`src/screens/ReportsScreen.tsx`)**: Created a full-fledged operational analytics screen with 8 visual sections powered by pure `useMemo` derivations from Zustand stores (`useAppointmentStore`, `usePatientStore`, `useDoctorStore`, `usePackageStore`, `useUIStore`).
+  - **KPI Summary Strip**: 4 metric cards (Total Appointments, Total Patients, Active Packages, Est. Revenue) with left accent border indicators.
+  - **Appointment Status Breakdown**: Flex-based segmented bar with status counts, percentage labels, and dot legend.
+  - **Service Type Distribution**: Donut chart using `react-native-svg` (`Svg`, `G`, `Circle`) with center metrics and service legend.
+  - **Daily Activity Heatmap**: 7-bar chart (Mon–Sun) with height indicators, highlighted current day bar, and Thursday closed-day overlay.
+  - **Doctor Performance & Workload Table**: Mini-table displaying doctor appointments, confirmed sessions, paid sessions, and cancellation rates.
+  - **Package Enrollment Lifecycle Summary**: Grid cards for Active, Completed, Paused, and Cancelled enrollments with completion percentages.
+  - **Patient Acquisition Source Chart**: Proportional horizontal bar chart displaying enquiry sources (Walk-in, Referral, Google Ads, etc.).
+  - **Patient Priority Distribution**: 3-segment distribution bar based on `calculatePatientPriority` formula (High, Medium, Low).
+- **Time Period Filtering**: Dynamic Segmented Period Switcher (This Week / This Month / All Time) re-calculating all analytics metrics on the fly.
+- **Sidebar Drawer Integration (`SidebarDrawer.tsx`)**: Added `Reports & Analytics` (`bar-chart-outline`) to the primary drawer menu stack.
+- **App Navigator Routing (`App.tsx`)**: Wired `ReportsScreen` into the main screen container router stack.
 
 ### Overdue / Unattended Past Sessions Status Chip (`@Frontend`)
 - **Automatic Overdue Evaluation (`StatusChip.tsx`)**: Enhanced `StatusChip` to accept an optional `date` prop. When an appointment date is in the past (`date < today`) and its status is unsettled (not `Paid` and not `Cancelled`), `StatusChip` dynamically renders an **`Overdue`** badge chip with high-visibility red highlight (`#EF4444` text with tinted background).
@@ -26,8 +40,8 @@
 
 ### Appointments Directory & Packaged Timeline Navigation Fix (`@Frontend`)
 - **Appointments Directory (`AppointmentsScreen.tsx`)**: Fixed packaged appointment banner click behavior. Previously, clicking the packaged treatment banner inside `AppointmentDetailModal` on the Appointments Directory page fell back to showing a Toast (`"Package Enrollment: Linked to Enrollment ID..."`) because `onOpenEnrollmentTimeline` callback was missing and `PackageEnrollmentDetailSheet` was not rendered.
-- **Lifted ERP Timeline & Reschedule Modals**: Integrated `PackageEnrollmentDetailSheet` and `RescheduleModal` into `AppointmentsScreen.tsx`, `CalendarScreen.tsx`, `PatientRecordsScreen.tsx`, and `PastAppointmentsScreen.tsx`.
-- **Seamless Navigation**: Passing `onOpenEnrollmentTimeline` callback to `AppointmentDetailModal` allows clicking any packaged appointment across all directory screens to seamlessly transition to the full interactive Package ERP Session Timeline sheet (`PackageEnrollmentDetailSheet.tsx`).
+- **Lifted Timeline & Reschedule Modals**: Integrated `PackageEnrollmentDetailSheet` and `RescheduleModal` into `AppointmentsScreen.tsx`, `CalendarScreen.tsx`, `PatientRecordsScreen.tsx`, and `PastAppointmentsScreen.tsx`.
+- **Seamless Navigation**: Passing `onOpenEnrollmentTimeline` callback to `AppointmentDetailModal` allows clicking any packaged appointment across all directory screens to seamlessly transition to the full interactive Package Session Timeline sheet (`PackageEnrollmentDetailSheet.tsx`).
 
 ### Modal Architecture & Dialog UI Overhaul (`@Frontend`, `@UXEngineer`)
 - **Flattened Modal Stack**: Lifted `RescheduleModal` and `AppointmentDetailModal` to screen level as siblings in `PatientEnrollmentsScreen.tsx` and `HomeScreen.tsx`, eliminating 3-level deep Modal nesting bugs.

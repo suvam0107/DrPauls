@@ -18,6 +18,7 @@ import AppointmentsScreen from './src/screens/AppointmentsScreen';
 import PatientRecordsScreen from './src/screens/PatientRecordsScreen';
 import AvailablePackagesScreen from './src/screens/AvailablePackagesScreen';
 import PatientEnrollmentsScreen from './src/screens/PatientEnrollmentsScreen';
+import ReportsScreen from './src/screens/ReportsScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import CreateAppointmentSheet from './src/components/appointment/CreateAppointmentSheet';
 import AddPatientSheet from './src/components/appointment/AddPatientSheet';
@@ -189,6 +190,7 @@ function MainApp() {
           <AvailablePackagesScreen />
         )}
         {currentScreen === 'patient-enrollments' && <PatientEnrollmentsScreen />}
+        {currentScreen === 'reports' && <ReportsScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
       </View>
 

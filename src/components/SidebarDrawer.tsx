@@ -152,6 +152,7 @@ export default function SidebarDrawer({ visible, onClose, onNavigate, currentScr
     { label: 'All Appointments', icon: 'time-outline', screen: 'appointments' },
     { label: 'Patient Directory', icon: 'people-outline', screen: 'patients' },
     { label: 'Doctor Schedule', icon: 'medical-outline', screen: 'doctors' },
+    { label: 'Reports & Analytics', icon: 'bar-chart-outline', screen: 'reports' },
     {
       label: 'Packages',
       icon: 'gift-outline',

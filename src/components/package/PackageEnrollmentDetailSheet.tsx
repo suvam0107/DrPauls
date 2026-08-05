@@ -86,10 +86,10 @@ export default function PackageEnrollmentDetailSheet({
         const status = isCompleted
           ? 'Paid'
           : enrollment.status === 'Paused'
-          ? 'Pending'
-          : sNum === enrollment.completedSessions + 1
-          ? 'Scheduled'
-          : 'Confirmed';
+            ? 'Pending'
+            : sNum === enrollment.completedSessions + 1
+              ? 'Scheduled'
+              : 'Confirmed';
 
         const nowISO = new Date().toISOString();
         appt = {
@@ -264,8 +264,8 @@ export default function PackageEnrollmentDetailSheet({
                         enrollment.status === 'Active'
                           ? colors.success
                           : enrollment.status === 'Paused'
-                          ? colors.warning
-                          : colors.textMuted,
+                            ? colors.warning
+                            : colors.textMuted,
                     },
                   ]}
                 >
@@ -309,7 +309,7 @@ export default function PackageEnrollmentDetailSheet({
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Ionicons name="layers-outline" size={16} color={colors.primary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Session Timeline & ERP History</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Session Timeline</Text>
             </View>
             <View style={[styles.timelineBadge, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.timelineBadgeText, { color: colors.primary }]}>

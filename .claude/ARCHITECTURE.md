@@ -108,6 +108,7 @@ DrPauls/
     │   ├── PatientListScreen.tsx  # Patient directory screen with priority border highlights
     │   ├── PatientRecordsScreen.tsx # Patient Past Records, timeline, active enrollments
     │   ├── DoctorScreen.tsx       # Doctor schedule screen with phone & direct system dialer call icon
+    │   ├── ReportsScreen.tsx      # Comprehensive clinical data analytics & operational dashboard
     │   ├── AvailablePackagesScreen.tsx # Dedicated Available Packages catalog screen
     │   ├── PatientEnrollmentsScreen.tsx # Dedicated Patient Package Enrollments screen
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile & Sign Out
@@ -169,9 +170,10 @@ App Root (SafeAreaProvider)
     │   ├── PatientListScreen (Priority card border highlights)
     │   ├── PatientRecordsScreen (Past records & interactive timeline)
     │   ├── DoctorScreen
+    │   ├── ReportsScreen (Analytics & operational data dashboard)
     │   ├── Packages (Multi-level Collapsible Sidebar Group)
     │   │   ├── AvailablePackagesScreen (Catalog & booking)
-    │   │   └── PatientEnrollmentsScreen (Live ERP enrollments & timelines)
+    │   │   └── PatientEnrollmentsScreen (Live enrollments & timelines)
     │   └── SettingsScreen
     └── Bottom Nav Bar (Home | Quick Add [+] | Settings)
 ```
@@ -212,7 +214,7 @@ App Root (SafeAreaProvider)
 
 ---
 
-## 8. Packaged Sessions ERP — Enrollment Lifecycle
+## 8. Packaged Sessions — Enrollment Lifecycle
 
 ### Core Data Model
 
@@ -255,9 +257,9 @@ No emojis anywhere in the UI. All icons use `@expo/vector-icons` Ionicons.
 ### UI Components
 - `SessionProgressRing.tsx` — Reanimated SVG circular progress.
 - `PackageSessionCard.tsx` — Action card per session (Mark / Reschedule / Cancel).
-- `PackageEnrollmentDetailSheet.tsx` — Full ERP bottom sheet with timeline, pause/resume, shift dialog.
+- `PackageEnrollmentDetailSheet.tsx` — Full bottom sheet with timeline, pause/resume, shift dialog.
 - `UpcomingSessionsWidget.tsx` — Dashboard horizontal scrollable widget on `HomeScreen`.
-- `PackagesScreen.tsx` — Dual tabs: **Catalog** (static) / **Enrollments** (live ERP).
+- `PackagesScreen.tsx` — Dual tabs: **Catalog** (static) / **Enrollments** (live).
 
 ---
 

@@ -61,7 +61,7 @@ export default function AppointmentsScreen() {
 
   // Selected appointment for detail modal
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
-  // Lifted ERP Package Enrollment timeline & session modals
+  // Lifted Package Enrollment timeline & session modals
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
   const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
   const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
@@ -385,7 +385,7 @@ export default function AppointmentsScreen() {
         }}
       />
 
-      {/* Package Enrollment Detail Sheet (ERP Timeline) */}
+      {/* Package Enrollment Detail Sheet (Timeline) */}
       <PackageEnrollmentDetailSheet
         visible={!!selectedEnrollmentId}
         enrollmentId={selectedEnrollmentId}
@@ -401,7 +401,7 @@ export default function AppointmentsScreen() {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      {/* Session Appointment Detail Modal — opened from timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}

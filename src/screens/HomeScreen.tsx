@@ -121,7 +121,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Upcoming Packaged Sessions ERP Widget */}
+      {/* Upcoming Packaged Sessions Widget */}
       <UpcomingSessionsWidget onSelectEnrollment={(id) => setSelectedEnrollmentId(id)} />
 
       {/* Today's Appointments List */}
@@ -195,7 +195,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      {/* Session Appointment Detail Modal — opened from timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 16 },
   sectionCount: { fontSize: 12 },
   emptyBox: {
     padding: 32,

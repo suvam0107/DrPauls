@@ -204,7 +204,7 @@ export default function CalendarScreen() {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      {/* Session Appointment Detail Modal — opened from timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}

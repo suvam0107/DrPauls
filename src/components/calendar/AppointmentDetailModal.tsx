@@ -290,11 +290,11 @@ function ModalContent({
                 {matchedEnrollment
                   ? matchedEnrollment.packageName
                   : appointment.sessionNumber
-                  ? `Session ${appointment.sessionNumber} (Packaged Visit)`
-                  : 'Packaged Treatment Visit'}
+                    ? `Session ${appointment.sessionNumber} (Packaged Visit)`
+                    : 'Packaged Treatment Visit'}
               </Text>
               <Text style={[styles.packageBandSub, { color: colors.text }]}>
-                {targetEnrollmentId ? `ID: ${targetEnrollmentId} • ` : ''}View ERP Session Timeline
+                {targetEnrollmentId ? `ID: ${targetEnrollmentId} • ` : ''}View Session Timeline
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />

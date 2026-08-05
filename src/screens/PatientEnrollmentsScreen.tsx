@@ -186,7 +186,7 @@ export default function PatientEnrollmentsScreen() {
         )}
       </ScrollView>
 
-      {/* ERP Detail Sheet — callbacks lifted, no nested modals inside */}
+      {/* Enrollment Detail Sheet — callbacks lifted, no nested modals inside */}
       <PackageEnrollmentDetailSheet
         visible={!!selectedEnrollmentId}
         enrollmentId={selectedEnrollmentId}
@@ -202,7 +202,7 @@ export default function PatientEnrollmentsScreen() {
         onClose={() => setRescheduleTargetAppt(null)}
       />
 
-      {/* Session Appointment Detail Modal — opened from ERP timeline, redundant package link hidden */}
+      {/* Session Appointment Detail Modal — opened from timeline, redundant package link hidden */}
       <AppointmentDetailModal
         visible={!!selectedSessionAppt}
         appointment={selectedSessionAppt}
