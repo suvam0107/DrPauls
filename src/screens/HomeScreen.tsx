@@ -56,9 +56,12 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Date Banner */}
-      <View style={styles.banner}>
-        <View>
-          <Text style={[styles.bannerTitle, { color: colors.text }]}>Today's Overview</Text>
+      <View style={[styles.bannerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.bannerTextCol}>
+          <View style={styles.bannerBadgeRow}>
+            <View style={[styles.liveDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.bannerTitle, { color: colors.text }]}>Today's Overview</Text>
+          </View>
           <Text style={[styles.bannerSub, { color: colors.textMuted }]}>{formatDateShort(today)}</Text>
         </View>
         <TouchableOpacity
@@ -67,31 +70,52 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
             playClickSound();
             onNavigate('calendar');
           }}
+          activeOpacity={0.8}
         >
-          <Ionicons name="calendar-outline" size={18} color="#FFF" />
+          <Ionicons name="calendar" size={16} color="#FFF" />
           <Text style={styles.calendarQuickText}>Full Calendar</Text>
         </TouchableOpacity>
       </View>
 
       {/* 2x2 Stats Cards Grid */}
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statNum, { color: colors.primary }]}>{todayAppts.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Appointments (Today)</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]}>
+          <View style={styles.statCardTop}>
+            <View style={[styles.iconBadge, { backgroundColor: colors.primaryLight }]}>
+              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.statNum, { color: colors.primary }]}>{todayAppts.length}</Text>
+          </View>
+          <Text style={[styles.statLabel, { color: colors.textMuted }]}>Today's Appts</Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statNum, { color: colors.success }]}>{confirmedCount}</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.success }]}>
+          <View style={styles.statCardTop}>
+            <View style={[styles.iconBadge, { backgroundColor: colors.successBg }]}>
+              <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+            </View>
+            <Text style={[styles.statNum, { color: colors.success }]}>{confirmedCount}</Text>
+          </View>
           <Text style={[styles.statLabel, { color: colors.textMuted }]}>Confirmed</Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statNum, { color: colors.warning }]}>{pendingCount}</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.warning }]}>
+          <View style={styles.statCardTop}>
+            <View style={[styles.iconBadge, { backgroundColor: colors.warningBg }]}>
+              <Ionicons name="time-outline" size={18} color={colors.warning} />
+            </View>
+            <Text style={[styles.statNum, { color: colors.warning }]}>{pendingCount}</Text>
+          </View>
           <Text style={[styles.statLabel, { color: colors.textMuted }]}>Pending</Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statNum, { color: colors.purple }]}>{paidCount}</Text>
+        <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.purple }]}>
+          <View style={styles.statCardTop}>
+            <View style={[styles.iconBadge, { backgroundColor: colors.purpleBg }]}>
+              <Ionicons name="card-outline" size={18} color={colors.purple} />
+            </View>
+            <Text style={[styles.statNum, { color: colors.purple }]}>{paidCount}</Text>
+          </View>
           <Text style={[styles.statLabel, { color: colors.textMuted }]}>Paid</Text>
         </View>
       </View>
@@ -99,25 +123,39 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       {/* Quick Nav Bar */}
       <View style={styles.quickNavRow}>
         <TouchableOpacity
-          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]}
           onPress={() => {
             playClickSound();
             onNavigate('patients');
           }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="people-outline" size={24} color={colors.primary} />
-          <Text style={[styles.quickNavText, { color: colors.text }]}>{patientCount} Patients Directory</Text>
+          <View style={[styles.quickNavIconBadge, { backgroundColor: colors.primaryLight }]}>
+            <Ionicons name="people-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.quickNavText, { color: colors.text }]}>Patients Directory</Text>
+            <Text style={[styles.quickNavSubText, { color: colors.textMuted }]}>{patientCount} registered</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.quickNavCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]}
           onPress={() => {
             playClickSound();
             onNavigate('doctors');
           }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="medical-outline" size={24} color={colors.primary} />
-          <Text style={[styles.quickNavText, { color: colors.text }]}>{doctorCount} Doctors on Duty</Text>
+          <View style={[styles.quickNavIconBadge, { backgroundColor: colors.primaryLight }]}>
+            <Ionicons name="medical-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.quickNavText, { color: colors.text }]}>Doctors Duty</Text>
+            <Text style={[styles.quickNavSubText, { color: colors.textMuted }]}>{doctorCount} on duty</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -209,14 +247,31 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  banner: {
+  bannerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
     marginBottom: 16,
   },
-  bannerTitle: { fontSize: 20, fontWeight: '700' },
-  bannerSub: { fontSize: 13, marginTop: 2 },
+  bannerTextCol: {
+    gap: 4,
+  },
+  bannerBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  bannerTitle: { fontSize: 18, fontWeight: '700' },
+  bannerSub: { fontSize: 12, fontWeight: '500' },
   calendarQuickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,36 +280,57 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  calendarQuickText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
+  calendarQuickText: { color: '#FFF', fontWeight: '600', fontSize: 12 },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 16,
     justifyContent: 'space-between',
   },
   statCard: {
     width: '48%',
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    alignItems: 'center',
+    borderLeftWidth: 4,
+    gap: 8,
   },
-  statNum: { fontSize: 20, fontWeight: '700' },
-  statLabel: { fontSize: 12, fontWeight: '500', marginTop: 4, textAlign: 'center' },
-  quickNavRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  statCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statNum: { fontSize: 22, fontWeight: '700' },
+  statLabel: { fontSize: 12, fontWeight: '600' },
+  quickNavRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   quickNavCard: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    gap: 10,
+  },
+  quickNavIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    gap: 8,
   },
-  quickNavText: { fontSize: 12, fontWeight: '600' },
+  quickNavText: { fontSize: 12, fontWeight: '700' },
+  quickNavSubText: { fontSize: 10, marginTop: 2 },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

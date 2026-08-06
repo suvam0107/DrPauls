@@ -159,94 +159,94 @@ export default function DoctorDetailModal({
     <BottomSheet visible={visible && !!activeDoc} onClose={onClose} snapHeight={560} keyboardBlurBehavior="none">
       {activeDoc ? (
         <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
-        {/* Header Profile Section with Copy & Share Icons */}
-        <View style={styles.headerRow}>
-          <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="medical" size={28} color={colors.primary} />
-          </View>
+          {/* Header Profile Section with Copy & Share Icons */}
+          <View style={styles.headerRow}>
+            <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+              <Ionicons name="medical-outline" size={28} color={colors.primary} />
+            </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.docName, { color: colors.text }]}>{name || activeDoc.name}</Text>
-            <Text style={[styles.docSpec, { color: colors.primary }]}>
-              {specialty || activeDoc.specialty} • {department || activeDoc.department}
-            </Text>
-          </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.docName, { color: colors.text }]}>{name || activeDoc.name}</Text>
+              <Text style={[styles.docSpec, { color: colors.primary }]}>
+                {specialty || activeDoc.specialty} • {department || activeDoc.department}
+              </Text>
+            </View>
 
-          {/* Plain Copy & Share Icons side-by-side */}
-          <View style={styles.iconRow}>
-            <TouchableOpacity
-              onPress={handleCopyProfile}
-              activeOpacity={0.7}
-              hitSlop={6}
-            >
-              <Ionicons name="copy-outline" size={19} color={colors.primary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleShareProfile}
-              activeOpacity={0.7}
-              hitSlop={6}
-            >
-              <Ionicons name="share-social-outline" size={19} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Status & Quick Action Bar */}
-        <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.statusPill}>
-            <View
-              style={[
-                styles.dot,
-                { backgroundColor: available ? colors.success : colors.danger },
-              ]}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                { color: available ? colors.success : colors.danger },
-              ]}
-            >
-              {available ? 'Available On Duty' : 'On Leave'}
-            </Text>
-          </View>
-
-          <View style={styles.actionBtns}>
-            {phone ? (
+            {/* Plain Copy & Share Icons side-by-side */}
+            <View style={styles.iconRow}>
               <TouchableOpacity
-                style={[styles.iconBtn, { backgroundColor: colors.success }]}
-                onPress={handleCall}
+                onPress={handleCopyProfile}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Ionicons name="copy-outline" size={19} color={colors.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleShareProfile}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Status & Quick Action Bar */}
+          <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.statusPill}>
+              <View
+                style={[
+                  styles.dot,
+                  { backgroundColor: available ? colors.success : colors.danger },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: available ? colors.success : colors.danger },
+                ]}
+              >
+                {available ? 'Available On Duty' : 'On Leave'}
+              </Text>
+            </View>
+
+            <View style={styles.actionBtns}>
+              {phone ? (
+                <TouchableOpacity
+                  style={[styles.iconBtn, { backgroundColor: colors.success }]}
+                  onPress={handleCall}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="call-outline" size={16} color="#FFF" />
+                  <Text style={[styles.btnText, { color: '#FFF' }]}>Call</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[
+                  styles.iconBtn,
+                  { backgroundColor: isEditing ? colors.danger : colors.primary },
+                ]}
+                onPress={() => {
+                  playClickSound();
+                  setIsEditing(!isEditing);
+                }}
                 activeOpacity={0.8}
               >
-                <Ionicons name="call-outline" size={16} color="#FFF" />
-                <Text style={[styles.btnText, { color: '#FFF' }]}>Call</Text>
+                <Ionicons
+                  name={isEditing ? 'close-circle-outline' : 'create-outline'}
+                  size={16}
+                  color="#FFF"
+                />
+                <Text style={[styles.btnText, { color: '#FFF' }]}>
+                  {isEditing ? 'Cancel' : 'Edit'}
+                </Text>
               </TouchableOpacity>
-            ) : null}
-
-            <TouchableOpacity
-              style={[
-                styles.iconBtn,
-                { backgroundColor: isEditing ? colors.danger : colors.primary },
-              ]}
-              onPress={() => {
-                playClickSound();
-                setIsEditing(!isEditing);
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={isEditing ? 'close-circle-outline' : 'create-outline'}
-                size={16}
-                color="#FFF"
-              />
-              <Text style={[styles.btnText, { color: '#FFF' }]}>
-                {isEditing ? 'Cancel' : 'Edit'}
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {!isEditing ? (
             /* READ-ONLY VIEW MODE */
@@ -351,188 +351,188 @@ export default function DoctorDetailModal({
                 </View>
               </TouchableOpacity>
             </View>
-        ) : (
-          /* EDIT FORM MODE */
-          <View style={{ marginTop: 8 }}>
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Doctor Name *</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                ]}
-                value={name}
-                onChangeText={setName}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Select
-                  label="Specialty *"
-                  value={specialty}
-                  options={SPECIALTIES}
-                  onChange={setSpecialty}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Department *</Text>
+          ) : (
+            /* EDIT FORM MODE */
+            <View style={{ marginTop: 8 }}>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Doctor Name *</Text>
                 <TextInput
                   style={[
                     styles.input,
                     { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
                   ]}
-                  value={department}
-                  onChangeText={setDepartment}
+                  value={name}
+                  onChangeText={setName}
                 />
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Qualification</Text>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Select
+                    label="Specialty *"
+                    value={specialty}
+                    options={SPECIALTIES}
+                    onChange={setSpecialty}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Department *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={department}
+                    onChangeText={setDepartment}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Qualification</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={qualification}
+                    onChangeText={setQualification}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Phone Number *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Consult Fee (₹) *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={consultFee}
+                    onChangeText={setConsultFee}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Max Patients / Day *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={maxPatientsPerDay}
+                    onChangeText={setMaxPatientsPerDay}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Location / Branch</Text>
                 <TextInput
                   style={[
                     styles.input,
                     { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
                   ]}
-                  value={qualification}
-                  onChangeText={setQualification}
+                  value={location}
+                  onChangeText={setLocation}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Phone Number *</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  maxLength={10}
+
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Working Days *</Text>
+                <View style={styles.daysRow}>
+                  {WEEKDAYS.map((day) => {
+                    const selected = selectedDays.includes(day);
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        style={[
+                          styles.dayChip,
+                          {
+                            backgroundColor: selected ? colors.primary : colors.surface,
+                            borderColor: selected ? colors.primary : colors.border,
+                          },
+                        ]}
+                        onPress={() => toggleDay(day)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.dayText, { color: selected ? '#FFF' : colors.text }]}>
+                          {day}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Start Time (HH:mm)</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={startHour}
+                    onChangeText={setStartHour}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>End Time (HH:mm)</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={endHour}
+                    onChangeText={setEndHour}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.switchRow}>
+                <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>
+                  Available On Duty
+                </Text>
+                <Switch
+                  value={available}
+                  onValueChange={(val) => {
+                    playClickSound();
+                    setAvailable(val);
+                  }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={available ? '#FFFFFF' : '#F4F3F4'}
                 />
               </View>
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSave}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.saveBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+
             </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Consult Fee (₹) *</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={consultFee}
-                  onChangeText={setConsultFee}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Max Patients / Day *</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={maxPatientsPerDay}
-                  onChangeText={setMaxPatientsPerDay}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Location / Branch</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                ]}
-                value={location}
-                onChangeText={setLocation}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Working Days *</Text>
-              <View style={styles.daysRow}>
-                {WEEKDAYS.map((day) => {
-                  const selected = selectedDays.includes(day);
-                  return (
-                    <TouchableOpacity
-                      key={day}
-                      style={[
-                        styles.dayChip,
-                        {
-                          backgroundColor: selected ? colors.primary : colors.surface,
-                          borderColor: selected ? colors.primary : colors.border,
-                        },
-                      ]}
-                      onPress={() => toggleDay(day)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.dayText, { color: selected ? '#FFF' : colors.text }]}>
-                        {day}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Start Time (HH:mm)</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={startHour}
-                  onChangeText={setStartHour}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>End Time (HH:mm)</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={endHour}
-                  onChangeText={setEndHour}
-                />
-              </View>
-            </View>
-
-            <View style={styles.switchRow}>
-              <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>
-                Available On Duty
-              </Text>
-              <Switch
-                value={available}
-                onValueChange={(val) => {
-                  playClickSound();
-                  setAvailable(val);
-                }}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={available ? '#FFFFFF' : '#F4F3F4'}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-              onPress={handleSave}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="save-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.saveBtnText}>Save Changes</Text>
-            </TouchableOpacity>
-
-          </View>
-        )}
-      </BottomSheetScrollView>
+          )}
+        </BottomSheetScrollView>
       ) : null}
     </BottomSheet>
   );

@@ -63,23 +63,20 @@ export default function Select({
   const [layoutPos, setLayoutPos] = useState<LayoutPos>({ x: 0, y: 0, width: 200, height: 44 });
 
   const opacity = useSharedValue(0);
-  const translateY = useSharedValue(-6);
-  const scaleY = useSharedValue(0.95);
+  const translateY = useSharedValue(-4);
 
   const screenHeight = Dimensions.get('window').height;
 
   const animateIn = () => {
-    opacity.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.quad) });
-    translateY.value = withTiming(0, { duration: 140, easing: Easing.out(Easing.quad) });
-    scaleY.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.quad) });
+    opacity.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
+    translateY.value = withTiming(0, { duration: 90, easing: Easing.out(Easing.quad) });
   };
 
   const animateOut = (onComplete?: () => void) => {
-    opacity.value = withTiming(0, { duration: 120, easing: Easing.in(Easing.quad) });
-    translateY.value = withTiming(-6, { duration: 120, easing: Easing.in(Easing.quad) });
-    scaleY.value = withTiming(
-      0.95,
-      { duration: 120, easing: Easing.in(Easing.quad) },
+    opacity.value = withTiming(0, { duration: 80, easing: Easing.in(Easing.quad) });
+    translateY.value = withTiming(
+      -4,
+      { duration: 80, easing: Easing.in(Easing.quad) },
       (finished) => {
         if (finished && onComplete) {
           runOnJS(onComplete)();
@@ -114,7 +111,7 @@ export default function Select({
 
   const popupAnimatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scaleY: scaleY.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   const selected = options.find((o) =>

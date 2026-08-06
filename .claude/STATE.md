@@ -12,19 +12,12 @@
 
 ## Current Sprint Focus
 
-### Reports & Analytics Dashboard (`@Frontend`)
-- **Full Data Analytics Dashboard (`src/screens/ReportsScreen.tsx`)**: Created a full-fledged operational analytics screen with 8 visual sections powered by pure `useMemo` derivations from Zustand stores (`useAppointmentStore`, `usePatientStore`, `useDoctorStore`, `usePackageStore`, `useUIStore`).
-  - **KPI Summary Strip**: 4 metric cards (Total Appointments, Total Patients, Active Packages, Est. Revenue) with left accent border indicators.
-  - **Appointment Status Breakdown**: Flex-based segmented bar with status counts, percentage labels, and dot legend.
-  - **Service Type Distribution**: Donut chart using `react-native-svg` (`Svg`, `G`, `Circle`) with center metrics and service legend.
-  - **Daily Activity Heatmap**: 7-bar chart (Mon–Sun) with height indicators, highlighted current day bar, and Thursday closed-day overlay.
-  - **Doctor Performance & Workload Table**: Mini-table displaying doctor appointments, confirmed sessions, paid sessions, and cancellation rates.
-  - **Package Enrollment Lifecycle Summary**: Grid cards for Active, Completed, Paused, and Cancelled enrollments with completion percentages.
-  - **Patient Acquisition Source Chart**: Proportional horizontal bar chart displaying enquiry sources (Walk-in, Referral, Google Ads, etc.).
-  - **Patient Priority Distribution**: 3-segment distribution bar based on `calculatePatientPriority` formula (High, Medium, Low).
-- **Time Period Filtering**: Dynamic Segmented Period Switcher (This Week / This Month / All Time) re-calculating all analytics metrics on the fly.
-- **Sidebar Drawer Integration (`SidebarDrawer.tsx`)**: Added `Reports & Analytics` (`bar-chart-outline`) to the primary drawer menu stack.
-- **App Navigator Routing (`App.tsx`)**: Wired `ReportsScreen` into the main screen container router stack.
+### 60Hz Animation Performance & Lightweight Transition Audit (`@UXEngineer`)
+- **Sidebar Drawer Optimization (`SidebarDrawer.tsx`)**: Streamlined slide-in (`120ms`) and slide-out (`100ms`) with `Easing.out(Easing.quad)`. Reduced nested sub-menu toggle duration to `100ms` to eliminate layout reflow frame drops on 60Hz displays.
+- **Quick Add Popup (`QuickAddPopup.tsx`)**: Replaced `Easing.back(1.5)` spring overshoot physics with lightweight `80ms` `Easing.out(Easing.quad)` scale + opacity transitions, eliminating 60Hz popup opening micro-jank.
+- **Dropdown Selector (`Select.tsx`)**: Removed `scaleY` transform distortion in favor of GPU-native `opacity` + `translateY` (`90ms` in / `80ms` out), guaranteeing 60fps locked dropdown rendering.
+- **Package Progress Ring (`SessionProgressRing.tsx`)**: Reduced SVG fill animation from `700ms cubic` to `200ms quad` for instant, lightweight progress updates without UI thread blocking.
+- **Calendar Tab Indicator (`CalendarHeader.tsx`)**: Optimized view switch indicator slide duration to `90ms quad` for instant tab switching response.
 
 ### Overdue / Unattended Past Sessions Status Chip (`@Frontend`)
 - **Automatic Overdue Evaluation (`StatusChip.tsx`)**: Enhanced `StatusChip` to accept an optional `date` prop. When an appointment date is in the past (`date < today`) and its status is unsettled (not `Paid` and not `Cancelled`), `StatusChip` dynamically renders an **`Overdue`** badge chip with high-visibility red highlight (`#EF4444` text with tinted background).

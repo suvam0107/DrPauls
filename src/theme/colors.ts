@@ -47,27 +47,27 @@ export const LIGHT: ColorPalette = {
   shadow: 'rgba(0,0,0,0.08)',
 };
 
-// Dark mode color palette
+// Dark mode color palette — Robinhood Pitch Black + Midnight Blue Tint Style
 export const DARK: ColorPalette = {
   dark: true,
-  background: '#09090B',
-  surface: '#18181B',
-  card: '#27272A',
-  border: '#3F3F46',
-  text: '#FAFAFA',
-  textMuted: '#A1A1AA',
-  primary: '#3B82F6',
-  primaryLight: '#1E3A5F',
+  background: '#000000',    // Pure Pitch Black
+  surface: '#070A10',       // Blacker surface with slight blue tint
+  card: '#0E131F',          // Blacker card with slight blue tint
+  border: '#171F2E',        // Dark midnight blue border stroke
+  text: '#FFFFFF',          // High contrast crisp white
+  textMuted: '#808D9E',     // Blue-tinted soft slate secondary text
+  primary: '#3875F6',       // Electric Robinhood Blue
+  primaryLight: '#0E1E3B',  // Midnight blue container tint
   primaryFg: '#FFFFFF',
-  success: '#22C55E',
-  successBg: '#052E16',
-  warning: '#F59E0B',
-  warningBg: '#451A03',
-  danger: '#EF4444',
-  dangerBg: '#450A0A',
-  purple: '#A78BFA',
-  purpleBg: '#2E1065',
-  cyan: '#22D3EE',
-  cyanBg: '#083344',
-  shadow: 'rgba(0,0,0,0.4)',
+  success: '#00C805',       // Signature Robinhood Emerald Green
+  successBg: '#042211',     // Midnight emerald container tint
+  warning: '#FF9500',       // Robinhood Amber / Gold
+  warningBg: '#221402',     // Midnight amber container tint
+  danger: '#FF3B30',        // Vivid Signal Red
+  dangerBg: '#240809',      // Midnight red container tint
+  purple: '#A855F7',        // Neon Electric Purple
+  purpleBg: '#1B0C30',      // Midnight purple container tint
+  cyan: '#00D5E6',          // Electric Cyan
+  cyanBg: '#031E2A',        // Midnight cyan container tint
+  shadow: 'rgba(0,0,0,0.9)',
 };

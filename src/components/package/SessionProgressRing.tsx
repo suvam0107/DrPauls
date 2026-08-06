@@ -36,8 +36,8 @@ export default function SessionProgressRing({
 
   useEffect(() => {
     progress.value = withTiming(targetProgress, {
-      duration: 700,
-      easing: Easing.out(Easing.cubic),
+      duration: 200,
+      easing: Easing.out(Easing.quad),
     });
   }, [targetProgress]);
 

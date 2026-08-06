@@ -45,7 +45,7 @@ export default function CalendarHeader({
   useEffect(() => {
     if (tabWidth > 0) {
       viewIndicatorX.value = withTiming(activeIndex * tabWidth, {
-        duration: 120,
+        duration: 90,
         easing: Easing.out(Easing.quad),
       });
     }

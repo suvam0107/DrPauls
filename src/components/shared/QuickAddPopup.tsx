@@ -32,13 +32,13 @@ export default function QuickAddPopup({
   useEffect(() => {
     if (visible) {
       setIsMounted(true);
-      opacity.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
-      scale.value = withTiming(1, { duration: 110, easing: Easing.out(Easing.back(1.5)) });
-      translateY.value = withTiming(0, { duration: 100, easing: Easing.out(Easing.quad) });
+      opacity.value = withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) });
+      scale.value = withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) });
+      translateY.value = withTiming(0, { duration: 80, easing: Easing.out(Easing.quad) });
     } else if (isMounted) {
-      opacity.value = withTiming(0, { duration: 90, easing: Easing.in(Easing.quad) });
-      scale.value = withTiming(0.8, { duration: 90, easing: Easing.in(Easing.quad) });
-      translateY.value = withTiming(12, { duration: 90, easing: Easing.in(Easing.quad) }, () => {
+      opacity.value = withTiming(0, { duration: 70, easing: Easing.in(Easing.quad) });
+      scale.value = withTiming(0.9, { duration: 70, easing: Easing.in(Easing.quad) });
+      translateY.value = withTiming(8, { duration: 70, easing: Easing.in(Easing.quad) }, () => {
         runOnJS(setIsMounted)(false);
       });
     }

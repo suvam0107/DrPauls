@@ -49,7 +49,7 @@ function CollapsibleMenuGroup({
 
   useEffect(() => {
     animation.value = withTiming(isOpen ? 1 : 0, {
-      duration: 180,
+      duration: 100,
       easing: Easing.out(Easing.quad),
     });
   }, [isOpen]);
@@ -165,18 +165,18 @@ export default function SidebarDrawer({ visible, onClose, onNavigate, currentScr
 
   useEffect(() => {
     if (visible) {
-      opacity.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) });
-      translateX.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) });
+      opacity.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.quad) });
+      translateX.value = withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) });
     } else {
-      opacity.value = withTiming(0, { duration: 140 });
-      translateX.value = withTiming(-DRAWER_WIDTH, { duration: 160 });
+      opacity.value = withTiming(0, { duration: 80 });
+      translateX.value = withTiming(-DRAWER_WIDTH, { duration: 100, easing: Easing.in(Easing.quad) });
     }
   }, [visible]);
 
   const handleClose = () => {
     playClickSound();
-    translateX.value = withTiming(-DRAWER_WIDTH, { duration: 160, easing: Easing.in(Easing.quad) });
-    opacity.value = withTiming(0, { duration: 140 }, () => {
+    translateX.value = withTiming(-DRAWER_WIDTH, { duration: 100, easing: Easing.in(Easing.quad) });
+    opacity.value = withTiming(0, { duration: 80 }, () => {
       runOnJS(onClose)();
     });
   };
