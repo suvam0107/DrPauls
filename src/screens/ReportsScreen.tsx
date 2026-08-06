@@ -21,6 +21,7 @@ import { APPOINTMENT_STATUS } from '../constants';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
 import { useRefresh } from '../utils/useRefresh';
 import { playClickSound } from '../utils/feedback';
+import ReportsScreenSkeleton from '../components/skeletons/ReportsScreenSkeleton';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -32,9 +33,13 @@ export default function ReportsScreen() {
   const { refreshing, onRefresh } = useRefresh();
 
   const appointments = useAppointmentStore((s) => s.appointments);
+  const apptLoading = useAppointmentStore((s) => s.loading);
   const patients = usePatientStore((s) => s.patients);
+  const patientLoading = usePatientStore((s) => s.loading);
   const doctors = useDoctorStore((s) => s.doctors);
+  const doctorLoading = useDoctorStore((s) => s.loading);
   const enrollments = usePackageStore((s) => s.enrollments);
+  const packageLoading = usePackageStore((s) => s.loading);
   const packages = usePackageStore((s) => s.packages);
   const activeCenterId = useUIStore((s) => s.activeCenterId);
 
@@ -258,6 +263,12 @@ export default function ReportsScreen() {
       { label: 'Low Priority', count: low, pct: Math.round((low / total) * 100), color: '#EF4444' },
     ];
   }, [patients]);
+
+  const isLoading = apptLoading || patientLoading || doctorLoading || packageLoading || refreshing;
+
+  if (isLoading) {
+    return <ReportsScreenSkeleton />;
+  }
 
   return (
     <ScrollView

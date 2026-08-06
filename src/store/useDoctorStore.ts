@@ -8,6 +8,7 @@ import { nextDoctorId } from '../utils/searchUtils';
 export interface ExtendedDoctorState {
   doctors: Doctor[];
   therapists: Therapist[];
+  loading: boolean;
   fetchDoctorsAndTherapists: () => Promise<void>;
   addDoctor: (data: Omit<Doctor, 'id'>) => Doctor;
   updateDoctor: (id: string, updates: Partial<Doctor>) => void;
@@ -23,11 +24,17 @@ const initialTherapists = dataStore.getData().therapists;
 const useDoctorStore = create<ExtendedDoctorState>((set, get) => ({
   doctors: initialDoctors,
   therapists: initialTherapists,
+  loading: false,
 
   fetchDoctorsAndTherapists: async () => {
-    const doctors = await doctorService.getAll();
-    const therapists = await therapistService.getAll();
-    set({ doctors, therapists });
+    set({ loading: true });
+    try {
+      const doctors = await doctorService.getAll();
+      const therapists = await therapistService.getAll();
+      set({ doctors, therapists });
+    } finally {
+      set({ loading: false });
+    }
   },
 
   /** Add new doctor, returns new doctor object */

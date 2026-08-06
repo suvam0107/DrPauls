@@ -16,6 +16,7 @@ import { Package } from '../types';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
 import { playClickSound } from '../utils/feedback';
 import { useRefresh } from '../utils/useRefresh';
+import PackagesCatalogSkeleton from '../components/skeletons/PackagesCatalogSkeleton';
 
 export default function AvailablePackagesScreen() {
   const { colors } = useTheme();
@@ -23,6 +24,7 @@ export default function AvailablePackagesScreen() {
   const { refreshing, onRefresh } = useRefresh();
 
   const packages = usePackageStore((s) => s.packages);
+  const loading = usePackageStore((s) => s.loading);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('All');
@@ -88,7 +90,8 @@ export default function AvailablePackagesScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: selectedServiceFilter === cat ? '#FFF' : colors.text },
+                  { color: colors.textMuted },
+                  selectedServiceFilter === cat && { color: '#FFF', fontWeight: '700' },
                 ]}
               >
                 {cat}
@@ -99,77 +102,81 @@ export default function AvailablePackagesScreen() {
       </View>
 
       {/* Package Cards Content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {filteredPackages.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="gift-outline" size={40} color={colors.textMuted} />
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No treatment packages found.</Text>
-          </View>
-        ) : (
-          filteredPackages.map((pkg) => (
-            <View key={pkg.id} style={[styles.pkgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.tagRow}>
-                    <View style={[styles.serviceTag, { backgroundColor: colors.primaryLight }]}>
-                      <Text style={[styles.serviceTagText, { color: colors.primary }]}>{pkg.serviceType}</Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.pkgName, { color: colors.text }]}>{pkg.name}</Text>
-                </View>
-                <View style={styles.priceCol}>
-                  <Text style={[styles.priceAmount, { color: colors.primary }]}>₹{pkg.price.toLocaleString()}</Text>
-                  <Text style={[styles.pricePerSession, { color: colors.textMuted }]}>
-                    ₹{pkg.perSessionPrice || Math.round(pkg.price / pkg.totalSessions)}/session
-                  </Text>
-                </View>
-              </View>
-
-              {pkg.description ? (
-                <Text style={[styles.pkgDesc, { color: colors.textMuted }]}>{pkg.description}</Text>
-              ) : null}
-
-              {pkg.includedServices && pkg.includedServices.length > 0 ? (
-                <View style={styles.servicesGrid}>
-                  {pkg.includedServices.map((service, idx) => (
-                    <View key={idx} style={[styles.serviceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                      <Ionicons name="checkmark-circle" size={14} color={colors.success || '#059669'} />
-                      <Text style={[styles.serviceItemText, { color: colors.text }]}>{service}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-
-              <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-                <View style={styles.sessionInfo}>
-                  <Ionicons name="layers-outline" size={16} color={colors.primary} />
-                  <Text style={[styles.sessionText, { color: colors.text }]}>
-                    <Text style={{ fontWeight: '700' }}>{pkg.totalSessions}</Text> Total Sessions
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.assignBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    playClickSound();
-                    setSelectedPackage(pkg);
-                    setShowBookingSheet(true);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="calendar-outline" size={15} color="#FFF" />
-                  <Text style={styles.assignBtnText}>Assign / Book Pack</Text>
-                </TouchableOpacity>
-              </View>
+      {loading || refreshing ? (
+        <PackagesCatalogSkeleton />
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {filteredPackages.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Ionicons name="gift-outline" size={40} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No treatment packages found.</Text>
             </View>
-          ))
-        )}
-      </ScrollView>
+          ) : (
+            filteredPackages.map((pkg) => (
+              <View key={pkg.id} style={[styles.pkgCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.tagRow}>
+                      <View style={[styles.serviceTag, { backgroundColor: colors.primaryLight }]}>
+                        <Text style={[styles.serviceTagText, { color: colors.primary }]}>{pkg.serviceType}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.pkgName, { color: colors.text }]}>{pkg.name}</Text>
+                  </View>
+                  <View style={styles.priceCol}>
+                    <Text style={[styles.priceAmount, { color: colors.primary }]}>₹{pkg.price.toLocaleString()}</Text>
+                    <Text style={[styles.pricePerSession, { color: colors.textMuted }]}>
+                      ₹{pkg.perSessionPrice || Math.round(pkg.price / pkg.totalSessions)}/session
+                    </Text>
+                  </View>
+                </View>
+
+                {pkg.description ? (
+                  <Text style={[styles.pkgDesc, { color: colors.textMuted }]}>{pkg.description}</Text>
+                ) : null}
+
+                {pkg.includedServices && pkg.includedServices.length > 0 ? (
+                  <View style={styles.servicesGrid}>
+                    {pkg.includedServices.map((service, idx) => (
+                      <View key={idx} style={[styles.serviceItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success || '#059669'} />
+                        <Text style={[styles.serviceItemText, { color: colors.text }]}>{service}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
+                  <View style={styles.sessionInfo}>
+                    <Ionicons name="layers-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.sessionText, { color: colors.text }]}>
+                      <Text style={{ fontWeight: '700' }}>{pkg.totalSessions}</Text> Total Sessions
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.assignBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      playClickSound();
+                      setSelectedPackage(pkg);
+                      setShowBookingSheet(true);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="calendar-outline" size={15} color="#FFF" />
+                    <Text style={styles.assignBtnText}>Assign / Book Pack</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      )}
 
       {/* Booking Sheet */}
       <CreateAppointmentSheet

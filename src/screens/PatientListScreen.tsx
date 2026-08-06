@@ -11,6 +11,7 @@ import { Patient } from '../types';
 import { playClickSound } from '../utils/feedback';
 import { copyToClipboard } from '../utils/clipboardUtils';
 import { useRefresh } from '../utils/useRefresh';
+import PatientListSkeleton from '../components/skeletons/PatientListSkeleton';
 
 export interface PatientListScreenProps {
   onNavigate?: (screen: string, params?: { patientId?: string }) => void;
@@ -20,6 +21,7 @@ export default function PatientListScreen({ onNavigate }: PatientListScreenProps
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
   const patients = usePatientStore((s) => s.patients);
+  const loading = usePatientStore((s) => s.loading);
   const search = usePatientStore((s) => s.search);
 
   const [query, setQuery] = useState('');
@@ -65,9 +67,12 @@ export default function PatientListScreen({ onNavigate }: PatientListScreenProps
         <SearchInput value={query} onChangeText={setQuery} placeholder="Search by name, ID or mobile..." />
       </View>
 
-      <FlatList
-        data={filteredPatients}
-        keyExtractor={(item) => item.id}
+      {loading || refreshing ? (
+        <PatientListSkeleton />
+      ) : (
+        <FlatList
+          data={filteredPatients}
+          keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => {
@@ -139,6 +144,7 @@ export default function PatientListScreen({ onNavigate }: PatientListScreenProps
           );
         }}
       />
+      )}
 
       {/* Quick Add Patient Sheet */}
       <AddPatientSheet visible={showAdd} onClose={() => setShowAdd(false)} />

@@ -6,6 +6,7 @@ import usePackageStore from '../../store/usePackageStore';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { formatDateShort, formatTime, todayISO } from '../../utils/dateUtils';
 import { playClickSound } from '../../utils/feedback';
+import UpcomingSessionsWidgetSkeleton from '../skeletons/UpcomingSessionsWidgetSkeleton';
 
 interface UpcomingSessionsWidgetProps {
   onSelectEnrollment: (enrollmentId: string) => void;
@@ -14,7 +15,12 @@ interface UpcomingSessionsWidgetProps {
 export default function UpcomingSessionsWidget({ onSelectEnrollment }: UpcomingSessionsWidgetProps) {
   const { colors } = useTheme();
   const enrollments = usePackageStore((s) => s.enrollments);
+  const loading = usePackageStore((s) => s.loading);
   const appointments = useAppointmentStore((s) => s.appointments);
+
+  if (loading) {
+    return <UpcomingSessionsWidgetSkeleton />;
+  }
 
   const today = todayISO();
   const activeEnrollments = enrollments.filter((e) => e.status === 'Active' || e.status === 'Paused');

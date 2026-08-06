@@ -25,6 +25,8 @@ import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmen
 import RescheduleModal from '../components/calendar/RescheduleModal';
 import { Appointment } from '../types';
 
+import PatientRecordsSkeleton from '../components/skeletons/PatientRecordsSkeleton';
+
 export interface PatientRecordsScreenProps {
   patientId?: string;
   onBack?: () => void;
@@ -36,7 +38,9 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   const { refreshing, onRefresh } = useRefresh();
 
   const patients = usePatientStore((s) => s.patients);
+  const patientLoading = usePatientStore((s) => s.loading);
   const appointments = useAppointmentStore((s) => s.appointments);
+  const apptLoading = useAppointmentStore((s) => s.loading);
   const packages = usePackageStore((s) => s.packages);
 
   const [selectedAppt, setSelectedAppt] = React.useState<Appointment | null>(null);
@@ -72,6 +76,10 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
 
   const priorityBg =
     priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
+
+  if (patientLoading || apptLoading || refreshing) {
+    return <PatientRecordsSkeleton />;
+  }
 
   if (!targetPatient) {
     return (

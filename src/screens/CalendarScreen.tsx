@@ -18,10 +18,12 @@ import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefresh } from '../utils/useRefresh';
+import CalendarScreenSkeleton from '../components/skeletons/CalendarScreenSkeleton';
 
 export default function CalendarScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
+  const loading = useAppointmentStore((s) => s.loading);
 
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid');
@@ -107,7 +109,9 @@ export default function CalendarScreen() {
       />
 
       {/* Main Content Area */}
-      {displayMode === 'list' ? (
+      {loading || refreshing ? (
+        <CalendarScreenSkeleton />
+      ) : displayMode === 'list' ? (
         /* List Mode View (view-only list, no drag-drop) */
         <ScrollView
           style={styles.container}

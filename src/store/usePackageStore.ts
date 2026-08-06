@@ -5,6 +5,7 @@ import useDoctorStore from './useDoctorStore';
 import { addDays, todayISO } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS, LEAD_STATUS } from '../constants';
 import enrollmentsRaw from '../../assets/data/enrollments.json';
+import { packageService } from '../api/services/packageService';
 
 export interface EnrollParams {
   packageId: string;
@@ -23,7 +24,8 @@ export interface EnrollParams {
 export interface PackageState {
   packages: Package[];
   enrollments: PackageEnrollment[];
-  fetchPackages: () => void;
+  loading: boolean;
+  fetchPackages: () => Promise<void>;
   fetchEnrollments: () => void;
   getPackageById: (id: string) => Package | undefined;
   getEnrollmentById: (enrollmentId: string) => PackageEnrollment | undefined;
@@ -127,9 +129,18 @@ const seedPackages: Package[] = [
 const usePackageStore = create<PackageState>((set, get) => ({
   packages: seedPackages,
   enrollments: enrollmentsRaw as PackageEnrollment[],
+  loading: false,
 
-  fetchPackages: () => {
-    set({ packages: seedPackages });
+  fetchPackages: async () => {
+    set({ loading: true });
+    try {
+      const fetched = await packageService.getAll();
+      set({ packages: fetched.length > 0 ? fetched : seedPackages });
+    } catch (e) {
+      set({ packages: seedPackages });
+    } finally {
+      set({ loading: false });
+    }
   },
 
   fetchEnrollments: () => {

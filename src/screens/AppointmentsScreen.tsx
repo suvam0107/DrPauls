@@ -33,6 +33,7 @@ import { playClickSound } from '../utils/feedback';
 
 import AppRefreshControl from '../components/shared/AppRefreshControl';
 import { useRefresh } from '../utils/useRefresh';
+import AppointmentsScreenSkeleton from '../components/skeletons/AppointmentsScreenSkeleton';
 
 export type RangeMode = 'today' | 'yesterday' | 'custom';
 export type GroupingMode = 'doctor' | 'patient';
@@ -43,6 +44,7 @@ export default function AppointmentsScreen() {
   const { refreshing, onRefresh } = useRefresh();
 
   const appointments = useAppointmentStore((s) => s.appointments);
+  const loading = useAppointmentStore((s) => s.loading);
   const doctors = useDoctorStore((s) => s.doctors);
   const patients = usePatientStore((s) => s.patients);
 
@@ -283,12 +285,15 @@ export default function AppointmentsScreen() {
       </View>
 
       {/* Main Grouped List */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
+      {loading || refreshing ? (
+        <AppointmentsScreenSkeleton />
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
         {groupedData.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <Ionicons name="calendar-clear-outline" size={48} color={colors.textMuted} />
@@ -373,6 +378,7 @@ export default function AppointmentsScreen() {
           })
         )}
       </ScrollView>
+      )}
 
       {/* Appointment Detail Bottom Sheet Modal */}
       <AppointmentDetailModal

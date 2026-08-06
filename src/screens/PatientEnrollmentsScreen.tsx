@@ -21,6 +21,7 @@ import { playClickSound } from '../utils/feedback';
 import { useRefresh } from '../utils/useRefresh';
 import { formatDateShort, getNextSessionAppointment } from '../utils/dateUtils';
 import { Appointment } from '../types';
+import EnrollmentsSkeleton from '../components/skeletons/EnrollmentsSkeleton';
 
 export default function PatientEnrollmentsScreen() {
   const { colors } = useTheme();
@@ -28,6 +29,7 @@ export default function PatientEnrollmentsScreen() {
   const { refreshing, onRefresh } = useRefresh();
 
   const enrollments = usePackageStore((s) => s.enrollments);
+  const loading = usePackageStore((s) => s.loading);
   const appointments = useAppointmentStore((s) => s.appointments);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +70,7 @@ export default function PatientEnrollmentsScreen() {
             style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search enrollments by patient, package or ID..."
+            placeholder="Search enrollments by patient or package..."
             placeholderTextColor={colors.textMuted}
           />
           {searchQuery ? (
@@ -96,7 +98,8 @@ export default function PatientEnrollmentsScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: enrollmentStatusFilter === status ? '#FFF' : colors.text },
+                  { color: colors.textMuted },
+                  enrollmentStatusFilter === status && { color: '#FFF', fontWeight: '700' },
                 ]}
               >
                 {status}
@@ -107,84 +110,88 @@ export default function PatientEnrollmentsScreen() {
       </View>
 
       {/* Enrollments Content List */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {filteredEnrollments.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons name="layers-outline" size={40} color={colors.textMuted} />
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>No package enrollments found.</Text>
-          </View>
-        ) : (
-          filteredEnrollments.map((e) => {
-            const nextAppt = getNextSessionAppointment(e.sessionIds, appointments);
+      {loading || refreshing ? (
+        <EnrollmentsSkeleton />
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {filteredEnrollments.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Ionicons name="layers-outline" size={40} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No package enrollments found.</Text>
+            </View>
+          ) : (
+            filteredEnrollments.map((e) => {
+              const nextAppt = getNextSessionAppointment(e.sessionIds, appointments);
 
-            return (
-              <View key={e.enrollmentId} style={[styles.enrollmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.enrollmentHeader}>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.tagRow}>
-                      <View style={[styles.serviceTag, { backgroundColor: colors.primaryLight }]}>
-                        <Text style={[styles.serviceTagText, { color: colors.primary }]}>{e.serviceType}</Text>
+              return (
+                <View key={e.enrollmentId} style={[styles.enrollmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.enrollmentHeader}>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.tagRow}>
+                        <View style={[styles.serviceTag, { backgroundColor: colors.primaryLight }]}>
+                          <Text style={[styles.serviceTagText, { color: colors.primary }]}>{e.serviceType}</Text>
+                        </View>
                       </View>
+                      <Text style={[styles.pkgName, { color: colors.text }]}>{e.packageName}</Text>
                     </View>
-                    <Text style={[styles.pkgName, { color: colors.text }]}>{e.packageName}</Text>
+
+                    <SessionProgressRing
+                      total={e.totalSessions}
+                      completed={e.completedSessions}
+                      size={54}
+                      strokeWidth={5}
+                    />
                   </View>
 
-                  <SessionProgressRing
-                    total={e.totalSessions}
-                    completed={e.completedSessions}
-                    size={54}
-                    strokeWidth={5}
-                  />
+                  <View style={[styles.enrollmentMeta, { borderTopColor: colors.border }]}>
+                    <View style={styles.metaRow}>
+                      <Ionicons name="person" size={14} color={colors.primary} />
+                      <Text style={[styles.metaText, { color: colors.text }]}>
+                        {e.patientName} ({e.patientMobile})
+                      </Text>
+                    </View>
+
+                    <View style={styles.metaRow}>
+                      <Ionicons name="medkit-outline" size={14} color={colors.textMuted} />
+                      <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                        Doctor: {e.doctorName}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.enrollmentFooter, { borderTopColor: colors.border }]}>
+                    <View style={styles.nextDateBox}>
+                      <Ionicons name="time-outline" size={14} color={colors.primary} />
+                      <Text style={[styles.nextDateText, { color: colors.text }]}>
+                        {nextAppt
+                          ? `Next: ${formatDateShort(nextAppt.date)} (${nextAppt.startTime})`
+                          : 'All Sessions Finished'}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[styles.detailsBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        playClickSound();
+                        setSelectedEnrollmentId(e.enrollmentId);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.detailsBtnText}>View Timeline</Text>
+                      <Ionicons name="chevron-forward" size={14} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-
-                <View style={[styles.enrollmentMeta, { borderTopColor: colors.border }]}>
-                  <View style={styles.metaRow}>
-                    <Ionicons name="person" size={14} color={colors.primary} />
-                    <Text style={[styles.metaText, { color: colors.text }]}>
-                      {e.patientName} ({e.patientMobile})
-                    </Text>
-                  </View>
-
-                  <View style={styles.metaRow}>
-                    <Ionicons name="medkit-outline" size={14} color={colors.textMuted} />
-                    <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                      Doctor: {e.doctorName}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.enrollmentFooter, { borderTopColor: colors.border }]}>
-                  <View style={styles.nextDateBox}>
-                    <Ionicons name="time-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.nextDateText, { color: colors.text }]}>
-                      {nextAppt
-                        ? `Next: ${formatDateShort(nextAppt.date)} (${nextAppt.startTime})`
-                        : 'All Sessions Finished'}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.detailsBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => {
-                      playClickSound();
-                      setSelectedEnrollmentId(e.enrollmentId);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.detailsBtnText}>View Timeline</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#FFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
 
       {/* Enrollment Detail Sheet — callbacks lifted, no nested modals inside */}
       <PackageEnrollmentDetailSheet

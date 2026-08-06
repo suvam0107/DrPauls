@@ -10,11 +10,13 @@ import DoctorDetailModal from '../components/doctor/DoctorDetailModal';
 import AddDoctorSheet from '../components/doctor/AddDoctorSheet';
 import { copyToClipboard } from '../utils/clipboardUtils';
 import { useRefresh } from '../utils/useRefresh';
+import DoctorScreenSkeleton from '../components/skeletons/DoctorScreenSkeleton';
 
 export default function DoctorScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
   const doctors = useDoctorStore((s) => s.doctors);
+  const loading = useDoctorStore((s) => s.loading);
 
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -55,9 +57,12 @@ export default function DoctorScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={doctors}
-        keyExtractor={(item) => item.id}
+      {loading || refreshing ? (
+        <DoctorScreenSkeleton />
+      ) : (
+        <FlatList
+          data={doctors}
+          keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }: { item: Doctor }) => (
@@ -122,6 +127,7 @@ export default function DoctorScreen() {
           </TouchableOpacity>
         )}
       />
+      )}
 
       {/* Doctor Detail & Edit Modal */}
       <DoctorDetailModal

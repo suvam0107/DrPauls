@@ -18,6 +18,7 @@ import { useRefresh } from '../utils/useRefresh';
 
 import UpcomingSessionsWidget from '../components/package/UpcomingSessionsWidget';
 import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import HomeScreenSkeleton from '../components/skeletons/HomeScreenSkeleton';
 
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
@@ -27,6 +28,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
   const appointments = useAppointmentStore((s) => s.appointments);
+  const loading = useAppointmentStore((s) => s.loading);
   const patientCount = usePatientStore((s) => s.count());
   const doctorCount = useDoctorStore((s) => s.count());
   const activeCenterId = useUIStore((s) => s.activeCenterId);
@@ -48,6 +50,10 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const confirmedCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED).length;
   const pendingCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PENDING).length;
   const paidCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PAID).length;
+
+  if (loading || refreshing) {
+    return <HomeScreenSkeleton />;
+  }
 
   return (
     <ScrollView

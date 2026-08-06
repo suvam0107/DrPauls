@@ -18,6 +18,7 @@ export interface AppointmentValidationResult {
 export interface ExtendedAppointmentState {
   appointments: Appointment[];
   slotMap: Record<string, string>;
+  loading: boolean;
   fetchAppointments: () => Promise<void>;
   addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Appointment;
   updateStatus: (id: string, status: string) => void;
@@ -65,10 +66,16 @@ const initialSeed = dataStore.getData().appointments;
 const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   appointments: initialSeed,
   slotMap: buildSlotMap(initialSeed),
+  loading: false,
 
   fetchAppointments: async () => {
-    const fetched = await appointmentService.getAll();
-    set({ appointments: fetched, slotMap: buildSlotMap(fetched) });
+    set({ loading: true });
+    try {
+      const fetched = await appointmentService.getAll();
+      set({ appointments: fetched, slotMap: buildSlotMap(fetched) });
+    } finally {
+      set({ loading: false });
+    }
   },
 
   /** Add a new appointment */
