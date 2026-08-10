@@ -24,9 +24,6 @@ export interface EnrollParams {
 export interface PackageState {
   packages: Package[];
   enrollments: PackageEnrollment[];
-  loading: boolean;
-  fetchPackages: () => Promise<void>;
-  fetchEnrollments: () => void;
   getPackageById: (id: string) => Package | undefined;
   getEnrollmentById: (enrollmentId: string) => PackageEnrollment | undefined;
   getEnrollmentsByPatient: (patientId: string) => PackageEnrollment[];
@@ -129,23 +126,6 @@ const seedPackages: Package[] = [
 const usePackageStore = create<PackageState>((set, get) => ({
   packages: seedPackages,
   enrollments: enrollmentsRaw as PackageEnrollment[],
-  loading: false,
-
-  fetchPackages: async () => {
-    set({ loading: true });
-    try {
-      const fetched = await packageService.getAll();
-      set({ packages: fetched.length > 0 ? fetched : seedPackages });
-    } catch (e) {
-      set({ packages: seedPackages });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  fetchEnrollments: () => {
-    set({ enrollments: enrollmentsRaw as PackageEnrollment[] });
-  },
 
   getPackageById: (id) => get().packages.find((p) => p.id === id),
 

@@ -32,6 +32,20 @@ export interface ModalContentProps {
   hidePackageTimelineLink?: boolean;
 }
 
+import { usePatientsQuery } from '../../hooks/queries/usePatientsQuery';
+import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
+import { useEnrollmentsQuery } from '../../hooks/queries/usePackagesQuery';
+import { useUpdateStatusMutation, useCancelAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
+
+export interface ModalContentProps {
+  appointment: Appointment;
+  onClose: () => void;
+  onEditPress: () => void;
+  onPatientPress: (patient: Patient) => void;
+  onOpenEnrollmentTimeline?: (enrollmentId: string) => void;
+  hidePackageTimelineLink?: boolean;
+}
+
 function ModalContent({
   appointment,
   onClose,
@@ -41,11 +55,13 @@ function ModalContent({
   hidePackageTimelineLink,
 }: ModalContentProps) {
   const { colors } = useTheme();
-  const patients = usePatientStore((s) => s.patients);
-  const centers = useCenterStore((s) => s.centers);
+  const { data: patients = [] } = usePatientsQuery();
+  const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const activeCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
-  const enrollments = usePackageStore((s) => s.enrollments);
+  const { data: enrollments = [] } = useEnrollmentsQuery();
+  const updateStatusMutation = useUpdateStatusMutation();
+  const cancelAppointmentMutation = useCancelAppointmentMutation();
 
   const matchedEnrollment = enrollments.find(
     (e) =>
@@ -105,14 +121,14 @@ function ModalContent({
     appointment.status !== APPOINTMENT_STATUS.PAID &&
     appointment.status !== APPOINTMENT_STATUS.CANCELLED;
 
-  const handleStatusChange = (status: string) => {
-    useAppointmentStore.getState().updateStatus(appointment.id, status);
+  const handleStatusChange = async (status: string) => {
+    await updateStatusMutation.mutateAsync({ id: appointment.id, status });
     playAppointmentSuccessSound();
     onClose();
   };
 
-  const handleCancel = () => {
-    useAppointmentStore.getState().cancelAppointment(appointment.id);
+  const handleCancel = async () => {
+    await cancelAppointmentMutation.mutateAsync(appointment.id);
     playAppointmentSuccessSound();
     onClose();
   };

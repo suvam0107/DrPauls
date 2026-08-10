@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import SearchInput from '../shared/SearchInput';
-import usePatientStore from '../../store/usePatientStore';
+import { usePatientSearchQuery } from '../../hooks/queries/usePatientsQuery';
+import { useDebounce } from '../../utils/useDebounce';
+import SearchDropdownSkeleton from '../skeletons/SearchDropdownSkeleton';
 import { useTheme } from '../../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Patient } from '../../types';
@@ -18,10 +20,23 @@ export default function PatientSearchInput({
   onAddNewPress,
 }: PatientSearchInputProps) {
   const { colors } = useTheme();
-  const [query, setQuery] = useState('');
-  const searchPatients = usePatientStore((s) => s.search);
 
-  const results = query.trim() ? searchPatients(query) : [];
+  // Raw query — updates immediately on every keystroke (no lag)
+  const [query, setQuery] = useState('');
+  // Debounced query — fires the API call only after 200ms of silence
+  const debouncedQuery = useDebounce(query, 200);
+
+  // Server-side search: enabled on first character (>= 1 char)
+  const { data: results = [], isFetching } = usePatientSearchQuery(debouncedQuery);
+
+  const isSearching = isFetching && debouncedQuery.trim().length >= 1;
+  const showSkeleton = isSearching && results.length === 0;
+  const showResults = results.length > 0 && debouncedQuery.trim().length >= 1;
+  const showNoResult =
+    !isFetching &&
+    debouncedQuery.trim().length >= 1 &&
+    query.trim().length >= 1 &&
+    results.length === 0;
 
   return (
     <View style={styles.container}>
@@ -51,9 +66,14 @@ export default function PatientSearchInput({
             value={query}
             onChangeText={setQuery}
             placeholder="Search by name, ID or mobile..."
+            isFetching={isSearching}
           />
 
-          {results.length > 0 && (
+          {/* Loading skeleton while results fetch */}
+          {showSkeleton && <SearchDropdownSkeleton />}
+
+          {/* Results dropdown */}
+          {showResults && (
             <View style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {results.slice(0, 5).map((item) => (
                 <TouchableOpacity
@@ -76,10 +96,11 @@ export default function PatientSearchInput({
             </View>
           )}
 
-          {query.trim().length > 0 && results.length === 0 && (
+          {/* No result state */}
+          {showNoResult && (
             <View style={[styles.noResultBox, { backgroundColor: colors.surface }]}>
               <Text style={[styles.noResultText, { color: colors.textMuted }]}>
-                No patient found for "{query}".
+                No patient found for "{debouncedQuery}".
               </Text>
               <TouchableOpacity onPress={onAddNewPress} style={{ marginTop: 4 }}>
                 <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
@@ -164,6 +185,12 @@ const styles = StyleSheet.create({
   },
   noResultBox: {
     padding: 12,
+    borderRadius: 10,
+    marginTop: 4,
+    alignItems: 'center',
+  },
+  hintBox: {
+    padding: 10,
     borderRadius: 10,
     marginTop: 4,
     alignItems: 'center',

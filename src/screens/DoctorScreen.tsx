@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
-import useDoctorStore from '../store/useDoctorStore';
+import SearchInput from '../components/shared/SearchInput';
+import { useDebounce } from '../utils/useDebounce';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Doctor } from '../types';
@@ -12,15 +13,23 @@ import { copyToClipboard } from '../utils/clipboardUtils';
 import { useRefresh } from '../utils/useRefresh';
 import DoctorScreenSkeleton from '../components/skeletons/DoctorScreenSkeleton';
 
+import { useDoctorsQuery, useDoctorSearchQuery } from '../hooks/queries/useDoctorsQuery';
+
 export default function DoctorScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
-  const doctors = useDoctorStore((s) => s.doctors);
-  const loading = useDoctorStore((s) => s.loading);
+  const { data: doctors = [] } = useDoctorsQuery();
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 200);
 
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAddDoctorSheet, setShowAddDoctorSheet] = useState(false);
+
+  const isSearchActive = debouncedQuery.trim().length >= 1;
+  const { data: searchResults = [], isFetching: isSearchFetching } = useDoctorSearchQuery(debouncedQuery);
+
+  const filteredDoctors: Doctor[] = isSearchActive ? searchResults : doctors;
 
   const handleCall = (phone?: string) => {
     if (!phone) return;
@@ -57,11 +66,20 @@ export default function DoctorScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading || refreshing ? (
+      <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search by doctor name, specialty, department..."
+          isFetching={isSearchFetching && isSearchActive}
+        />
+      </View>
+
+      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
         <DoctorScreenSkeleton />
       ) : (
         <FlatList
-          data={doctors}
+          data={filteredDoctors}
           keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

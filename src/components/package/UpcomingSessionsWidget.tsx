@@ -8,19 +8,17 @@ import { formatDateShort, formatTime, todayISO } from '../../utils/dateUtils';
 import { playClickSound } from '../../utils/feedback';
 import UpcomingSessionsWidgetSkeleton from '../skeletons/UpcomingSessionsWidgetSkeleton';
 
+import { useEnrollmentsQuery } from '../../hooks/queries/usePackagesQuery';
+import { useAppointmentsQuery } from '../../hooks/queries/useAppointmentsQuery';
+
 interface UpcomingSessionsWidgetProps {
   onSelectEnrollment: (enrollmentId: string) => void;
 }
 
 export default function UpcomingSessionsWidget({ onSelectEnrollment }: UpcomingSessionsWidgetProps) {
   const { colors } = useTheme();
-  const enrollments = usePackageStore((s) => s.enrollments);
-  const loading = usePackageStore((s) => s.loading);
-  const appointments = useAppointmentStore((s) => s.appointments);
-
-  if (loading) {
-    return <UpcomingSessionsWidgetSkeleton />;
-  }
+  const { data: enrollments = [] } = useEnrollmentsQuery();
+  const { data: appointments = [] } = useAppointmentsQuery();
 
   const today = todayISO();
   const activeEnrollments = enrollments.filter((e) => e.status === 'Active' || e.status === 'Paused');

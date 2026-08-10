@@ -20,6 +20,10 @@ import UpcomingSessionsWidget from '../components/package/UpcomingSessionsWidget
 import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
 import HomeScreenSkeleton from '../components/skeletons/HomeScreenSkeleton';
 
+import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
+import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
+import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
+
 export interface HomeScreenProps {
   onNavigate: (screen: string) => void;
 }
@@ -27,10 +31,11 @@ export interface HomeScreenProps {
 export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const loading = useAppointmentStore((s) => s.loading);
-  const patientCount = usePatientStore((s) => s.count());
-  const doctorCount = useDoctorStore((s) => s.count());
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: patients = [] } = usePatientsQuery();
+  const { data: doctors = [] } = useDoctorsQuery();
+  const patientCount = patients.length;
+  const doctorCount = doctors.length;
   const activeCenterId = useUIStore((s) => s.activeCenterId);
 
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
@@ -51,7 +56,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const pendingCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PENDING).length;
   const paidCount = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PAID).length;
 
-  if (loading || refreshing) {
+  if (refreshing) {
     return <HomeScreenSkeleton />;
   }
 

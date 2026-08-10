@@ -7,6 +7,8 @@ import useCenterStore from '../store/useCenterStore';
 import useUIStore from '../store/useUIStore';
 import { playClickSound } from '../utils/feedback';
 
+import { useCentersQuery } from '../hooks/queries/useCentersQuery';
+
 export interface HeaderProps {
   onMenuPress: () => void;
   onThemeToggle: () => void;
@@ -24,7 +26,7 @@ export default function Header({
   const insets = useSafeAreaInsets();
   const topPadding = Math.max(insets.top, 0);
 
-  const centers = useCenterStore((s) => s.centers);
+  const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const currentCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
 

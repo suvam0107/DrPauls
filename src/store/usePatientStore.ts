@@ -6,8 +6,6 @@ import { Patient } from '../types';
 
 export interface ExtendedPatientState {
   patients: Patient[];
-  loading: boolean;
-  fetchPatients: () => Promise<void>;
   addPatient: (data: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => Patient;
   updatePatient: (id: string, updates: Partial<Patient>) => void;
   incrementRescheduleCount: (id: string) => void;
@@ -33,26 +31,6 @@ const initialSeed = dataStore.getData().patients.map((p: Patient) => {
 
 const usePatientStore = create<ExtendedPatientState>((set, get) => ({
   patients: initialSeed,
-  loading: false,
-
-  fetchPatients: async () => {
-    set({ loading: true });
-    try {
-      const fetched = await patientService.getAll();
-      set({
-        patients: fetched.map((p) => {
-          const count = p.rescheduleCount || 0;
-          return {
-            ...p,
-            rescheduleCount: count,
-            priority: calculatePatientPriority(count),
-          };
-        }),
-      });
-    } finally {
-      set({ loading: false });
-    }
-  },
 
   /** Add new patient, returns the new patient object */
   addPatient: (data) => {

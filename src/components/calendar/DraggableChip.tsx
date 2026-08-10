@@ -15,6 +15,7 @@ import { GRID_START_HOUR, GRID_END_HOUR } from '../../constants';
 import useAppointmentStore from '../../store/useAppointmentStore';
 import { Appointment } from '../../types';
 import { playAppointmentSuccessSound, playAppointmentFailureSound } from '../../utils/feedback';
+import { useMoveAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
 
 const ELIGIBLE_STATUSES: string[] = [
   APPOINTMENT_STATUS.SCHEDULED,
@@ -91,6 +92,7 @@ export default function DraggableChip({
   const pan = useRef(new Animated.ValueXY()).current;
   const [isDragging, setIsDragging] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMoveData | null>(null);
+  const moveAppointmentMutation = useMoveAppointmentMutation();
 
   const isPast = isPastSlot(appointment.date, appointment.startTime);
   const isEligible = ELIGIBLE_STATUSES.includes(appointment.status) && !isPast;
@@ -334,15 +336,13 @@ export default function DraggableChip({
           toTime={pendingMove.newStartTime}
           doctorName={appointment.doctorName}
           onCancel={() => setPendingMove(null)}
-          onConfirm={() => {
-            useAppointmentStore
-              .getState()
-              .moveAppointment(
-                appointment.id,
-                pendingMove.newDate,
-                pendingMove.newStartTime,
-                pendingMove.newEndTime
-              );
+          onConfirm={async () => {
+            await moveAppointmentMutation.mutateAsync({
+              id: appointment.id,
+              newDate: pendingMove.newDate,
+              newStartTime: pendingMove.newStartTime,
+              newEndTime: pendingMove.newEndTime,
+            });
 
             playAppointmentSuccessSound();
             Toast.show({

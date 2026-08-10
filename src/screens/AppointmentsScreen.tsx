@@ -34,6 +34,12 @@ import { playClickSound } from '../utils/feedback';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
 import { useRefresh } from '../utils/useRefresh';
 import AppointmentsScreenSkeleton from '../components/skeletons/AppointmentsScreenSkeleton';
+import SearchInput from '../components/shared/SearchInput';
+import { useDebounce } from '../utils/useDebounce';
+
+import { useAppointmentsQuery, useAppointmentSearchQuery } from '../hooks/queries/useAppointmentsQuery';
+import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
+import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
 
 export type RangeMode = 'today' | 'yesterday' | 'custom';
 export type GroupingMode = 'doctor' | 'patient';
@@ -43,14 +49,16 @@ export default function AppointmentsScreen() {
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
 
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const loading = useAppointmentStore((s) => s.loading);
-  const doctors = useDoctorStore((s) => s.doctors);
-  const patients = usePatientStore((s) => s.patients);
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: doctors = [] } = useDoctorsQuery();
+  const { data: patients = [] } = usePatientsQuery();
 
   const [rangeMode, setRangeMode] = useState<RangeMode>('today');
   const [groupingMode, setGroupingMode] = useState<GroupingMode>('doctor');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
+
+  const isSearchActive = debouncedSearchQuery.trim().length >= 1;
 
   // Custom range dates
   const yesterdayDate = offsetDate(todayISO(), -1);
@@ -75,21 +83,22 @@ export default function AppointmentsScreen() {
     return { effectiveStart: startDate, effectiveEnd: endDate };
   }, [rangeMode, yesterdayDate, startDate, endDate]);
 
+  // Server-side search when debounced search query >= 1 char
+  const { data: searchResults = [], isFetching: isSearchFetching } = useAppointmentSearchQuery(
+    debouncedSearchQuery,
+    effectiveStart,
+    effectiveEnd
+  );
+
   // Filter & sort appointments
   const filteredAppointments = useMemo(() => {
-    let result = appointments.filter(
-      (a) => a.date >= effectiveStart && a.date <= effectiveEnd
-    );
+    let result: Appointment[];
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (a) =>
-          a.patientName.toLowerCase().includes(q) ||
-          a.doctorName.toLowerCase().includes(q) ||
-          a.patientMobile.includes(q) ||
-          a.serviceType.toLowerCase().includes(q) ||
-          a.status.toLowerCase().includes(q)
+    if (isSearchActive) {
+      result = [...searchResults];
+    } else {
+      result = appointments.filter(
+        (a) => a.date >= effectiveStart && a.date <= effectiveEnd
       );
     }
 
@@ -101,7 +110,7 @@ export default function AppointmentsScreen() {
     });
 
     return result;
-  }, [appointments, effectiveStart, effectiveEnd, searchQuery]);
+  }, [appointments, effectiveStart, effectiveEnd, isSearchActive, searchResults]);
 
   // Group appointments
   const groupedData = useMemo(() => {
@@ -213,20 +222,13 @@ export default function AppointmentsScreen() {
 
         {/* Search Bar & Grouping Toggle Row */}
         <View style={styles.filterBarRow}>
-          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search" size={16} color={colors.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
+          <View style={{ flex: 1 }}>
+            <SearchInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search by doctor, patient or service..."
-              placeholderTextColor={colors.textMuted}
+              placeholder="Search doctor, patient or service..."
+              isFetching={isSearchFetching && isSearchActive}
             />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-              </TouchableOpacity>
-            ) : null}
           </View>
 
           {/* Doctor-wise vs Patient-wise Toggle */}
@@ -285,7 +287,7 @@ export default function AppointmentsScreen() {
       </View>
 
       {/* Main Grouped List */}
-      {loading || refreshing ? (
+      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
         <AppointmentsScreenSkeleton />
       ) : (
         <ScrollView

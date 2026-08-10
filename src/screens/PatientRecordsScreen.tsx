@@ -27,6 +27,10 @@ import { Appointment } from '../types';
 
 import PatientRecordsSkeleton from '../components/skeletons/PatientRecordsSkeleton';
 
+import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
+import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
+import { usePackagesQuery, useEnrollmentsQuery } from '../hooks/queries/usePackagesQuery';
+
 export interface PatientRecordsScreenProps {
   patientId?: string;
   onBack?: () => void;
@@ -37,11 +41,10 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
 
-  const patients = usePatientStore((s) => s.patients);
-  const patientLoading = usePatientStore((s) => s.loading);
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const apptLoading = useAppointmentStore((s) => s.loading);
-  const packages = usePackageStore((s) => s.packages);
+  const { data: patients = [] } = usePatientsQuery();
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: packages = [] } = usePackagesQuery();
+  const { data: enrollments = [] } = useEnrollmentsQuery();
 
   const [selectedAppt, setSelectedAppt] = React.useState<Appointment | null>(null);
 
@@ -58,7 +61,6 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
       .sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
   }, [appointments, targetPatient]);
 
-  const enrollments = usePackageStore((s) => s.enrollments);
   const patientEnrollments = useMemo(() => {
     if (!targetPatient) return [];
     return enrollments.filter((e) => e.patientId === targetPatient.id);
@@ -77,7 +79,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   const priorityBg =
     priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
 
-  if (patientLoading || apptLoading || refreshing) {
+  if (refreshing) {
     return <PatientRecordsSkeleton />;
   }
 

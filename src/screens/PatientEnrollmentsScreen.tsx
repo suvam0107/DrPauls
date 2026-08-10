@@ -8,6 +8,8 @@ import {
   TextInput,
 } from 'react-native';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
+import SearchInput from '../components/shared/SearchInput';
+import { useDebounce } from '../utils/useDebounce';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
@@ -23,16 +25,19 @@ import { formatDateShort, getNextSessionAppointment } from '../utils/dateUtils';
 import { Appointment } from '../types';
 import EnrollmentsSkeleton from '../components/skeletons/EnrollmentsSkeleton';
 
+import { useEnrollmentsQuery, useEnrollmentSearchQuery } from '../hooks/queries/usePackagesQuery';
+import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
+
 export default function PatientEnrollmentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
 
-  const enrollments = usePackageStore((s) => s.enrollments);
-  const loading = usePackageStore((s) => s.loading);
-  const appointments = useAppointmentStore((s) => s.appointments);
+  const { data: enrollments = [] } = useEnrollmentsQuery();
+  const { data: appointments = [] } = useAppointmentsQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
   const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useState<string>('All');
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
   // Lifted modal states — flat sibling stack, no nesting
@@ -41,15 +46,17 @@ export default function PatientEnrollmentsScreen() {
 
   const enrollmentStatusCategories = ['All', 'Active', 'Paused', 'Completed'];
 
-  const filteredEnrollments = enrollments.filter((e) => {
-    const matchesStatus = enrollmentStatusFilter === 'All' || e.status === enrollmentStatusFilter;
-    const matchesSearch =
-      !searchQuery.trim() ||
-      e.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.packageName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.enrollmentId.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const isSearchActive = debouncedSearchQuery.trim().length >= 1;
+  const { data: searchResults = [], isFetching: isSearchFetching } = useEnrollmentSearchQuery(
+    debouncedSearchQuery,
+    enrollmentStatusFilter
+  );
+
+  const filteredEnrollments = isSearchActive
+    ? searchResults
+    : enrollments.filter((e) => {
+        return enrollmentStatusFilter === 'All' || e.status === enrollmentStatusFilter;
+      });
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -64,20 +71,13 @@ export default function PatientEnrollmentsScreen() {
         </View>
 
         {/* Search Bar */}
-        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={16} color={colors.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+        <View style={{ marginBottom: 10 }}>
+          <SearchInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search enrollments by patient or package..."
-            placeholderTextColor={colors.textMuted}
+            isFetching={isSearchFetching && isSearchActive}
           />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Status Filter Chips Row */}
@@ -110,7 +110,7 @@ export default function PatientEnrollmentsScreen() {
       </View>
 
       {/* Enrollments Content List */}
-      {loading || refreshing ? (
+      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
         <EnrollmentsSkeleton />
       ) : (
         <ScrollView

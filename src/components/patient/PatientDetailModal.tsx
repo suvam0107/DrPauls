@@ -21,6 +21,8 @@ import { copyToClipboard } from '../../utils/clipboardUtils';
 
 import { formatPatientText, shareDetails } from '../../utils/shareUtils';
 
+import { useUpdatePatientMutation } from '../../hooks/mutations/usePatientMutations';
+
 export interface PatientDetailModalProps {
   patient: Patient | null;
   visible: boolean;
@@ -35,7 +37,7 @@ export default function PatientDetailModal({
   onViewPastRecords,
 }: PatientDetailModalProps) {
   const { colors } = useTheme();
-  const updatePatient = usePatientStore((s) => s.updatePatient);
+  const updatePatientMutation = useUpdatePatientMutation();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -108,7 +110,7 @@ export default function PatientDetailModal({
     Linking.openURL(`tel:${mobile}`);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!activePat) return;
     playClickSound();
 
@@ -139,7 +141,7 @@ export default function PatientDetailModal({
       referenceDoctor: referenceDoctor.trim() || undefined,
     };
 
-    updatePatient(activePat.id, updates);
+    await updatePatientMutation.mutateAsync({ id: activePat.id, updates });
     playAppointmentSuccessSound();
     setIsEditing(false);
   };

@@ -20,10 +20,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRefresh } from '../utils/useRefresh';
 import CalendarScreenSkeleton from '../components/skeletons/CalendarScreenSkeleton';
 
+import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
+import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
+
 export default function CalendarScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
-  const loading = useAppointmentStore((s) => s.loading);
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: doctors = [] } = useDoctorsQuery();
 
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [displayMode, setDisplayMode] = useState<'grid' | 'list'>('grid');
@@ -37,9 +41,6 @@ export default function CalendarScreen() {
   const activeStatusFilters = useUIStore((s) => s.activeStatusFilters);
   const toggleStatusFilter = useUIStore((s) => s.toggleStatusFilter);
   const activeDoctorFilter = useUIStore((s) => s.activeDoctorFilter);
-
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const doctors = useDoctorStore((s) => s.doctors);
 
   // Modals state
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
@@ -109,7 +110,7 @@ export default function CalendarScreen() {
       />
 
       {/* Main Content Area */}
-      {loading || refreshing ? (
+      {refreshing ? (
         <CalendarScreenSkeleton />
       ) : displayMode === 'list' ? (
         /* List Mode View (view-only list, no drag-drop) */

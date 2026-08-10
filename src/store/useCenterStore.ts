@@ -5,7 +5,6 @@ import { Center } from '../types';
 
 export interface CenterState {
   centers: Center[];
-  fetchCenters: () => Promise<void>;
   getCenterById: (id: string) => Center | undefined;
 }
 
@@ -13,11 +12,6 @@ const initialCenters = dataStore.getData().centers;
 
 const useCenterStore = create<CenterState>((set, get) => ({
   centers: initialCenters,
-
-  fetchCenters: async () => {
-    const centers = await centerService.getAll();
-    set({ centers });
-  },
 
   getCenterById: (id: string) => get().centers.find((c) => c.id === id),
 }));

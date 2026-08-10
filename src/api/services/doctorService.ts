@@ -22,6 +22,14 @@ export const doctorService = {
     return res.data.data;
   },
 
+  search: async (query: string): Promise<Doctor[]> => {
+    const res = await apiClient.post<ApiResponse<Doctor[]>>('/nested', {
+      spc: 'search_doctors',
+      payload: { query },
+    });
+    return res.data.data;
+  },
+
   add: async (data: Omit<Doctor, 'id'>): Promise<Doctor> => {
     const res = await apiClient.post<ApiResponse<Doctor>>('/nonnested', {
       spc: 'add_doctor',

@@ -8,6 +8,8 @@ import {
   TextInput,
 } from 'react-native';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
+import SearchInput from '../components/shared/SearchInput';
+import { useDebounce } from '../utils/useDebounce';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
@@ -18,30 +20,34 @@ import { playClickSound } from '../utils/feedback';
 import { useRefresh } from '../utils/useRefresh';
 import PackagesCatalogSkeleton from '../components/skeletons/PackagesCatalogSkeleton';
 
+import { usePackagesQuery, usePackageSearchQuery } from '../hooks/queries/usePackagesQuery';
+
 export default function AvailablePackagesScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
 
-  const packages = usePackageStore((s) => s.packages);
-  const loading = usePackageStore((s) => s.loading);
+  const { data: packages = [] } = usePackagesQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
   const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('All');
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
 
   const serviceCategories = ['All', 'Hair', 'Skin', 'Laser', 'Hair Transplant'];
 
-  const filteredPackages = packages.filter((pkg) => {
-    const matchesService = selectedServiceFilter === 'All' || pkg.serviceType === selectedServiceFilter;
-    const matchesSearch =
-      !searchQuery.trim() ||
-      pkg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pkg.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (pkg.description && pkg.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesService && matchesSearch;
-  });
+  const isSearchActive = debouncedSearchQuery.trim().length >= 1;
+  const { data: searchResults = [], isFetching: isSearchFetching } = usePackageSearchQuery(
+    debouncedSearchQuery,
+    selectedServiceFilter
+  );
+
+  const filteredPackages = isSearchActive
+    ? searchResults
+    : packages.filter((pkg) => {
+        return selectedServiceFilter === 'All' || pkg.serviceType === selectedServiceFilter;
+      });
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -56,20 +62,13 @@ export default function AvailablePackagesScreen() {
         </View>
 
         {/* Search Bar */}
-        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={16} color={colors.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+        <View style={{ marginBottom: 10 }}>
+          <SearchInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search packages by name or service..."
-            placeholderTextColor={colors.textMuted}
+            isFetching={isSearchFetching && isSearchActive}
           />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Service Filter Chips Row */}
@@ -102,7 +101,7 @@ export default function AvailablePackagesScreen() {
       </View>
 
       {/* Package Cards Content */}
-      {loading || refreshing ? (
+      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
         <PackagesCatalogSkeleton />
       ) : (
         <ScrollView

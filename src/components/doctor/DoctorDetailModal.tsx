@@ -24,6 +24,8 @@ import { formatDoctorText, shareDetails } from '../../utils/shareUtils';
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+import { useUpdateDoctorMutation } from '../../hooks/mutations/useDoctorMutations';
+
 export interface DoctorDetailModalProps {
   doctor: Doctor | null;
   visible: boolean;
@@ -36,7 +38,7 @@ export default function DoctorDetailModal({
   onClose,
 }: DoctorDetailModalProps) {
   const { colors } = useTheme();
-  const updateDoctor = useDoctorStore((s) => s.updateDoctor);
+  const updateDoctorMutation = useUpdateDoctorMutation();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -105,7 +107,7 @@ export default function DoctorDetailModal({
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     playClickSound();
 
     if (!name.trim()) {
@@ -150,7 +152,7 @@ export default function DoctorDetailModal({
       available,
     };
 
-    updateDoctor(activeDoc.id, updates);
+    await updateDoctorMutation.mutateAsync({ id: activeDoc.id, updates });
     playAppointmentSuccessSound();
     setIsEditing(false);
   };

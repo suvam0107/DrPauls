@@ -59,18 +59,28 @@ export interface CreateSheetFormProps {
 }
 
 import usePackageStore from '../../store/usePackageStore';
+import { useDoctorsQuery, useTherapistsQuery } from '../../hooks/queries/useDoctorsQuery';
+import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
+import { usePackagesQuery } from '../../hooks/queries/usePackagesQuery';
+import { useAppointmentsQuery } from '../../hooks/queries/useAppointmentsQuery';
+import { useAddAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
+import { useEnrollPatientMutation } from '../../hooks/mutations/usePackageMutations';
 
 function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const { colors } = useTheme();
   const { expandSheet, handleScroll } = useBottomSheet();
 
-  const allDoctors = useDoctorStore((s) => s.doctors);
-  const therapistsByService = useDoctorStore((s) => s.therapistsByService);
-  const addAppointment = useAppointmentStore((s) => s.addAppointment);
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const centers = useCenterStore((s) => s.centers);
+  const { data: allDoctors = [] } = useDoctorsQuery();
+  const { data: therapists = [] } = useTherapistsQuery();
+  const addAppointmentMutation = useAddAppointmentMutation();
+  const enrollPatientMutation = useEnrollPatientMutation();
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: centers = [] } = useCentersQuery();
   const globalCenterId = useUIStore((s) => s.activeCenterId);
-  const packages = usePackageStore((s) => s.packages);
+  const { data: packages = [] } = usePackagesQuery();
+
+  const therapistsByService = (svc?: string) =>
+    therapists.filter((t) => !svc || t.specialization === svc);
 
   const [centerId, setCenterId] = useState(globalCenterId);
   const [activeTab, setActiveTab] = useState('Normal'); // 'Normal' | 'Package'
@@ -145,7 +155,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const availableTherapists = therapistsByService(serviceType);
   const isDoctorAvailableToday = isDoctorAvailableOnDate(selectedDoctor, date, centerId);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!selectedPatient) {
       setError('Please select or add a patient');
       playAppointmentFailureSound();
@@ -204,7 +214,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
 
     if (activeTab === 'Package' && selectedPkg) {
       // Auto-schedule package sessions and create enrollment
-      const enrollment = usePackageStore.getState().enrollPatientInPackage({
+      const enrollment = await enrollPatientMutation.mutateAsync({
         packageId: selectedPkg.id,
         patientId: selectedPatient.id,
         patientName: selectedPatient.name,
@@ -226,7 +236,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
         position: 'bottom',
       });
     } else {
-      addAppointment({
+      await addAppointmentMutation.mutateAsync({
         centerId,
         patientId: selectedPatient.id,
         patientName: selectedPatient.name,

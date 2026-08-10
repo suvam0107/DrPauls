@@ -6,57 +6,102 @@
 ---
 
 ## Last Updated
-`2026-08-05` — Reports & Analytics Screen & Sidebar Drawer Integration completed by `@Frontend`.
+`2026-08-10` — Implemented unified **Debounced Server-Side Search Architecture** across all search inputs. Resolved `PatientSearchInput` character-reset bug by converting `SearchInput` to a fully controlled component (`value` prop). Added `useDebounce` hook (200ms delay, 1-character threshold for immediate search on first keypress). Added server-side search handlers (`search_patients`, `search_packages`, `search_appointments_by_query`, `search_enrollments`, `search_doctors`), service methods, query keys, and custom query hooks (`usePatientSearchQuery`, `usePackageSearchQuery`, `useAppointmentSearchQuery`, `useEnrollmentSearchQuery`, `useDoctorSearchQuery`). Migrated all 6 search screens (`PatientSearchInput`, `PatientListScreen`, `AppointmentsScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `PastAppointmentsScreen`, `DoctorScreen`). Added `SearchDropdownSkeleton` and inline activity spinner indicators. Verified zero TypeScript errors with `npx tsc --noEmit`.
 
 ---
 
 ## Current Sprint Focus
 
-### 60Hz Animation Performance & Lightweight Transition Audit (`@UXEngineer`)
-- **Sidebar Drawer Optimization (`SidebarDrawer.tsx`)**: Streamlined slide-in (`120ms`) and slide-out (`100ms`) with `Easing.out(Easing.quad)`. Reduced nested sub-menu toggle duration to `100ms` to eliminate layout reflow frame drops on 60Hz displays.
-- **Quick Add Popup (`QuickAddPopup.tsx`)**: Replaced `Easing.back(1.5)` spring overshoot physics with lightweight `80ms` `Easing.out(Easing.quad)` scale + opacity transitions, eliminating 60Hz popup opening micro-jank.
-- **Dropdown Selector (`Select.tsx`)**: Removed `scaleY` transform distortion in favor of GPU-native `opacity` + `translateY` (`90ms` in / `80ms` out), guaranteeing 60fps locked dropdown rendering.
-- **Package Progress Ring (`SessionProgressRing.tsx`)**: Reduced SVG fill animation from `700ms cubic` to `200ms quad` for instant, lightweight progress updates without UI thread blocking.
-- **Calendar Tab Indicator (`CalendarHeader.tsx`)**: Optimized view switch indicator slide duration to `90ms quad` for instant tab switching response.
+### TanStack Query Migration (`@DataEngineer`, `@Frontend`, `@UXEngineer`)
 
-### Overdue / Unattended Past Sessions Status Chip (`@Frontend`)
-- **Automatic Overdue Evaluation (`StatusChip.tsx`)**: Enhanced `StatusChip` to accept an optional `date` prop. When an appointment date is in the past (`date < today`) and its status is unsettled (not `Paid` and not `Cancelled`), `StatusChip` dynamically renders an **`Overdue`** badge chip with high-visibility red highlight (`#EF4444` text with tinted background).
-- **Constants & Type System (`types/index.ts` & `constants/index.ts`)**: Added `'Overdue'` and `'Unattended'` to `AppointmentStatus` type, `APPOINTMENT_STATUS` constant object, and `STATUS_COLORS` token dictionary.
-- **Card & Modal Synchronization ([PackageSessionCard.tsx](file:///c:/Iconwizard/DrPauls/src/components/package/PackageSessionCard.tsx) & [AppointmentDetailModal.tsx](file:///c:/Iconwizard/DrPauls/src/components/calendar/AppointmentDetailModal.tsx))**: Past non-settled session cards in package timelines and appointment detail modals now display the red **`Overdue`** chip with red indicator dots instead of conflicting chips like "Confirmed" or "Scheduled".
-- **App-Wide Propagation**: Passed `date={appt.date}` to `StatusChip` across `AppointmentsScreen`, `PatientRecordsScreen`, `PastAppointmentsScreen`, `HomeScreen`, and `CalendarScreen`.
+**Goal**: Replace all Zustand `fetch*` methods and `loading` flags with TanStack Query (`useQuery` / `useMutation`). Zustand retains all write-through mutation logic.
 
-### Patient Past Records & Package Session Timeline Discrepancy Fix (`@Frontend`, `@DataEngineer`)
-- **Complete Session Timeline Resolution (`PackageEnrollmentDetailSheet.tsx`)**: Overhauled session list generation logic. Instead of mapping strictly over `enrollment.sessionIds` (which previously left incomplete/generic session cards), `sessionsList` now constructs a complete 1-to-`totalSessions` sequence for every enrollment. Each session looks up its store appointment or dynamically constructs a fallback appointment object with correct dates (spaced by `sessionInterval`), status (`Paid` for completed sessions, `Scheduled`/`Confirmed` for future sessions), therapist, doctor, and service details.
-- **Seed Database Hydration (`enrollments.json` & `appointments.json`)**: Populated full `sessionIds` arrays for seed package enrollments (`ENR-001` through `ENR-005`) and added explicit package session appointment records for Ravi Sharma (10 sessions, 4 completed `Paid`), Priya Das (6 completed `Paid`), Amit Bora (8 sessions, 2 `Paid`), Sunita Kalita (5 sessions, 1 `Paid`), and Neha Gogoi (6 sessions, 3 `Paid`).
-- **Individual Session Detail Modals**: Tapping on ANY session card in the timeline (past completed sessions or upcoming sessions) triggers `onViewSessionDetails(appointment)`, opening `AppointmentDetailModal` with complete details for that specific session.
-- **Patient Past Records Timeline (`PatientRecordsScreen.tsx`)**: In Patient Past Records, the appointment timeline now lists all past completed package sessions along with regular appointments, matching patient history accurately.
+**Decisions locked & implemented**:
+- `staleTime = 2 min`, `gcTime = 10 min`, `refetchOnWindowFocus = false`
+- Entity list queries use `initialData: dataStore.getData().[entity]` for zero-flicker instant render
+- Detail/secondary queries (e.g. `useEnrollmentsByPatientQuery`, `useStaffQuery`) use skeleton loading
+- Mutation cascade logic stays in Zustand stores; `useMutation` wraps the store action and calls `queryClient.invalidateQueries()` on success
+- **TypeScript Gate Passed**: `npx tsc --noEmit` returns 0 errors across the entire codebase.
 
-### Appointments Directory & Packaged Timeline Navigation Fix (`@Frontend`)
-- **Appointments Directory (`AppointmentsScreen.tsx`)**: Fixed packaged appointment banner click behavior. Previously, clicking the packaged treatment banner inside `AppointmentDetailModal` on the Appointments Directory page fell back to showing a Toast (`"Package Enrollment: Linked to Enrollment ID..."`) because `onOpenEnrollmentTimeline` callback was missing and `PackageEnrollmentDetailSheet` was not rendered.
-- **Lifted Timeline & Reschedule Modals**: Integrated `PackageEnrollmentDetailSheet` and `RescheduleModal` into `AppointmentsScreen.tsx`, `CalendarScreen.tsx`, `PatientRecordsScreen.tsx`, and `PastAppointmentsScreen.tsx`.
-- **Seamless Navigation**: Passing `onOpenEnrollmentTimeline` callback to `AppointmentDetailModal` allows clicking any packaged appointment across all directory screens to seamlessly transition to the full interactive Package Session Timeline sheet (`PackageEnrollmentDetailSheet.tsx`).
+**Phase Status**:
+- [x] **Phase 0** — Installed `@tanstack/react-query` v5 (`@DataEngineer`)
+- [x] **Phase 1** — `src/api/queryClient.ts` + `QueryClientProvider` wrapper in `App.tsx` (`@DataEngineer` / `@Frontend`)
+- [x] **Phase 2** — `src/api/queryKeys.ts` centralized key factory (`@DataEngineer`)
+- [x] **Phase 3** — `src/hooks/queries/` — all custom `useQuery` hooks created (`@DataEngineer`)
+- [x] **Phase 4** — `src/hooks/mutations/` — all custom `useMutation` hooks created (`@DataEngineer`)
+- [x] **Phase 5** — Stripped `fetch*` + `loading` from all Zustand stores (`@DataEngineer`)
+- [x] **Phase 6** — `useRefresh.ts` → `queryClient.invalidateQueries()` (`@DataEngineer`)
+- [x] **Phase 7** — Screen + component consumer migration completed (`@Frontend`)
+  - [x] `HomeScreen.tsx` → `useAppointmentsQuery`, `usePatientsQuery`, `useDoctorsQuery`
+  - [x] `CalendarScreen.tsx` → `useAppointmentsQuery`, `useDoctorsQuery`
+  - [x] `AppointmentsScreen.tsx` → `useAppointmentsQuery`, `useDoctorsQuery`, `usePatientsQuery`
+  - [x] `PatientListScreen.tsx` → `usePatientsQuery`, `searchPatients`
+  - [x] `PatientRecordsScreen.tsx` → `usePatientsQuery`, `useAppointmentsQuery`, `usePackagesQuery`, `useEnrollmentsQuery`
+  - [x] `DoctorScreen.tsx` → `useDoctorsQuery`
+  - [x] `AvailablePackagesScreen.tsx` → `usePackagesQuery`
+  - [x] `PatientEnrollmentsScreen.tsx` → `useEnrollmentsQuery`, `useAppointmentsQuery`
+  - [x] `ReportsScreen.tsx` → `useAppointmentsQuery`, `usePatientsQuery`, `useDoctorsQuery`, `usePackagesQuery`, `useEnrollmentsQuery`
+  - [x] `SettingsScreen.tsx` → `useCentersQuery`, `useStaffQuery`
+  - [x] `CreateAppointmentSheet.tsx` → `useDoctorsQuery`, `useTherapistsQuery`, `useCentersQuery`, `usePackagesQuery`, `useAppointmentsQuery`, `useAddAppointmentMutation`, `useEnrollPatientMutation`
+  - [x] `AddPatientSheet.tsx` → `useAddPatientMutation`
+  - [x] `AddDoctorSheet.tsx` → `useCentersQuery`, `useAddDoctorMutation`
+  - [x] `CenterSwitchSheet.tsx` → `useCentersQuery`
+  - [x] `Header.tsx` → `useCentersQuery`
+  - [x] `RescheduleModal.tsx` → `useDoctorsQuery`, `useMoveAppointmentMutation`
+  - [x] `AppointmentDetailModal.tsx` → `usePatientsQuery`, `useCentersQuery`, `useEnrollmentsQuery`, `useUpdateStatusMutation`, `useCancelAppointmentMutation`
+  - [x] `UpcomingSessionsWidget.tsx` → `useEnrollmentsQuery`, `useAppointmentsQuery`
+  - [x] `PackageEnrollmentDetailSheet.tsx` → `useEnrollmentsQuery`, `useAppointmentsQuery`, `useMarkSessionCompletedMutation`, `useCancelSessionMutation`, `usePauseEnrollmentMutation`, `useResumeEnrollmentMutation`
+  - [x] `DoctorDetailModal.tsx` → `useUpdateDoctorMutation`
+- [x] **Phase 8** — `npx tsc --noEmit` — 0 errors verified (`@DataEngineer`, `@Frontend`, `@UXEngineer`)
+- [x] **Phase 9** — Updated `ARCHITECTURE.md` + `STATE.md` (`@DataEngineer`)
+- [x] **UX Audit** — Verified skeleton loaders & mutation `isPending` states (`@UXEngineer`)
 
-### Modal Architecture & Dialog UI Overhaul (`@Frontend`, `@UXEngineer`)
-- **Flattened Modal Stack**: Lifted `RescheduleModal` and `AppointmentDetailModal` to screen level as siblings in `PatientEnrollmentsScreen.tsx` and `HomeScreen.tsx`, eliminating 3-level deep Modal nesting bugs.
-- **`BottomSheet.tsx`**: Removed `if (!visible) return null` early exit to keep the Modal wrapper mounted during closing animations, fixing open/close flash issues.
-- **`RescheduleModal.tsx`**: Moved internal Date Picker `<Modal>` outside of `<BottomSheet>` JSX fragment to render as a top-level sibling, resolving Date Picker invisibility bugs on Android. BottomSheet now stays visible during `RescheduleConfirmationModal` confirmation step.
-- **`PackageEnrollmentDetailSheet.tsx`**: Refactored child modal triggers into emitted callbacks (`onRescheduleSession`, `onViewSessionDetails`). Overhauled Pause/Resume and Cancel Session confirmation dialogs to use proper overlay/backdrop touch traps, `statusBarTranslucent`, and solid buttons.
-- **`PackageSessionCard.tsx`**: Added `isPast` action button guard so past non-paid sessions don't display action buttons. Added "Today" badge, fixed therapist icon to `body-outline`, and converted action buttons to solid filled semantic colors.
-- **Solid Button Design System**: Standardized `ExitConfirmationModal`, `LogoutConfirmationModal`, `RescheduleConfirmationModal`, and `PackageEnrollmentDetailSheet` dialog buttons to use solid `#52525B` (Zinc-600) dark neutral secondary buttons with white text/icons for high contrast across both Light and Dark themes.
+**Created files**:
+```
+src/api/queryClient.ts
+src/api/queryKeys.ts
+src/hooks/queries/useAppointmentsQuery.ts
+src/hooks/queries/usePatientsQuery.ts
+src/hooks/queries/useDoctorsQuery.ts
+src/hooks/queries/useCentersQuery.ts
+src/hooks/queries/usePackagesQuery.ts
+src/hooks/queries/useStaffQuery.ts
+src/hooks/mutations/useAppointmentMutations.ts
+src/hooks/mutations/usePatientMutations.ts
+src/hooks/mutations/useDoctorMutations.ts
+src/hooks/mutations/usePackageMutations.ts
+```
 
-### Date Formatting & Reschedule Log Bug Fix (`@DataEngineer`)
-- **`dateUtils.ts`**: Updated `formatDate`, `formatDateShort`, and `formatMonthYear` to isolate `YYYY-MM-DD` via `d.split('T')[0].split(' ')[0]` before parsing, preventing `NaN` / `Invalid Date` when processing ISO 8601 timestamp strings (e.g. `"2026-08-04T17:34:01.123Z"`).
-- **`PatientRecordsScreen.tsx`**: Fixed line 276 where `formatDateShort(appt.originalSchedule.rescheduledAt)` previously rendered `"Invalid Date"`.
-- **`AppointmentsScreen.tsx` & `AppointmentDetailModal.tsx`**: Standardized reschedule log date formatting across all appointment detail views.
-
----
-
-## Previous Sprint Focus
-
-### Multi-Level Sidebar Drawer & Package Screen Split (`@Frontend`)
-- Dedicated Packages Catalog (`AvailablePackagesScreen.tsx`) & Patient Enrollments (`PatientEnrollmentsScreen.tsx`).
-- Full sub-menu highlight drawer navigation alignment in `SidebarDrawer.tsx`.
-- Package enrollment resolution & detail sheet timeline modal links.
+**Modified files**:
+```
+App.tsx                          — QueryClientProvider wrapper, removed fetchCenters() useEffect
+src/store/useAppointmentStore.ts — Stripped loading & fetchAppointments
+src/store/usePatientStore.ts     — Stripped loading & fetchPatients
+src/store/useDoctorStore.ts      — Stripped loading & fetchDoctorsAndTherapists
+src/store/useCenterStore.ts      — Stripped fetchCenters
+src/store/usePackageStore.ts     — Stripped loading, fetchPackages, fetchEnrollments
+src/utils/useRefresh.ts          — queryClient.invalidateQueries() instead of store.fetch*()
+src/screens/HomeScreen.tsx
+src/screens/CalendarScreen.tsx
+src/screens/AppointmentsScreen.tsx
+src/screens/PatientListScreen.tsx
+src/screens/PatientRecordsScreen.tsx
+src/screens/DoctorScreen.tsx
+src/screens/AvailablePackagesScreen.tsx
+src/screens/PatientEnrollmentsScreen.tsx
+src/screens/ReportsScreen.tsx
+src/screens/SettingsScreen.tsx
+src/components/Header.tsx
+src/components/appointment/CreateAppointmentSheet.tsx
+src/components/appointment/AddPatientSheet.tsx
+src/components/doctor/AddDoctorSheet.tsx
+src/components/doctor/DoctorDetailModal.tsx
+src/components/shared/CenterSwitchSheet.tsx
+src/components/calendar/RescheduleModal.tsx
+src/components/calendar/AppointmentDetailModal.tsx
+src/components/package/UpcomingSessionsWidget.tsx
+src/components/package/PackageEnrollmentDetailSheet.tsx
+```
 
 ---
 
@@ -67,7 +112,19 @@
 - [x] Expo SDK 54.0.36
 - [x] `@gorhom/bottom-sheet`, `react-native-keyboard-controller`, `expo-clipboard` installed
 - [x] `react-native-svg` (required by `SessionProgressRing.tsx`)
-- [x] All screens & modals type-checked
+- [x] `@tanstack/react-query` v5 installed
+- [x] All screens & components type-checked with zero errors (`npx tsc --noEmit`)
+
+### TanStack Query Migration
+- [x] Package installed
+- [x] QueryClient + Provider configured
+- [x] Query key registry created (`src/api/queryKeys.ts`)
+- [x] All `useQuery` hooks created (`src/hooks/queries/`)
+- [x] All `useMutation` hooks created (`src/hooks/mutations/`)
+- [x] Zustand stores stripped of `fetch*` / `loading`
+- [x] `useRefresh.ts` updated with `queryClient.invalidateQueries()`
+- [x] All screens & components migrated
+- [x] Zero TypeScript errors (`npx tsc --noEmit`)
 
 ### Packaged Sessions & Modal System
 - [x] Flat screen-level modal hierarchy — no double/triple modal nesting
@@ -87,3 +144,5 @@ _None_
 - No emoji used anywhere in UI — all icons are Ionicons.
 - Shift-remaining-sessions behavior is user-selectable (modal prompt on cancel/reschedule).
 - All confirmation dialogs use `statusBarTranslucent`, backdrop touch traps, and solid white-text buttons.
+- **TanStack Query rule**: Never call store `fetch*` methods from screens. Never read store `loading` flags. Use hooks from `src/hooks/queries/` and `src/hooks/mutations/` only.
+- **TSC gate**: `npx tsc --noEmit` verified with **0 errors**.

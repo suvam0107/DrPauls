@@ -19,17 +19,22 @@ import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS, STATUS_COLORS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
+import SearchInput from '../components/shared/SearchInput';
+import { useDebounce } from '../utils/useDebounce';
+
+import { useAppointmentsQuery, useAppointmentSearchQuery } from '../hooks/queries/useAppointmentsQuery';
 
 const STATUS_FILTERS: string[] = Object.values(APPOINTMENT_STATUS);
 
 export default function PastAppointmentsScreen() {
   const { colors, isDark } = useTheme();
-  const appointments = useAppointmentStore((s) => s.appointments);
+  const { data: appointments = [] } = useAppointmentsQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const activeStatusFilters = useUIStore((s) => s.activeStatusFilters);
   const toggleStatusFilter = useUIStore((s) => s.toggleStatusFilter);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
   const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
@@ -40,25 +45,20 @@ export default function PastAppointmentsScreen() {
   const currentHHMM =
     String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
+  const isSearchActive = debouncedSearchQuery.trim().length >= 1;
+  const { data: searchResults = [], isFetching: isSearchFetching } = useAppointmentSearchQuery(debouncedSearchQuery);
+
   // Filter all preceding/past appointments for the active center
   const pastAppointments = useMemo(() => {
-    return appointments
+    const baseList = isSearchActive ? searchResults : appointments;
+
+    return baseList
       .filter((a) => {
         const isCenterMatch = !a.centerId || a.centerId === activeCenterId;
         if (!isCenterMatch) return false;
 
         const isPast = a.date < today || (a.date === today && a.startTime <= currentHHMM);
         if (!isPast) return false;
-
-        // Search query filter
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const matchPatient = a.patientName?.toLowerCase().includes(q);
-          const matchDoctor = a.doctorName?.toLowerCase().includes(q);
-          const matchService = a.serviceType?.toLowerCase().includes(q);
-          const matchPhone = a.patientMobile?.includes(q);
-          if (!matchPatient && !matchDoctor && !matchService && !matchPhone) return false;
-        }
 
         // Multi-select status filter chips
         if (activeStatusFilters.length > 0) {
@@ -68,7 +68,7 @@ export default function PastAppointmentsScreen() {
         return true;
       })
       .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime));
-  }, [appointments, activeCenterId, today, currentHHMM, searchQuery, activeStatusFilters]);
+  }, [appointments, searchResults, isSearchActive, activeCenterId, today, currentHHMM, activeStatusFilters]);
 
   const handleFilterPress = (status: string) => {
     playClickSound();
@@ -98,20 +98,13 @@ export default function PastAppointmentsScreen() {
         </View>
 
         {/* Search Bar */}
-        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search patient, doctor, service..."
-            placeholderTextColor={colors.textMuted}
+        <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
+          <SearchInput
             value={searchQuery}
             onChangeText={setSearchQuery}
+            placeholder="Search patient, doctor, service..."
+            isFetching={isSearchFetching && isSearchActive}
           />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Status Filter Chips (Calendar-style) */}

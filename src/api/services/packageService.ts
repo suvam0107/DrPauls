@@ -22,6 +22,14 @@ export const packageService = {
     return res.data.data;
   },
 
+  search: async (query: string, serviceType?: string): Promise<Package[]> => {
+    const res = await apiClient.post<ApiResponse<Package[]>>('/nested', {
+      spc: 'search_packages',
+      payload: { query, serviceType },
+    });
+    return res.data.data;
+  },
+
   add: async (data: Omit<Package, 'id'>): Promise<Package> => {
     const res = await apiClient.post<ApiResponse<Package>>('/nonnested', {
       spc: 'add_package',

@@ -9,6 +9,8 @@ import usePatientStore from '../../store/usePatientStore';
 import { Patient, Gender } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAddPatientMutation } from '../../hooks/mutations/usePatientMutations';
+
 export interface AddPatientSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -18,7 +20,7 @@ export interface AddPatientSheetProps {
 function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 'visible'>) {
   const { colors } = useTheme();
   const { expandSheet } = useBottomSheet();
-  const addPatient = usePatientStore((s) => s.addPatient);
+  const addPatientMutation = useAddPatientMutation();
 
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
@@ -26,7 +28,7 @@ function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 
   const [enquirySource, setEnquirySource] = useState('Walk-in');
   const [error, setError] = useState('');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       setError('Patient name is required');
       return;
@@ -37,7 +39,7 @@ function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 
     }
 
     setError('');
-    const newPatient = addPatient({
+    const newPatient = await addPatientMutation.mutateAsync({
       name: name.trim(),
       mobile: mobile.trim(),
       gender: gender as Gender,

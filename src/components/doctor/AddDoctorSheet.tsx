@@ -20,6 +20,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
 import { generateDoctorWorkingHourSlots, timeToMins, formatTime } from '../../utils/dateUtils';
 
+import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
+import { useAddDoctorMutation } from '../../hooks/mutations/useDoctorMutations';
+
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -32,8 +35,8 @@ export interface AddDoctorSheetProps {
 function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'visible'>) {
   const { colors } = useTheme();
   const { expandSheet } = useBottomSheet();
-  const addDoctor = useDoctorStore((s) => s.addDoctor);
-  const centers = useCenterStore((s) => s.centers);
+  const addDoctorMutation = useAddDoctorMutation();
+  const { data: centers = [] } = useCentersQuery();
   const globalCenterId = useUIStore((s) => s.activeCenterId);
 
   const [centerId, setCenterId] = useState(globalCenterId || centers[0]?.id || 'CC-001');
@@ -115,7 +118,7 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     playClickSound();
 
     if (!name.trim()) {
@@ -143,7 +146,7 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
 
     setError('');
 
-    const newDoc = addDoctor({
+    const newDoc = await addDoctorMutation.mutateAsync({
       name: name.trim().startsWith('Dr.') ? name.trim() : `Dr. ${name.trim()}`,
       specialty,
       department: department.trim() || 'General Practice',

@@ -8,6 +8,8 @@ import useUIStore from '../../store/useUIStore';
 import { Ionicons } from '@expo/vector-icons';
 import { playClickSound } from '../../utils/feedback';
 
+import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
+
 export interface CenterSwitchSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -15,7 +17,7 @@ export interface CenterSwitchSheetProps {
 
 export default function CenterSwitchSheet({ visible, onClose }: CenterSwitchSheetProps) {
   const { colors } = useTheme();
-  const centers = useCenterStore((s) => s.centers);
+  const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const setActiveCenterId = useUIStore((s) => s.setActiveCenterId);
 

@@ -1,10 +1,5 @@
 import { useState, useCallback } from 'react';
-import { RefreshControl } from 'react-native';
-import useAppointmentStore from '../store/useAppointmentStore';
-import usePatientStore from '../store/usePatientStore';
-import useDoctorStore from '../store/useDoctorStore';
-import useCenterStore from '../store/useCenterStore';
-import usePackageStore from '../store/usePackageStore';
+import { queryClient } from '../api/queryClient';
 import { playClickSound } from './feedback';
 
 export function useRefresh(onCustomRefresh?: () => Promise<void> | void) {
@@ -18,13 +13,7 @@ export function useRefresh(onCustomRefresh?: () => Promise<void> | void) {
       if (onCustomRefresh) {
         await onCustomRefresh();
       }
-      await Promise.all([
-        useAppointmentStore.getState().fetchAppointments(),
-        usePatientStore.getState().fetchPatients(),
-        useDoctorStore.getState().fetchDoctorsAndTherapists(),
-        useCenterStore.getState().fetchCenters(),
-        usePackageStore.getState().fetchPackages(),
-      ]);
+      await queryClient.invalidateQueries();
     } catch (e) {
       console.warn('Refresh error:', e);
     } finally {

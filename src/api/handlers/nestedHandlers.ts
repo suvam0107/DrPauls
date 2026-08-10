@@ -50,6 +50,53 @@ export const nestedHandlers = {
     return searchPatients(patients, payload.query);
   },
 
+  search_packages: (payload: { query: string; serviceType?: string }) => {
+    const packages = dataStore.getData().packages;
+    const { query, serviceType } = payload;
+    const q = query.trim().toLowerCase();
+    return packages.filter((pkg) => {
+      const matchesService = !serviceType || serviceType === 'All' || pkg.serviceType === serviceType;
+      const matchesQuery =
+        pkg.name.toLowerCase().includes(q) ||
+        pkg.serviceType.toLowerCase().includes(q) ||
+        (pkg.description ? pkg.description.toLowerCase().includes(q) : false);
+      return matchesService && matchesQuery;
+    });
+  },
+
+  search_appointments_by_query: (payload: { query: string; startDate?: string; endDate?: string }) => {
+    const appointments = dataStore.getData().appointments;
+    const { query, startDate, endDate } = payload;
+    const q = query.trim().toLowerCase();
+    return appointments.filter((a) => {
+      const inRange =
+        !startDate || !endDate
+          ? true
+          : a.date >= startDate && a.date <= endDate;
+      const matchesQuery =
+        a.patientName.toLowerCase().includes(q) ||
+        a.doctorName.toLowerCase().includes(q) ||
+        a.patientMobile.includes(q) ||
+        a.serviceType.toLowerCase().includes(q) ||
+        a.status.toLowerCase().includes(q);
+      return inRange && matchesQuery;
+    });
+  },
+
+  search_enrollments: (payload: { query: string; status?: string }) => {
+    const enrollments = dataStore.getData().enrollments;
+    const { query, status } = payload;
+    const q = query.trim().toLowerCase();
+    return enrollments.filter((e) => {
+      const matchesStatus = !status || status === 'All' || e.status === status;
+      const matchesQuery =
+        e.patientName.toLowerCase().includes(q) ||
+        e.packageName.toLowerCase().includes(q) ||
+        e.enrollmentId.toLowerCase().includes(q);
+      return matchesStatus && matchesQuery;
+    });
+  },
+
   get_appointment_with_details: (payload: { id: string }) => {
     const store = dataStore.getData();
     const appt = store.appointments.find((a) => a.id === payload.id);
@@ -63,6 +110,19 @@ export const nestedHandlers = {
       patientDetail: patient || null,
       doctorDetail: doctor || null,
     };
+  },
+
+  search_doctors: (payload: { query: string }) => {
+    const doctors = dataStore.getData().doctors;
+    const q = payload.query.trim().toLowerCase();
+    return doctors.filter(
+      (d) =>
+        d.name.toLowerCase().includes(q) ||
+        d.specialty.toLowerCase().includes(q) ||
+        d.department.toLowerCase().includes(q) ||
+        (d.phone ? d.phone.includes(q) : false) ||
+        d.id.toLowerCase().includes(q)
+    );
   },
 
   get_today_stats: () => {

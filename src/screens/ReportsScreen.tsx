@@ -23,6 +23,11 @@ import { useRefresh } from '../utils/useRefresh';
 import { playClickSound } from '../utils/feedback';
 import ReportsScreenSkeleton from '../components/skeletons/ReportsScreenSkeleton';
 
+import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
+import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
+import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
+import { usePackagesQuery, useEnrollmentsQuery } from '../hooks/queries/usePackagesQuery';
+
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -32,15 +37,11 @@ export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
 
-  const appointments = useAppointmentStore((s) => s.appointments);
-  const apptLoading = useAppointmentStore((s) => s.loading);
-  const patients = usePatientStore((s) => s.patients);
-  const patientLoading = usePatientStore((s) => s.loading);
-  const doctors = useDoctorStore((s) => s.doctors);
-  const doctorLoading = useDoctorStore((s) => s.loading);
-  const enrollments = usePackageStore((s) => s.enrollments);
-  const packageLoading = usePackageStore((s) => s.loading);
-  const packages = usePackageStore((s) => s.packages);
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const { data: patients = [] } = usePatientsQuery();
+  const { data: doctors = [] } = useDoctorsQuery();
+  const { data: enrollments = [] } = useEnrollmentsQuery();
+  const { data: packages = [] } = usePackagesQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
 
   const [period, setPeriod] = useState<TimePeriod>('month');
@@ -264,7 +265,7 @@ export default function ReportsScreen() {
     ];
   }, [patients]);
 
-  const isLoading = apptLoading || patientLoading || doctorLoading || packageLoading || refreshing;
+  const isLoading = refreshing;
 
   if (isLoading) {
     return <ReportsScreenSkeleton />;

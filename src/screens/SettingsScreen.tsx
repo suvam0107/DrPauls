@@ -12,13 +12,17 @@ import { copyToClipboard } from '../utils/clipboardUtils';
 
 import { formatCenterText, shareDetails } from '../utils/shareUtils';
 
+import { useCentersQuery } from '../hooks/queries/useCentersQuery';
+import { useStaffQuery } from '../hooks/queries/useStaffQuery';
+
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const themeMode = useUIStore((s) => s.themeMode);
   const setThemeMode = useUIStore((s) => s.setThemeMode);
   const activeCenterId = useUIStore((s) => s.activeCenterId);
 
-  const centers = useCenterStore((s) => s.centers);
+  const { data: centers = [] } = useCentersQuery();
+  const { data: staff } = useStaffQuery();
   const currentCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);

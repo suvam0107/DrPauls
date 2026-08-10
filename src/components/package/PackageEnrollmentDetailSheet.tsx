@@ -35,6 +35,25 @@ interface PackageEnrollmentDetailSheetProps {
   onViewSessionDetails?: (appointment: Appointment) => void;
 }
 
+import { useEnrollmentsQuery } from '../../hooks/queries/usePackagesQuery';
+import { useAppointmentsQuery } from '../../hooks/queries/useAppointmentsQuery';
+import {
+  useMarkSessionCompletedMutation,
+  useCancelSessionMutation,
+  usePauseEnrollmentMutation,
+  useResumeEnrollmentMutation,
+} from '../../hooks/mutations/usePackageMutations';
+
+interface PackageEnrollmentDetailSheetProps {
+  visible: boolean;
+  enrollmentId: string | null;
+  onClose: () => void;
+  /** Lifted to parent screen — avoid nesting RescheduleModal inside this BottomSheet */
+  onRescheduleSession?: (appointment: Appointment) => void;
+  /** Lifted to parent screen — avoid nesting AppointmentDetailModal inside this BottomSheet */
+  onViewSessionDetails?: (appointment: Appointment) => void;
+}
+
 export default function PackageEnrollmentDetailSheet({
   visible,
   enrollmentId,
@@ -43,15 +62,14 @@ export default function PackageEnrollmentDetailSheet({
   onViewSessionDetails,
 }: PackageEnrollmentDetailSheetProps) {
   const { colors } = useTheme();
-  const enrollment = usePackageStore((s) =>
-    enrollmentId ? s.getEnrollmentById(enrollmentId) : undefined
-  );
-  const appointments = useAppointmentStore((s) => s.appointments);
+  const { data: enrollments = [] } = useEnrollmentsQuery();
+  const enrollment = enrollmentId ? enrollments.find((e) => e.enrollmentId === enrollmentId) : undefined;
+  const { data: appointments = [] } = useAppointmentsQuery();
 
-  const markSessionCompleted = usePackageStore((s) => s.markSessionCompleted);
-  const cancelSession = usePackageStore((s) => s.cancelSession);
-  const pauseEnrollment = usePackageStore((s) => s.pauseEnrollment);
-  const resumeEnrollment = usePackageStore((s) => s.resumeEnrollment);
+  const markSessionCompletedMutation = useMarkSessionCompletedMutation();
+  const cancelSessionMutation = useCancelSessionMutation();
+  const pauseEnrollmentMutation = usePauseEnrollmentMutation();
+  const resumeEnrollmentMutation = useResumeEnrollmentMutation();
 
   // Confirmation dialogs — local to this sheet only (no child sheets)
   const [confirmPauseResume, setConfirmPauseResume] = useState<'pause' | 'resume' | null>(null);
@@ -138,8 +156,8 @@ export default function PackageEnrollmentDetailSheet({
     );
   }
 
-  const handleMarkAttended = (sessionId: string) => {
-    markSessionCompleted(enrollment.enrollmentId, sessionId);
+  const handleMarkAttended = async (sessionId: string) => {
+    await markSessionCompletedMutation.mutateAsync({ enrollmentId: enrollment.enrollmentId, sessionId });
     playSessionMarkedSound();
     Toast.show({
       type: 'success',
@@ -149,9 +167,13 @@ export default function PackageEnrollmentDetailSheet({
     });
   };
 
-  const handleCancelConfirm = (shiftRemaining: boolean) => {
+  const handleCancelConfirm = async (shiftRemaining: boolean) => {
     if (!showCancelPrompt.sessionId) return;
-    cancelSession(enrollment.enrollmentId, showCancelPrompt.sessionId, shiftRemaining);
+    await cancelSessionMutation.mutateAsync({
+      enrollmentId: enrollment.enrollmentId,
+      sessionId: showCancelPrompt.sessionId,
+      shiftRemaining,
+    });
     playSessionCancelledSound();
     setShowCancelPrompt({ visible: false, sessionId: '' });
     Toast.show({
@@ -164,10 +186,10 @@ export default function PackageEnrollmentDetailSheet({
     });
   };
 
-  const handleConfirmPauseResume = () => {
+  const handleConfirmPauseResume = async () => {
     if (!enrollment || !confirmPauseResume) return;
     if (confirmPauseResume === 'pause') {
-      pauseEnrollment(enrollment.enrollmentId);
+      await pauseEnrollmentMutation.mutateAsync(enrollment.enrollmentId);
       playClickSound();
       Toast.show({
         type: 'info',
@@ -176,7 +198,10 @@ export default function PackageEnrollmentDetailSheet({
         position: 'bottom',
       });
     } else {
-      resumeEnrollment(enrollment.enrollmentId, enrollment.startDate);
+      await resumeEnrollmentMutation.mutateAsync({
+        enrollmentId: enrollment.enrollmentId,
+        newStartDate: enrollment.startDate,
+      });
       playClickSound();
       Toast.show({
         type: 'success',

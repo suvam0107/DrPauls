@@ -4,7 +4,6 @@ import AppRefreshControl from '../components/shared/AppRefreshControl';
 import SearchInput from '../components/shared/SearchInput';
 import AddPatientSheet from '../components/appointment/AddPatientSheet';
 import PatientDetailModal from '../components/patient/PatientDetailModal';
-import usePatientStore from '../store/usePatientStore';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Patient } from '../types';
@@ -12,6 +11,9 @@ import { playClickSound } from '../utils/feedback';
 import { copyToClipboard } from '../utils/clipboardUtils';
 import { useRefresh } from '../utils/useRefresh';
 import PatientListSkeleton from '../components/skeletons/PatientListSkeleton';
+import { useDebounce } from '../utils/useDebounce';
+
+import { usePatientsQuery, usePatientSearchQuery } from '../hooks/queries/usePatientsQuery';
 
 export interface PatientListScreenProps {
   onNavigate?: (screen: string, params?: { patientId?: string }) => void;
@@ -20,16 +22,20 @@ export interface PatientListScreenProps {
 export default function PatientListScreen({ onNavigate }: PatientListScreenProps) {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
-  const patients = usePatientStore((s) => s.patients);
-  const loading = usePatientStore((s) => s.loading);
-  const search = usePatientStore((s) => s.search);
+  const { data: patients = [] } = usePatientsQuery();
 
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 200);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showPatientDetail, setShowPatientDetail] = useState(false);
 
-  const filteredPatients: Patient[] = query.trim() ? search(query) : patients;
+  // Server-side search — fires on first character (>= 1 char)
+  const isSearchActive = debouncedQuery.trim().length >= 1;
+  const { data: searchResults = [], isFetching: isSearchFetching } = usePatientSearchQuery(debouncedQuery);
+
+  // When search active: use server results. Otherwise: full patient list.
+  const filteredPatients: Patient[] = isSearchActive ? searchResults : patients;
 
   const handleOpenPatientDetail = (patient: Patient) => {
     playClickSound();
@@ -64,10 +70,15 @@ export default function PatientListScreen({ onNavigate }: PatientListScreenProps
       </View>
 
       <View style={styles.searchBox}>
-        <SearchInput value={query} onChangeText={setQuery} placeholder="Search by name, ID or mobile..." />
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search by name, ID or mobile..."
+          isFetching={isSearchFetching && isSearchActive}
+        />
       </View>
 
-      {loading || refreshing ? (
+      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
         <PatientListSkeleton />
       ) : (
         <FlatList

@@ -24,6 +24,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import RescheduleConfirmationModal from '../shared/RescheduleConfirmationModal';
 
+import { useDoctorsQuery } from '../../hooks/queries/useDoctorsQuery';
+import { useMoveAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
+
 export interface RescheduleModalProps {
   visible: boolean;
   appointment: Appointment | null;
@@ -33,10 +36,9 @@ export interface RescheduleModalProps {
 export default function RescheduleModal({ visible, appointment, onClose }: RescheduleModalProps) {
   const { colors } = useTheme();
 
-  const doctors = useDoctorStore((s) => s.doctors);
+  const { data: doctors = [] } = useDoctorsQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
-  const moveAppointment = useAppointmentStore((s) => s.moveAppointment);
-  const updateAppointment = useAppointmentStore((s) => s.updateAppointment);
+  const moveAppointmentMutation = useMoveAppointmentMutation();
 
   const apptCenterId = appointment?.centerId || activeCenterId;
 
@@ -111,17 +113,16 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
     setShowConfirm(true);
   };
 
-  const handleConfirmReschedule = () => {
+  const handleConfirmReschedule = async () => {
     if (!appointment) return;
     const endTime = addMins(startTime, 30);
-    moveAppointment(appointment.id, date, startTime, endTime, doctorId);
-
-    if (doctorId !== appointment.doctorId) {
-      updateAppointment(appointment.id, {
-        doctorId,
-        doctorName: selectedDoctor?.name || appointment.doctorName,
-      });
-    }
+    await moveAppointmentMutation.mutateAsync({
+      id: appointment.id,
+      newDate: date,
+      newStartTime: startTime,
+      newEndTime: endTime,
+      newDoctorId: doctorId,
+    });
 
     playAppointmentSuccessSound();
     Toast.show({

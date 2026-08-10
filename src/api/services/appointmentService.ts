@@ -57,6 +57,14 @@ export const appointmentService = {
     return res.data.data;
   },
 
+  searchByQuery: async (query: string, startDate?: string, endDate?: string): Promise<Appointment[]> => {
+    const res = await apiClient.post<ApiResponse<Appointment[]>>('/nested', {
+      spc: 'search_appointments_by_query',
+      payload: { query, startDate, endDate },
+    });
+    return res.data.data;
+  },
+
   add: async (
     data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Appointment> => {

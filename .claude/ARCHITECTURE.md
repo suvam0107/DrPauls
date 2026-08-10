@@ -16,6 +16,9 @@
 - **Back Navigation & Exit Policy**: Full Android hardware back button & gesture navigation stack (`router.back()`). Home screen back press presents a theme-aligned exit app confirmation modal (`ExitConfirmationModal`).
 - **Full TypeScript Security**: Strict TypeScript configuration (`"strict": true`, `"noImplicitAny": true`) with central domain interfaces in `src/types/index.ts`.
 - **JSON File-System Data Layer & Axios Interceptor Engine**: All domain records originate from static JSON files (`assets/data/*.json`). Data access is routed through an elaborate Axios interceptor layer (`src/api/`) with custom in-memory adapter routing requests to `/nested` and `/nonnested` endpoint families keyed by `spc`.
+
+- **TanStack Query + Zustand Coexistence**: Server-state (remote data fetching, caching, background refetch, deduplication, loading/error state) is owned by **TanStack Query** (@tanstack/react-query). Client/UI state (theme, activeCenterId, modals, auth token) and write-through optimistic mutations are owned by **Zustand**. Screens and components consume data exclusively via custom query hooks (src/hooks/queries/) and mutation hooks (src/hooks/mutations/). Zustand stores no longer expose fetch* methods or loading flags — those responsibilities belong to TanStack Query. Pull-to-refresh is handled by queryClient.invalidateQueries() in useRefresh.ts. Query keys are centralized in src/api/queryKeys.ts (no magic strings). staleTime = 2 min, gcTime = 10 min. For entity list queries, initialData is seeded from dataStore.getData() for zero-flicker instant render. For detail/secondary queries, skeleton loaders are shown while isLoading = true.
+- **Debounced Server-Side Search Architecture**: Search inputs across all screens (`SearchInput`, `PatientSearchInput`, `PatientListScreen`, `AppointmentsScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `PastAppointmentsScreen`, `DoctorScreen`) utilize controlled input components powered by a custom `useDebounce` hook (200ms delay, 1-character threshold). Keystrokes update local UI state immediately for responsive typing, while debounced values trigger TanStack Query server-side search hooks (`usePatientSearchQuery`, `usePackageSearchQuery`, `useAppointmentSearchQuery`, `useEnrollmentSearchQuery`, `useDoctorSearchQuery`) starting on the very first character typed. Uncontrolled `defaultValue` re-render issues are eliminated. Loading states display an activity indicator inside the input suffix and skeleton loading cards during active fetches.
 - **Robinhood-Style OLED Dark Aesthetics**: Deep pitch-black background (`#000000`), elevated dark card surfaces (`#131722`), sleek subtle dark borders (`#1E2432`), high-contrast crisp white typography (`#FFFFFF`), and high-energy electric Robinhood accent tokens (`#3875F6` blue, `#00C805` emerald green, `#FF9500` amber, `#FF3B30` red).
 - **Multi-Center Global Scoping**: Global active center selector in Header (`activeCenterId`), filtering appointments, doctor availability, working days/hours, and scheduling slots across branches.
 
@@ -49,6 +52,8 @@ DrPauls/
     │   ├── axiosConfig.ts         # Axios instance setup with base URL, headers & interceptors
     │   ├── dataStore.ts           # In-memory session store hydrated from assets/data/*.json
     │   ├── index.ts               # Barrel export for API layer
+    │   ├── queryClient.ts         # Singleton QueryClient (staleTime=2min, gcTime=10min)
+    │   ├── queryKeys.ts           # Centralized TanStack Query key factory (no magic strings)
     │   ├── types.ts               # ApiFamily, SpcKey, ApiRequest, ApiResponse definitions
     │   ├── handlers/
     │   │   ├── nestedHandlers.ts  # Relational / composed query handlers
@@ -65,6 +70,19 @@ DrPauls/
     │       ├── patientService.ts    # Patient API operations
     │       ├── staffService.ts      # Staff API operations
     │       └── therapistService.ts  # Therapist API operations
+    ├── hooks/                     # Custom TanStack Query hooks (@DataEngineer)
+    │   ├── queries/               # useQuery hooks (server read state)
+    │   │   ├── useAppointmentsQuery.ts  # Appointments queries (all, byDate, byRange, todayStats)
+    │   │   ├── usePatientsQuery.ts      # Patients queries (all, byId, search)
+    │   │   ├── useDoctorsQuery.ts       # Doctors + Therapists queries
+    │   │   ├── useCentersQuery.ts       # Centers queries
+    │   │   ├── usePackagesQuery.ts      # Packages + Enrollments queries
+    │   │   └── useStaffQuery.ts         # Staff/profile query
+    │   └── mutations/             # useMutation hooks (server write state)
+    │       ├── useAppointmentMutations.ts  # add, update, move, cancel, updateStatus
+    │       ├── usePatientMutations.ts      # add, update patient
+    │       ├── useDoctorMutations.ts       # add, update doctor
+    │       └── usePackageMutations.ts      # enroll, markCompleted, cancel/reschedule session, pause/resume
     ├── types/
     │   └── index.ts               # Central TypeScript type definitions & interfaces (Center, Doctor, Appointment)
     ├── components/
@@ -115,11 +133,11 @@ DrPauls/
     │   └── SettingsScreen.tsx     # Settings screen with Staff Profile & Sign Out
     ├── store/
     │   ├── useAuthStore.ts        # Persistent AsyncStorage Auth Token Engine & 24-hour mock JWT issuance
-    │   ├── useAppointmentStore.ts# State routed through appointmentService; API: updateStatus, updateAppointment, moveAppointment, cancelAppointment
-    │   ├── useCenterStore.ts      # Clinic center state management routed through centerService
-    │   ├── usePatientStore.ts     # Patient directory state routed through patientService & priority calculation
-    │   ├── useDoctorStore.ts      # Doctor schedule state routed through doctorService & therapistService
-    │   ├── usePackageStore.ts     # Package catalog + PackageEnrollment lifecycle (enroll, mark, cancel, reschedule, pause, resume)
+    │   ├── useAppointmentStore.ts # Write-through mutations: updateStatus, updateAppointment, moveAppointment, cancelAppointment, addAppointment (fetch* removed)
+    │   ├── useCenterStore.ts      # Center selectors (getCenterById); fetchCenters removed
+    │   ├── usePatientStore.ts     # Patient CRUD mutations + priority calculation; fetchPatients removed
+    │   ├── useDoctorStore.ts      # Doctor/therapist CRUD mutations; fetchDoctorsAndTherapists removed
+    │   ├── usePackageStore.ts     # Package enrollment lifecycle mutations; fetchPackages/fetchEnrollments removed
     │   └── useUIStore.ts          # UI theme, layout & activeCenterId state
     ├── theme/
     │   ├── colors.ts              # Dark & light color tokens
@@ -131,7 +149,7 @@ DrPauls/
         ├── feedback.ts           # Centralized audio & haptic feedback controller
         ├── searchUtils.ts        # Patient search & ID generation logic
         ├── shareUtils.ts         # Utility for sharing appointment details via system share sheet
-        └── useRefresh.ts         # Custom hook for pull-to-refresh store re-hydration
+        └── useRefresh.ts         # Pull-to-refresh via queryClient.invalidateQueries() (all active queries)
 ```
 
 ---

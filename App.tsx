@@ -27,16 +27,16 @@ import CenterSwitchSheet from './src/components/shared/CenterSwitchSheet';
 import QuickAddPopup from './src/components/shared/QuickAddPopup';
 import ExitConfirmationModal from './src/components/shared/ExitConfirmationModal';
 
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './src/api/queryClient';
 import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
-import useCenterStore from './src/store/useCenterStore';
 import { playNavigationSound, playClickSound } from './src/utils/feedback';
 
 function MainApp() {
   const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkAndVerifyAuth = useAuthStore((s) => s.checkAndVerifyAuth);
-  const fetchCenters = useCenterStore((s) => s.fetchCenters);
 
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('home');
@@ -56,7 +56,6 @@ function MainApp() {
 
   useEffect(() => {
     checkAndVerifyAuth();
-    fetchCenters();
   }, []);
 
   // Navigate & push to navigation history stack
@@ -260,15 +259,17 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <KeyboardProvider>
-          <ThemeProvider>
-            <MainApp />
-          </ThemeProvider>
-        </KeyboardProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <KeyboardProvider>
+            <ThemeProvider>
+              <MainApp />
+            </ThemeProvider>
+          </KeyboardProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 

@@ -30,6 +30,14 @@ export const packageEnrollmentService = {
     return res.data.data;
   },
 
+  search: async (query: string, status?: string): Promise<PackageEnrollment[]> => {
+    const res = await apiClient.post<ApiResponse<PackageEnrollment[]>>('/nested', {
+      spc: 'search_enrollments',
+      payload: { query, status },
+    });
+    return res.data.data;
+  },
+
   add: async (data: Omit<PackageEnrollment, 'enrollmentId' | 'enrolledAt'>): Promise<PackageEnrollment> => {
     const res = await apiClient.post<ApiResponse<PackageEnrollment>>('/nonnested', {
       spc: 'add_enrollment',
