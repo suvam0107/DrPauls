@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { playConfirmationSound, playLogoutSound, playClickSound } from '../../utils/feedback';
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+import PredictiveBackWrapper from './PredictiveBackWrapper';
+
 export interface LogoutConfirmationModalProps {
   visible: boolean;
   onCancel: () => void;
@@ -20,8 +23,6 @@ export default function LogoutConfirmationModal({ visible, onCancel, onConfirm }
     }
   }, [visible]);
 
-  if (!visible) return null;
-
   const handleCancel = () => {
     playClickSound();
     onCancel();
@@ -31,6 +32,15 @@ export default function LogoutConfirmationModal({ visible, onCancel, onConfirm }
     playLogoutSound();
     onConfirm();
   };
+
+  usePredictiveBack({
+    priority: 10,
+    transition: 'scale-fade',
+    enabled: visible,
+    onCommit: handleCancel,
+  });
+
+  if (!visible) return null;
 
   return (
     <Modal
@@ -45,7 +55,8 @@ export default function LogoutConfirmationModal({ visible, onCancel, onConfirm }
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <PredictiveBackWrapper transition="scale-fade" isActive={visible}>
+          <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Text Content */}
           <Text style={[styles.title, { color: colors.text }]}>Sign Out of Account?</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
@@ -73,8 +84,9 @@ export default function LogoutConfirmationModal({ visible, onCancel, onConfirm }
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
+      </PredictiveBackWrapper>
+    </View>
+  </Modal>
   );
 }
 

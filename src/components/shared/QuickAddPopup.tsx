@@ -6,6 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { playClickSound } from '../../utils/feedback';
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+import PredictiveBackWrapper from './PredictiveBackWrapper';
+
 export interface QuickAddPopupProps {
   visible: boolean;
   onClose: () => void;
@@ -28,6 +31,13 @@ export default function QuickAddPopup({
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.8);
   const translateY = useSharedValue(10);
+
+  usePredictiveBack({
+    priority: 6,
+    transition: 'scale-fade',
+    enabled: visible || isMounted,
+    onCommit: onClose,
+  });
 
   useEffect(() => {
     if (visible) {
@@ -58,6 +68,7 @@ export default function QuickAddPopup({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={[styles.overlay, { paddingBottom: bottomSpace }]}>
           <TouchableWithoutFeedback>
+            <PredictiveBackWrapper transition="scale-fade" isActive={visible || isMounted}>
             <Animated.View
               style={[
                 styles.popup,
@@ -119,6 +130,7 @@ export default function QuickAddPopup({
                 </View>
               </TouchableOpacity>
             </Animated.View>
+            </PredictiveBackWrapper>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>

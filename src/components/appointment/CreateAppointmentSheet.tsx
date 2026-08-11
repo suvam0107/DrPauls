@@ -659,6 +659,8 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   );
 }
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+
 export interface CreateAppointmentSheetProps {
   visible: boolean;
   initialData?: InitialData;
@@ -670,6 +672,13 @@ export default function CreateAppointmentSheet({
   initialData,
   onClose,
 }: CreateAppointmentSheetProps) {
+  usePredictiveBack({
+    priority: 3,
+    transition: 'none',
+    enabled: visible,
+    onCommit: onClose,
+  });
+
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={640} keyboardBlurBehavior="none">
       <CreateSheetForm initialData={initialData} onClose={onClose} />

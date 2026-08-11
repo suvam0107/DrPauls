@@ -34,6 +34,10 @@ import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
 import { playNavigationSound, playClickSound } from './src/utils/feedback';
 
+import { PredictiveBackProvider } from './src/utils/PredictiveBackContext';
+import { usePredictiveBack } from './src/hooks/usePredictiveBack';
+import PredictiveBackWrapper from './src/components/shared/PredictiveBackWrapper';
+
 function MainApp() {
   const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -82,75 +86,33 @@ function MainApp() {
     else if (tab === 'settings') handleNavigate('settings');
   };
 
-  // Android hardware back button & back gesture handler
-  useEffect(() => {
-    const onBackPress = () => {
-      if (showExitModal) {
-        playClickSound();
-        setShowExitModal(false);
-        return true;
+  // Back action: Pop Screen (Priority 1)
+  usePredictiveBack({
+    priority: 1,
+    transition: 'slide',
+    enabled: screenHistory.length > 1,
+    onCommit: () => {
+      playNavigationSound();
+      const updatedHistory = [...screenHistory];
+      updatedHistory.pop();
+      const prevScreen = updatedHistory[updatedHistory.length - 1];
+      setScreenHistory(updatedHistory);
+      setCurrentScreen(prevScreen);
+      if (prevScreen === 'home' || prevScreen === 'settings') {
+        setActiveTab(prevScreen);
       }
-      if (showCenterSwitchModal) {
-        playClickSound();
-        setShowCenterSwitchModal(false);
-        return true;
-      }
-      if (showQuickAddPopup) {
-        playClickSound();
-        setShowQuickAddPopup(false);
-        return true;
-      }
-      if (showAddDoctorModal) {
-        playClickSound();
-        setShowAddDoctorModal(false);
-        return true;
-      }
-      if (showAddPatientModal) {
-        playClickSound();
-        setShowAddPatientModal(false);
-        return true;
-      }
-      if (showCreateModal) {
-        playClickSound();
-        setShowCreateModal(false);
-        return true;
-      }
-      if (drawerOpen) {
-        playClickSound();
-        setDrawerOpen(false);
-        return true;
-      }
+    },
+  });
 
-      if (screenHistory.length > 1) {
-        playNavigationSound();
-        const updatedHistory = [...screenHistory];
-        updatedHistory.pop();
-        const prevScreen = updatedHistory[updatedHistory.length - 1];
-        setScreenHistory(updatedHistory);
-        setCurrentScreen(prevScreen);
-        if (prevScreen === 'home' || prevScreen === 'settings') {
-          setActiveTab(prevScreen);
-        }
-        return true;
-      }
-
+  // Back action: Show Exit Confirmation Modal on Root Home Screen (Priority 0)
+  usePredictiveBack({
+    priority: 0,
+    transition: 'none',
+    enabled: screenHistory.length <= 1,
+    onCommit: () => {
       setShowExitModal(true);
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => backHandler.remove();
-  }, [
-    showExitModal,
-    showCenterSwitchModal,
-    showQuickAddPopup,
-    showAddDoctorModal,
-    showAddPatientModal,
-    showCreateModal,
-    drawerOpen,
-    screenHistory,
-    currentScreen,
-  ]);
+    },
+  });
 
   if (!isAuthenticated) {
     return (
@@ -173,8 +135,12 @@ function MainApp() {
         onCenterPress={() => setShowCenterSwitchModal(true)}
       />
 
-      {/* Main Screen Content */}
-      <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+      {/* Main Screen Content with Horizontal Slide Predictive Back */}
+      <PredictiveBackWrapper
+        transition="slide"
+        isActive={screenHistory.length > 1}
+        style={[styles.screenContainer, { backgroundColor: colors.background }]}
+      >
         {currentScreen === 'home' && <HomeScreen onNavigate={handleNavigate} />}
         {currentScreen === 'calendar' && <CalendarScreen />}
         {(currentScreen === 'appointments' || currentScreen === 'past-appointments') && <AppointmentsScreen />}
@@ -192,7 +158,7 @@ function MainApp() {
         {currentScreen === 'patient-enrollments' && <PatientEnrollmentsScreen />}
         {currentScreen === 'reports' && <ReportsScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
-      </View>
+      </PredictiveBackWrapper>
 
       {/* Bottom Nav Bar with safe area bottom inset */}
       <BottomNav
@@ -221,7 +187,7 @@ function MainApp() {
         open={drawerOpen}
         onOpen={() => setDrawerOpen(true)}
         onClose={() => setDrawerOpen(false)}
-        edgeSwipeEnabled={currentScreen === 'home'}
+        edgeSwipeEnabled={true}
       >
         <SidebarDrawer
           onClose={() => setDrawerOpen(false)}
@@ -271,7 +237,9 @@ export default function App() {
         <SafeAreaProvider>
           <KeyboardProvider>
             <ThemeProvider>
-              <MainApp />
+              <PredictiveBackProvider>
+                <MainApp />
+              </PredictiveBackProvider>
             </ThemeProvider>
           </KeyboardProvider>
         </SafeAreaProvider>

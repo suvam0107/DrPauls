@@ -364,11 +364,20 @@ function AddDoctorForm({ onClose, onDoctorAdded }: Omit<AddDoctorSheetProps, 'vi
   );
 }
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+
 export default function AddDoctorSheet({
   visible,
   onClose,
   onDoctorAdded,
 }: AddDoctorSheetProps) {
+  usePredictiveBack({
+    priority: 5,
+    transition: 'none',
+    enabled: visible,
+    onCommit: onClose,
+  });
+
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={600} keyboardBlurBehavior="none">
       <AddDoctorForm onClose={onClose} onDoctorAdded={onDoctorAdded} />

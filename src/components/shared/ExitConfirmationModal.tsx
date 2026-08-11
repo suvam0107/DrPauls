@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { playConfirmationSound, playClickSound } from '../../utils/feedback';
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+import PredictiveBackWrapper from './PredictiveBackWrapper';
+
 export interface ExitConfirmationModalProps {
   visible: boolean;
   onCancel: () => void;
@@ -20,8 +23,6 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
     }
   }, [visible]);
 
-  if (!visible) return null;
-
   const handleCancel = () => {
     playClickSound();
     onCancel();
@@ -31,6 +32,15 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
     playClickSound();
     onConfirm();
   };
+
+  usePredictiveBack({
+    priority: 8,
+    transition: 'fade',
+    enabled: visible,
+    onCommit: handleCancel,
+  });
+
+  if (!visible) return null;
 
   return (
     <Modal
@@ -45,7 +55,8 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <PredictiveBackWrapper transition="fade" isActive={visible}>
+          <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Icon Badge */}
           <View style={[styles.iconCircle, { backgroundColor: colors.dangerBg }]}>
             <Ionicons name="power-outline" size={26} color={colors.danger} />
@@ -78,8 +89,9 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
+      </PredictiveBackWrapper>
+    </View>
+  </Modal>
   );
 }
 

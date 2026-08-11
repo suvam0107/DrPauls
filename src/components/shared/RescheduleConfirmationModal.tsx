@@ -5,6 +5,9 @@ import { useTheme } from '../../theme/ThemeContext';
 import { formatDateShort, formatTime } from '../../utils/dateUtils';
 import { playConfirmationSound, playClickSound } from '../../utils/feedback';
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+import PredictiveBackWrapper from './PredictiveBackWrapper';
+
 export interface RescheduleConfirmationModalProps {
   visible: boolean;
   patientName: string;
@@ -37,8 +40,6 @@ export default function RescheduleConfirmationModal({
     }
   }, [visible]);
 
-  if (!visible) return null;
-
   const handleCancel = () => {
     playClickSound();
     onCancel();
@@ -48,6 +49,15 @@ export default function RescheduleConfirmationModal({
     playClickSound();
     onConfirm();
   };
+
+  usePredictiveBack({
+    priority: 9,
+    transition: 'scale-fade',
+    enabled: visible,
+    onCommit: handleCancel,
+  });
+
+  if (!visible) return null;
 
   return (
     <Modal
@@ -62,7 +72,8 @@ export default function RescheduleConfirmationModal({
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <PredictiveBackWrapper transition="scale-fade" isActive={visible}>
+          <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Title & Patient Subtitle */}
           <Text style={[styles.title, { color: colors.text }]}>Confirm Reschedule</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
@@ -114,8 +125,9 @@ export default function RescheduleConfirmationModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
+      </PredictiveBackWrapper>
+    </View>
+  </Modal>
   );
 }
 

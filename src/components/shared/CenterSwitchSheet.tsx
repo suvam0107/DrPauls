@@ -10,6 +10,8 @@ import { playClickSound } from '../../utils/feedback';
 
 import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+
 export interface CenterSwitchSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -20,6 +22,16 @@ export default function CenterSwitchSheet({ visible, onClose }: CenterSwitchShee
   const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const setActiveCenterId = useUIStore((s) => s.setActiveCenterId);
+
+  usePredictiveBack({
+    priority: 7,
+    transition: 'none',
+    enabled: visible,
+    onCommit: () => {
+      playClickSound();
+      onClose();
+    },
+  });
 
   const handleSelect = (id: string) => {
     playClickSound();

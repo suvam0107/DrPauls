@@ -113,7 +113,16 @@ function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 
   );
 }
 
+import { usePredictiveBack } from '../../hooks/usePredictiveBack';
+
 export default function AddPatientSheet({ visible, onClose, onPatientAdded }: AddPatientSheetProps) {
+  usePredictiveBack({
+    priority: 4,
+    transition: 'none',
+    enabled: visible,
+    onCommit: onClose,
+  });
+
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={420} keyboardBlurBehavior="restore">
       <AddPatientForm onClose={onClose} onPatientAdded={onPatientAdded} />
