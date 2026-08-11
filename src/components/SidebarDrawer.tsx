@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 import useAuthStore from '../store/useAuthStore';
 import { playClickSound } from '../utils/feedback';
-
-const DRAWER_WIDTH = 280;
 
 export interface SubMenuItem {
   label: string;
@@ -23,7 +21,6 @@ export interface MenuItem {
 }
 
 export interface SidebarDrawerProps {
-  visible: boolean;
   onClose: () => void;
   onNavigate: (screen: string) => void;
   currentScreen?: string;
@@ -60,7 +57,7 @@ function CollapsibleMenuGroup({
 
   const subMenuContainerStyle = useAnimatedStyle(() => ({
     opacity: animation.value,
-    maxHeight: animation.value * 140,
+    maxHeight: animation.value * 200,
     overflow: 'hidden',
   }));
 
@@ -99,13 +96,13 @@ function CollapsibleMenuGroup({
                   styles.subMenuItemFullWidth,
                   isActive
                     ? {
-                      backgroundColor: colors.primaryLight,
-                      borderLeftColor: colors.primary,
-                    }
+                        backgroundColor: colors.primaryLight,
+                        borderLeftColor: colors.primary,
+                      }
                     : {
-                      backgroundColor: 'transparent',
-                      borderLeftColor: 'transparent',
-                    },
+                        backgroundColor: 'transparent',
+                        borderLeftColor: 'transparent',
+                      },
                 ]}
                 onPress={() => {
                   playClickSound();
@@ -139,13 +136,10 @@ function CollapsibleMenuGroup({
   );
 }
 
-export default function SidebarDrawer({ visible, onClose, onNavigate, currentScreen }: SidebarDrawerProps) {
+export default function SidebarDrawer({ onClose, onNavigate, currentScreen }: SidebarDrawerProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-
-  const translateX = useSharedValue(-DRAWER_WIDTH);
-  const opacity = useSharedValue(0);
 
   const menuItems: MenuItem[] = [
     { label: 'Calendar Grid', icon: 'calendar-outline', screen: 'calendar' },
@@ -163,139 +157,102 @@ export default function SidebarDrawer({ visible, onClose, onNavigate, currentScr
     },
   ];
 
-  useEffect(() => {
-    if (visible) {
-      opacity.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.quad) });
-      translateX.value = withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) });
-    } else {
-      opacity.value = withTiming(0, { duration: 80 });
-      translateX.value = withTiming(-DRAWER_WIDTH, { duration: 100, easing: Easing.in(Easing.quad) });
-    }
-  }, [visible]);
-
   const handleClose = () => {
     playClickSound();
-    translateX.value = withTiming(-DRAWER_WIDTH, { duration: 100, easing: Easing.in(Easing.quad) });
-    opacity.value = withTiming(0, { duration: 80 }, () => {
-      runOnJS(onClose)();
-    });
+    onClose();
   };
-
-  const drawerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  if (!visible) return null;
 
   const displayName = user?.name || 'Anita Roy';
   const displayRole = user?.role || 'Receptionist';
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        {/* Animated Backdrop */}
-        <Pressable style={styles.backdropPressable} onPress={handleClose}>
-          <Animated.View style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropStyle]} />
-        </Pressable>
-
-        {/* Animated Slide-in Drawer */}
-        <Animated.View style={[styles.drawer, { backgroundColor: colors.card, borderRightColor: colors.border }, drawerStyle]}>
-          {/* Staff Info Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: Math.max(insets.top + 16, 44) }]}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>{displayName.charAt(0)}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.staffName, { color: colors.text }]} numberOfLines={1}>{displayName}</Text>
-              <Text style={[styles.staffRole, { color: colors.textMuted }]}>
-                {displayRole} • Dr. Paul's Clinic
-              </Text>
-            </View>
-            <TouchableOpacity onPress={handleClose} hitSlop={8}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Navigation Items List */}
-          <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
-            {menuItems.map((item) => {
-              if (item.subItems) {
-                return (
-                  <CollapsibleMenuGroup
-                    key={item.label}
-                    item={item}
-                    currentScreen={currentScreen}
-                    onNavigate={onNavigate}
-                    onCloseDrawer={handleClose}
-                  />
-                );
-              }
-
-              const isActive = currentScreen === item.screen;
-              return (
-                <TouchableOpacity
-                  key={item.screen}
-                  style={[
-                    styles.menuItem,
-                    { borderBottomColor: colors.border },
-                    isActive && { backgroundColor: colors.primaryLight },
-                  ]}
-                  onPress={() => {
-                    playClickSound();
-                    if (item.screen) onNavigate(item.screen);
-                    handleClose();
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name={item.icon} size={20} color={colors.primary} />
-                  <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Footer Clinic Info */}
-          <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
-            <Text style={[styles.clinicTitle, { color: colors.text }]}>Dr. Paul's Clinic</Text>
-            <Text style={[styles.clinicSub, { color: colors.textMuted }]}>
-              Guwahati • Receptionist Console
-            </Text>
-          </View>
-        </Animated.View>
+    <View style={styles.container}>
+      {/* Staff Info Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: Math.max(insets.top + 16, 44) }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Text style={styles.avatarText}>{displayName.charAt(0)}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.staffName, { color: colors.text }]} numberOfLines={1}>{displayName}</Text>
+          <Text style={[styles.staffRole, { color: colors.textMuted }]}>
+            {displayRole} • Dr. Paul's Clinic
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleClose} hitSlop={8}>
+          <Ionicons name="close" size={22} color={colors.textMuted} />
+        </TouchableOpacity>
       </View>
-    </Modal>
+
+      {/* Navigation Items List */}
+      <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
+        {menuItems.map((item) => {
+          if (item.subItems) {
+            return (
+              <CollapsibleMenuGroup
+                key={item.label}
+                item={item}
+                currentScreen={currentScreen}
+                onNavigate={onNavigate}
+                onCloseDrawer={handleClose}
+              />
+            );
+          }
+
+          const isActive = currentScreen === item.screen;
+          return (
+            <TouchableOpacity
+              key={item.screen}
+              style={[
+                styles.menuItem,
+                { borderBottomColor: colors.border },
+                isActive
+                  ? {
+                      backgroundColor: colors.primaryLight,
+                      borderLeftColor: colors.primary,
+                    }
+                  : {
+                      borderLeftColor: 'transparent',
+                    },
+              ]}
+              onPress={() => {
+                playClickSound();
+                if (item.screen) onNavigate(item.screen);
+                handleClose();
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={item.icon} size={20} color={colors.primary} />
+              <Text
+                style={[
+                  styles.menuLabel,
+                  {
+                    color: isActive ? colors.primary : colors.text,
+                    fontWeight: isActive ? '700' : '600',
+                  },
+                ]}
+              >
+                {item.label}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Footer Clinic Info */}
+      <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
+        <Text style={[styles.clinicTitle, { color: colors.text }]}>Dr. Paul's Clinic</Text>
+        <Text style={[styles.clinicSub, { color: colors.textMuted }]}>
+          Guwahati • Receptionist Console
+        </Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-  },
-  backdropPressable: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  backdrop: {
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  drawer: {
-    width: DRAWER_WIDTH,
-    height: '100%',
-    borderRightWidth: 1,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 100,
-    elevation: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
   },
   header: {
     flexDirection: 'row',
@@ -334,6 +291,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 12,
+    borderLeftWidth: 3,
   },
   menuLabel: {
     fontSize: 14,
@@ -352,7 +310,7 @@ const styles = StyleSheet.create({
     width: 1.5,
     borderRadius: 1,
     opacity: 0.7,
-    zIndex: 10
+    zIndex: 10,
   },
   subMenuItemFullWidth: {
     width: '100%',

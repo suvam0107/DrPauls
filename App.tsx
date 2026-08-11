@@ -7,6 +7,7 @@ import AppToast from './src/components/shared/AppToast';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import Header from './src/components/Header';
 import BottomNav from './src/components/BottomNav';
+import SidebarContainer from './src/components/SidebarContainer';
 import SidebarDrawer from './src/components/SidebarDrawer';
 
 import HomeScreen from './src/screens/HomeScreen';
@@ -215,13 +216,19 @@ function MainApp() {
         onClose={() => setShowCenterSwitchModal(false)}
       />
 
-      {/* Sidebar Drawer */}
-      <SidebarDrawer
-        visible={drawerOpen}
+      {/* Sidebar Drawer Container */}
+      <SidebarContainer
+        open={drawerOpen}
+        onOpen={() => setDrawerOpen(true)}
         onClose={() => setDrawerOpen(false)}
-        onNavigate={handleNavigate}
-        currentScreen={currentScreen}
-      />
+        edgeSwipeEnabled={currentScreen === 'home'}
+      >
+        <SidebarDrawer
+          onClose={() => setDrawerOpen(false)}
+          onNavigate={handleNavigate}
+          currentScreen={currentScreen}
+        />
+      </SidebarContainer>
 
       {/* Create Appointment Modal */}
       <CreateAppointmentSheet
