@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    marginBottom: 16,
+    marginVertical: 16,
   },
   widgetHeader: {
     flexDirection: 'row',

@@ -310,7 +310,7 @@ function ModalContent({
                     : 'Packaged Treatment Visit'}
               </Text>
               <Text style={[styles.packageBandSub, { color: colors.text }]}>
-                {targetEnrollmentId ? `ID: ${targetEnrollmentId} • ` : ''}View Session Timeline
+                View Session Timeline
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />

@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700' },
   sectionCount: { fontSize: 12 },
   emptyBox: {
     padding: 32,
