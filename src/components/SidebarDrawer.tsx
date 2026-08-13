@@ -66,8 +66,17 @@ function CollapsibleMenuGroup({
       <TouchableOpacity
         style={[
           styles.menuItem,
-          { borderBottomColor: colors.border },
-          isChildActive && { backgroundColor: colors.surface },
+          isChildActive
+            ? {
+                backgroundColor: colors.surface,
+                borderLeftColor: colors.primary,
+                borderLeftWidth: 3,
+              }
+            : {
+                backgroundColor: 'transparent',
+                borderLeftColor: 'transparent',
+                borderLeftWidth: 0,
+              },
         ]}
         onPress={() => {
           playClickSound();
@@ -98,10 +107,12 @@ function CollapsibleMenuGroup({
                     ? {
                         backgroundColor: colors.primaryLight,
                         borderLeftColor: colors.primary,
+                        borderLeftWidth: 3,
                       }
                     : {
                         backgroundColor: 'transparent',
                         borderLeftColor: 'transparent',
+                        borderLeftWidth: 0,
                       },
                 ]}
                 onPress={() => {
@@ -201,14 +212,16 @@ export default function SidebarDrawer({ onClose, onNavigate, currentScreen }: Si
               key={item.screen}
               style={[
                 styles.menuItem,
-                { borderBottomColor: colors.border },
                 isActive
                   ? {
                       backgroundColor: colors.primaryLight,
                       borderLeftColor: colors.primary,
+                      borderLeftWidth: 3,
                     }
                   : {
+                      backgroundColor: 'transparent',
                       borderLeftColor: 'transparent',
+                      borderLeftWidth: 0,
                     },
               ]}
               onPress={() => {
@@ -288,7 +301,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 12,
-    borderLeftWidth: 3,
   },
   menuLabel: {
     fontSize: 14,
@@ -317,7 +329,6 @@ const styles = StyleSheet.create({
     paddingLeft: 44,
     paddingRight: 16,
     gap: 10,
-    borderLeftWidth: 3,
   },
   subMenuLabel: {
     fontSize: 13,

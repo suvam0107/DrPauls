@@ -6,8 +6,9 @@
 ---
 
 ## Last Updated
-`2026-08-13` — Completed **UI/UX Polish, Scroll-Driven Navbar Translation & PredictiveBack Cleanup**:
-1. **Scroll-Driven Navbar Translation**: Built `useScrollNavbar` hook and animated `translateY` transform (`120px` hide / `0px` show via `withTiming`) on `BottomNav.tsx`. Attached `onScroll` handlers across all scrollable screens & grids (`HomeScreen`, `CalendarScreen`, `CalendarGrid`, `MonthGrid`, `AppointmentsScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `ReportsScreen`).
+`2026-08-13` — Completed **UI/UX Polish, Scroll-Driven Navbar Translation & Sidebar Border Fix**:
+1. **Sidebar Drawer Left Border Fix**: Removed static `borderLeftWidth: 3` from `SidebarDrawer.tsx` stylesheet and conditionally set `borderLeftWidth: 3` with `colors.primary` only when active (`isChildActive` / `isActive`), eliminating the unwanted default black left border on inactive collapsible items (like Packages).
+2. **Scroll-Driven Navbar Translation**: Built `useScrollNavbar` hook and animated `translateY` transform (`120px` hide / `0px` show via `withTiming`) on `BottomNav.tsx`. Attached `onScroll` handlers across all scrollable screens & grids (`HomeScreen`, `CalendarScreen`, `CalendarGrid`, `MonthGrid`, `AppointmentsScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `ReportsScreen`).
 2. **PredictiveBack Removal**: Completely removed all PredictiveBack wrappers, context provider, custom hooks (`PredictiveBackContext.tsx`, `usePredictiveBack.ts`, `PredictiveBackWrapper.tsx`), and usages across 10 modal/sheet components. Retained `enableOnBackInvokedCallback: true` in `app.json`.
 3. **Standard Android BackHandler**: Replaced predictive back logic in `App.tsx` with a standard React Native `BackHandler` hardware back button listener that pops the screen history stack or opens `ExitConfirmationModal` on root.
 4. **Navigation Architecture**: Per-tab animated spring pill highlights (`TabItem` in `BottomNav.tsx`) with `scaleX` expansion and `withSpring` physics matching WhatsApp tab bar design. Hidden cleanly on `SettingsScreen`.
