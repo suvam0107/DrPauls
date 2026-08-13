@@ -8,7 +8,7 @@ import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
-import { todayISO, formatDateShort, formatTime } from '../utils/dateUtils';
+import { todayISO, formatDateShort, formatTime, isPastSlot } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
@@ -63,9 +63,19 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const overdueAppts = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PENDING);
   const overdueCount = overdueAppts.length;
 
-  // Next up appointment
+  // Next up appointment: next upcoming session to be conducted today
+  const activeUpcomingStatuses: string[] = [
+    APPOINTMENT_STATUS.CONFIRMED,
+    APPOINTMENT_STATUS.SCHEDULED,
+    APPOINTMENT_STATUS.PENDING,
+    APPOINTMENT_STATUS.RESCHEDULED,
+  ];
   const nextAppt = todayAppts
-    .filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED || a.status === APPOINTMENT_STATUS.PENDING)
+    .filter(
+      (a) =>
+        activeUpcomingStatuses.includes(a.status) &&
+        !isPastSlot(a.date, a.endTime || a.startTime)
+    )
     .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
 
   // Animated live pulse dot
