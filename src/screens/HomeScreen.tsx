@@ -138,7 +138,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
           <View style={styles.nextUpHeader}>
             <View style={styles.nextUpTitleRow}>
               <Ionicons name="time" size={16} color={colors.primary} />
-              <Text style={[styles.nextUpTitle, { color: colors.primary }]}>Next Appointment Spotlight</Text>
+              <Text style={[styles.nextUpTitle, { color: colors.primary }]}>Next Appointment</Text>
             </View>
             <Text style={[styles.nextUpTime, { color: colors.primary }]}>{formatTime(nextAppt.startTime)}</Text>
           </View>
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   nextUpCard: {
     padding: 14,
     borderRadius: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     marginBottom: 16,
     gap: 10,
   },
