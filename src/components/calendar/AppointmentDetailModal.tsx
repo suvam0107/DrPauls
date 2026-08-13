@@ -164,7 +164,7 @@ function ModalContent({
             <Ionicons name="open-outline" size={16} color={colors.primary} />
           </View>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {appointment.patientMobile} • Tap for patient details
+            {appointment.patientMobile}
           </Text>
         </TouchableOpacity>
 

@@ -142,10 +142,7 @@ export default function SidebarDrawer({ onClose, onNavigate, currentScreen }: Si
   const user = useAuthStore((s) => s.user);
 
   const menuItems: MenuItem[] = [
-    { label: 'Calendar Grid', icon: 'calendar-outline', screen: 'calendar' },
-    { label: 'All Appointments', icon: 'time-outline', screen: 'appointments' },
-    { label: 'Patient Directory', icon: 'people-outline', screen: 'patients' },
-    { label: 'Doctor Schedule', icon: 'medical-outline', screen: 'doctors' },
+    { label: 'Home Dashboard', icon: 'home-outline', screen: 'home' },
     { label: 'Reports & Analytics', icon: 'bar-chart-outline', screen: 'reports' },
     {
       label: 'Packages',

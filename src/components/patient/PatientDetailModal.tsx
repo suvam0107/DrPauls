@@ -150,120 +150,120 @@ export default function PatientDetailModal({
     <BottomSheet visible={visible && !!activePat} onClose={onClose} snapHeight={580} keyboardBlurBehavior="none">
       {activePat ? (
         <BottomSheetScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 240 }} keyboardShouldPersistTaps="handled">
-        {/* Priority-Highlighted Profile Card */}
-        <View
-          style={[
-            styles.profileBorderCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: priorityColor + '40',
-              borderLeftWidth: 5,
-              borderLeftColor: priorityColor,
-            },
-          ]}
-        >
-          {/* Header Profile Section with Copy & Share Icons */}
-          <View style={styles.headerRow}>
-            <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.avatarText, { color: colors.primary }]}>
-                {(name || activePat.name).charAt(0).toUpperCase()}
-              </Text>
-            </View>
+          {/* Priority-Highlighted Profile Card */}
+          <View
+            style={[
+              styles.profileBorderCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: priorityColor + '40',
+                borderLeftWidth: 5,
+                borderLeftColor: priorityColor,
+              },
+            ]}
+          >
+            {/* Header Profile Section with Copy & Share Icons */}
+            <View style={styles.headerRow}>
+              <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.avatarText, { color: colors.primary }]}>
+                  {(name || activePat.name).charAt(0).toUpperCase()}
+                </Text>
+              </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
-              <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-                {gender || activePat.gender} • {rescheduleCount} Reschedule{rescheduleCount !== 1 ? 's' : ''} • Priority: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Priority</Text>
-              </Text>
-            </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
+                <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
+                  {gender || activePat.gender} • {rescheduleCount} Reschedule{rescheduleCount !== 1 ? 's' : ''} • Reliability: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Reliability</Text>
+                </Text>
+              </View>
 
-            {/* Plain Copy & Share Icons side-by-side */}
-            <View style={styles.iconRow}>
-              <TouchableOpacity
-                onPress={handleCopyProfile}
-                activeOpacity={0.7}
-                hitSlop={6}
-              >
-                <Ionicons name="copy-outline" size={19} color={colors.primary} />
-              </TouchableOpacity>
+              {/* Plain Copy & Share Icons side-by-side */}
+              <View style={styles.iconRow}>
+                <TouchableOpacity
+                  onPress={handleCopyProfile}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                >
+                  <Ionicons name="copy-outline" size={19} color={colors.primary} />
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={handleShareProfile}
-                activeOpacity={0.7}
-                hitSlop={6}
-              >
-                <Ionicons name="share-social-outline" size={19} color={colors.primary} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleShareProfile}
+                  activeOpacity={0.7}
+                  hitSlop={6}
+                >
+                  <Ionicons name="share-social-outline" size={19} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* View Past Records Link Button */}
-        {onViewPastRecords ? (
-          <TouchableOpacity
-            style={[styles.pastRecordsBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
-            onPress={() => {
-              playClickSound();
-              onClose();
-              onViewPastRecords(activePat.id);
-            }}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="document-text-outline" size={16} color={colors.primary} />
-            <Text style={[styles.pastRecordsBtnText, { color: colors.primary }]}>
-              View Patient Past Records & Medical History
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Quick Action Bar */}
-        <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={styles.phoneTag}
-            onLongPress={() => (mobile || activePat.mobile) && copyToClipboard(mobile || activePat.mobile, 'Mobile Number')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="phone-portrait-outline" size={14} color={colors.textMuted} />
-            <Text style={[styles.phoneTagText, { color: colors.text }]}>{mobile || activePat.mobile}</Text>
-          </TouchableOpacity>
-
-          <View style={styles.actionBtns}>
-            {mobile ? (
-              <TouchableOpacity
-                style={[styles.iconBtn, { backgroundColor: colors.success }]}
-                onPress={handleCall}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="call-outline" size={15} color="#FFF" />
-                <Text style={[styles.btnText, { color: '#FFF' }]}>Call</Text>
-              </TouchableOpacity>
-            ) : null}
-
+          {/* View Past Records Link Button */}
+          {onViewPastRecords ? (
             <TouchableOpacity
-              style={[
-                styles.iconBtn,
-                { backgroundColor: isEditing ? colors.danger : colors.primary },
-              ]}
+              style={[styles.pastRecordsBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
               onPress={() => {
                 playClickSound();
-                setIsEditing(!isEditing);
+                onClose();
+                onViewPastRecords(activePat.id);
               }}
               activeOpacity={0.8}
             >
-              <Ionicons
-                name={isEditing ? 'close-circle-outline' : 'create-outline'}
-                size={15}
-                color="#FFF"
-              />
-              <Text style={[styles.btnText, { color: '#FFF' }]}>
-                {isEditing ? 'Cancel' : 'Edit'}
+              <Ionicons name="document-text-outline" size={16} color={colors.primary} />
+              <Text style={[styles.pastRecordsBtnText, { color: colors.primary }]}>
+                View Patient Past Records & Medical History
               </Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
             </TouchableOpacity>
-          </View>
-        </View>
+          ) : null}
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {/* Quick Action Bar */}
+          <View style={[styles.actionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.phoneTag}
+              onLongPress={() => (mobile || activePat.mobile) && copyToClipboard(mobile || activePat.mobile, 'Mobile Number')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="phone-portrait-outline" size={14} color={colors.textMuted} />
+              <Text style={[styles.phoneTagText, { color: colors.text }]}>{mobile || activePat.mobile}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.actionBtns}>
+              {mobile ? (
+                <TouchableOpacity
+                  style={[styles.iconBtn, { backgroundColor: colors.success }]}
+                  onPress={handleCall}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="call-outline" size={15} color="#FFF" />
+                  <Text style={[styles.btnText, { color: '#FFF' }]}>Call</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[
+                  styles.iconBtn,
+                  { backgroundColor: isEditing ? colors.danger : colors.primary },
+                ]}
+                onPress={() => {
+                  playClickSound();
+                  setIsEditing(!isEditing);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isEditing ? 'close-circle-outline' : 'create-outline'}
+                  size={15}
+                  color="#FFF"
+                />
+                <Text style={[styles.btnText, { color: '#FFF' }]}>
+                  {isEditing ? 'Cancel' : 'Edit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {!isEditing ? (
             /* READ-ONLY VIEW MODE */
@@ -389,199 +389,199 @@ export default function PatientDetailModal({
                 </Text>
               </TouchableOpacity>
             </View>
-        ) : (
-          /* EDIT FORM MODE */
-          <View style={{ marginTop: 8 }}>
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Full Name *</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                ]}
-                value={name}
-                onChangeText={setName}
-                placeholder="Patient Full Name"
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
+          ) : (
+            /* EDIT FORM MODE */
+            <View style={{ marginTop: 8 }}>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Full Name *</Text>
                 <TextInput
                   style={[
                     styles.input,
                     { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
                   ]}
-                  value={mobile}
-                  onChangeText={setMobile}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Select
-                  label="Gender *"
-                  value={gender}
-                  options={GENDERS}
-                  onChange={setGender}
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>WhatsApp Number</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={whatsapp}
-                  onChangeText={setWhatsapp}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  placeholder="Optional"
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Patient Full Name"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Alternate Mobile</Text>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={mobile}
+                    onChangeText={setMobile}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Select
+                    label="Gender *"
+                    value={gender}
+                    options={GENDERS}
+                    onChange={setGender}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>WhatsApp Number</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={whatsapp}
+                    onChangeText={setWhatsapp}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholder="Optional"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Alternate Mobile</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={alternateMobile}
+                    onChangeText={setAlternateMobile}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholder="Optional"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Date of Birth</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={dob}
+                    onChangeText={setDob}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Email Address</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    placeholder="email@example.com"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Street Address</Text>
                 <TextInput
                   style={[
                     styles.input,
                     { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
                   ]}
-                  value={alternateMobile}
-                  onChangeText={setAlternateMobile}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  placeholder="Optional"
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="House / Flat / Area"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Date of Birth</Text>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>District / City</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={district}
+                    onChangeText={setDistrict}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>State</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={state}
+                    onChangeText={setState}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textMuted }]}>Pin Code</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
+                    ]}
+                    value={pinCode}
+                    onChangeText={setPinCode}
+                    keyboardType="numeric"
+                    maxLength={6}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Select
+                    label="Enquiry Source"
+                    value={enquirySource}
+                    options={ENQUIRY_SOURCE}
+                    onChange={setEnquirySource}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textMuted }]}>Reference Doctor</Text>
                 <TextInput
                   style={[
                     styles.input,
                     { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
                   ]}
-                  value={dob}
-                  onChangeText={setDob}
-                  placeholder="YYYY-MM-DD"
+                  value={referenceDoctor}
+                  onChangeText={setReferenceDoctor}
+                  placeholder="Dr. Name if referred"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Email Address</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  placeholder="email@example.com"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </View>
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSave}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.saveBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+
             </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Street Address</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                ]}
-                value={address}
-                onChangeText={setAddress}
-                placeholder="House / Flat / Area"
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>District / City</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={district}
-                  onChangeText={setDistrict}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>State</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={state}
-                  onChangeText={setState}
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Pin Code</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                  ]}
-                  value={pinCode}
-                  onChangeText={setPinCode}
-                  keyboardType="numeric"
-                  maxLength={6}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Select
-                  label="Enquiry Source"
-                  value={enquirySource}
-                  options={ENQUIRY_SOURCE}
-                  onChange={setEnquirySource}
-                />
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Reference Doctor</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-                ]}
-                value={referenceDoctor}
-                onChangeText={setReferenceDoctor}
-                placeholder="Dr. Name if referred"
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-              onPress={handleSave}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="save-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.saveBtnText}>Save Changes</Text>
-            </TouchableOpacity>
-
-          </View>
-        )}
-      </BottomSheetScrollView>
+          )}
+        </BottomSheetScrollView>
       ) : null}
     </BottomSheet>
   );

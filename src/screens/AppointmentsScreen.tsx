@@ -36,18 +36,44 @@ import { useRefresh } from '../utils/useRefresh';
 import AppointmentsScreenSkeleton from '../components/skeletons/AppointmentsScreenSkeleton';
 import SearchInput from '../components/shared/SearchInput';
 import { useDebounce } from '../utils/useDebounce';
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 import { useAppointmentsQuery, useAppointmentSearchQuery } from '../hooks/queries/useAppointmentsQuery';
 import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
 import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
 
-export type RangeMode = 'today' | 'yesterday' | 'custom';
+import { STATUS_COLORS } from '../constants';
+
+export type RangeMode = 'today' | 'week' | 'month' | 'custom';
 export type GroupingMode = 'doctor' | 'patient';
+export type StatusFilter =
+  | 'All'
+  | 'Scheduled'
+  | 'Confirmed'
+  | 'Paid'
+  | 'Pending'
+  | 'Rescheduled'
+  | 'Overdue'
+  | 'Unattended'
+  | 'Cancelled';
+
+const STATUS_FILTER_OPTIONS: StatusFilter[] = [
+  'All',
+  'Scheduled',
+  'Confirmed',
+  'Paid',
+  'Pending',
+  'Rescheduled',
+  'Overdue',
+  'Unattended',
+  'Cancelled',
+];
 
 export default function AppointmentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
 
   const { data: appointments = [] } = useAppointmentsQuery();
   const { data: doctors = [] } = useDoctorsQuery();
@@ -55,33 +81,37 @@ export default function AppointmentsScreen() {
 
   const [rangeMode, setRangeMode] = useState<RangeMode>('today');
   const [groupingMode, setGroupingMode] = useState<GroupingMode>('doctor');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 200);
 
   const isSearchActive = debouncedSearchQuery.trim().length >= 1;
 
   // Custom range dates
-  const yesterdayDate = offsetDate(todayISO(), -1);
-  const [startDate, setStartDate] = useState(offsetDate(todayISO(), -7));
-  const [endDate, setEndDate] = useState(todayISO());
+  const todayStr = todayISO();
+  const weekStartDate = offsetDate(todayStr, -6);
+  const monthStartDate = todayStr.substring(0, 7) + '-01';
+
+  const [startDate, setStartDate] = useState(offsetDate(todayStr, -7));
+  const [endDate, setEndDate] = useState(todayStr);
 
   // Date Picker Modal state
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
-  const [pickerMonth, setPickerMonth] = useState(todayISO());
+  const [pickerMonth, setPickerMonth] = useState(todayStr);
 
   // Selected appointment for detail modal
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
-  // Lifted Package Enrollment timeline & session modals
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
   const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
   const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
 
   // Compute effective date range
   const { effectiveStart, effectiveEnd } = useMemo(() => {
-    if (rangeMode === 'today') return { effectiveStart: todayISO(), effectiveEnd: todayISO() };
-    if (rangeMode === 'yesterday') return { effectiveStart: yesterdayDate, effectiveEnd: yesterdayDate };
+    if (rangeMode === 'today') return { effectiveStart: todayStr, effectiveEnd: todayStr };
+    if (rangeMode === 'week') return { effectiveStart: weekStartDate, effectiveEnd: todayStr };
+    if (rangeMode === 'month') return { effectiveStart: monthStartDate, effectiveEnd: todayStr };
     return { effectiveStart: startDate, effectiveEnd: endDate };
-  }, [rangeMode, yesterdayDate, startDate, endDate]);
+  }, [rangeMode, todayStr, weekStartDate, monthStartDate, startDate, endDate]);
 
   // Server-side search when debounced search query >= 1 char
   const { data: searchResults = [], isFetching: isSearchFetching } = useAppointmentSearchQuery(
@@ -93,13 +123,35 @@ export default function AppointmentsScreen() {
   // Filter & sort appointments
   const filteredAppointments = useMemo(() => {
     let result: Appointment[];
+    const isGlobalFilter = statusFilter === 'Overdue' || statusFilter === 'Unattended';
 
     if (isSearchActive) {
       result = [...searchResults];
     } else {
-      result = appointments.filter(
-        (a) => a.date >= effectiveStart && a.date <= effectiveEnd
-      );
+      result = appointments.filter((a) => {
+        if (isGlobalFilter) return true; // Overdue & Unattended scan across all dates
+        return a.date >= effectiveStart && a.date <= effectiveEnd;
+      });
+    }
+
+    if (statusFilter !== 'All') {
+      result = result.filter((a) => {
+        const isPastDate = a.date < todayStr;
+
+        if (statusFilter === 'Pending') {
+          return a.status === 'Pending' && !isPastDate;
+        }
+        if (statusFilter === 'Overdue') {
+          return a.status === 'Overdue' || (a.status === 'Pending' && isPastDate);
+        }
+        if (statusFilter === 'Unattended') {
+          return (
+            a.status === 'Unattended' ||
+            ((a.status === 'Scheduled' || a.status === 'Confirmed') && isPastDate)
+          );
+        }
+        return a.status === statusFilter;
+      });
     }
 
     // Sort descending by date and time
@@ -110,7 +162,7 @@ export default function AppointmentsScreen() {
     });
 
     return result;
-  }, [appointments, effectiveStart, effectiveEnd, isSearchActive, searchResults]);
+  }, [appointments, effectiveStart, effectiveEnd, isSearchActive, searchResults, statusFilter, todayStr]);
 
   // Group appointments
   const groupedData = useMemo(() => {
@@ -163,7 +215,7 @@ export default function AppointmentsScreen() {
 
         {/* Date Range Selector Pills */}
         <View style={[styles.rangePillsRow, { backgroundColor: colors.surface }]}>
-          {(['today', 'yesterday', 'custom'] as RangeMode[]).map((mode) => (
+          {(['today', 'week', 'month', 'custom'] as RangeMode[]).map((mode) => (
             <TouchableOpacity
               key={mode}
               style={[
@@ -181,11 +233,49 @@ export default function AppointmentsScreen() {
                   { color: rangeMode === mode ? '#FFFFFF' : colors.textMuted },
                 ]}
               >
-                {mode === 'today' ? 'Today' : mode === 'yesterday' ? 'Yesterday' : 'Custom Range'}
+                {mode === 'today' ? 'Today' : mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'Custom'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Status Filter Chips Row */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusChipsScroll}>
+          {STATUS_FILTER_OPTIONS.map((st) => {
+            const isActive = statusFilter === st;
+            const colorHex = st === 'All' ? colors.primary : (STATUS_COLORS[st] || colors.primary);
+            const activeBg = colors.dark ? colorHex + '45' : colorHex + '25';
+
+            return (
+              <TouchableOpacity
+                key={st}
+                style={[
+                  styles.statusFilterChip,
+                  {
+                    backgroundColor: isActive ? (st === 'All' ? colors.primary : activeBg) : colors.surface,
+                    borderColor: isActive ? colorHex : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  playClickSound();
+                  setStatusFilter(st);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.statusFilterChipText,
+                    {
+                      color: isActive ? (st === 'All' ? '#FFFFFF' : (colors.dark ? '#FFFFFF' : colorHex)) : colors.textMuted,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {st}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* Custom Date Range Pickers (if mode is custom) */}
         {rangeMode === 'custom' && (
@@ -295,91 +385,93 @@ export default function AppointmentsScreen() {
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 120 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
-        {groupedData.length === 0 ? (
-          <View style={styles.emptyStateContainer}>
-            <Ionicons name="calendar-clear-outline" size={48} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Appointments Found</Text>
-            <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-              Try adjusting your date range, search query, or grouping filter.
-            </Text>
-          </View>
-        ) : (
-          groupedData.map((group, gIdx) => {
-            const pat = groupingMode === 'patient'
-              ? patients.find((p) => p.name.toLowerCase() === group.title.toLowerCase() || p.mobile === group.subtitle)
-              : null;
-            const patPriority = pat ? (pat.priority || calculatePatientPriority(pat.rescheduleCount || 0)) : null;
-            const priorityColor = patPriority === 'High' ? '#10B981' : patPriority === 'Medium' ? '#F59E0B' : patPriority === 'Low' ? '#EF4444' : null;
+          {groupedData.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="calendar-clear-outline" size={48} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Appointments Found</Text>
+              <Text style={[styles.emptySub, { color: colors.textMuted }]}>
+                Try adjusting your date range, search query, or grouping filter.
+              </Text>
+            </View>
+          ) : (
+            groupedData.map((group, gIdx) => {
+              const pat = groupingMode === 'patient'
+                ? patients.find((p) => p.name.toLowerCase() === group.title.toLowerCase() || p.mobile === group.subtitle)
+                : null;
+              const patPriority = pat ? (pat.priority || calculatePatientPriority(pat.rescheduleCount || 0)) : null;
+              const priorityColor = patPriority === 'High' ? '#10B981' : patPriority === 'Medium' ? '#F59E0B' : patPriority === 'Low' ? '#EF4444' : null;
 
-            return (
-              <View
-                key={gIdx}
-                style={[
-                  styles.groupCard,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: priorityColor ? priorityColor + '40' : colors.border,
-                    borderLeftWidth: priorityColor ? 5 : 1,
-                    borderLeftColor: priorityColor || colors.border,
-                  },
-                ]}
-              >
-                {/* Group Header */}
-                <View style={[styles.groupHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text>
-                    <Text style={[styles.groupSub, { color: colors.textMuted }]}>{group.subtitle}</Text>
+              return (
+                <View
+                  key={gIdx}
+                  style={[
+                    styles.groupCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: priorityColor ? priorityColor + '40' : colors.border,
+                      borderLeftWidth: priorityColor ? 5 : 1,
+                      borderLeftColor: priorityColor || colors.border,
+                    },
+                  ]}
+                >
+                  {/* Group Header */}
+                  <View style={[styles.groupHeaderRow, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text>
+                      <Text style={[styles.groupSub, { color: colors.textMuted }]}>{group.subtitle}</Text>
+                    </View>
+                    <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.countBadgeText}>{group.items.length} Visit{group.items.length > 1 ? 's' : ''}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.countBadgeText}>{group.items.length} Visit{group.items.length > 1 ? 's' : ''}</Text>
+
+                  {/* Group Appointments List */}
+                  <View style={styles.groupApptsList}>
+                    {group.items.map((appt) => (
+                      <TouchableOpacity
+                        key={appt.id}
+                        style={[styles.apptRowItem, { borderBottomColor: colors.border }]}
+                        onPress={() => {
+                          playClickSound();
+                          setSelectedAppt(appt);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.timeCol}>
+                          <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
+                          <Text style={[styles.dateSubText, { color: colors.textMuted }]}>{formatDateShort(appt.date)}</Text>
+                        </View>
+
+                        <View style={{ flex: 1, paddingHorizontal: 10 }}>
+                          <Text style={[styles.patientNameText, { color: colors.text }]} numberOfLines={1}>
+                            {groupingMode === 'doctor' ? appt.patientName : `${appt.doctorName}`}
+                          </Text>
+                          <Text style={[styles.serviceTypeText, { color: colors.textMuted }]}>
+                            {appt.serviceType} • {appt.appointmentType} {appt.isPackage && <Ionicons name="gift-outline" size={12} color={colors.primary} />}
+                          </Text>
+                          {appt.originalSchedule ? (
+                            <View style={styles.rescheduledBadgeRow}>
+                              <Ionicons name="swap-horizontal-outline" size={12} color="#D97706" />
+                              <Text style={styles.rescheduledBadgeText}>Rescheduled from {formatDateShort(appt.originalSchedule.date)}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+
+                        <View style={styles.statusCol}>
+                          <StatusChip status={appt.status} date={appt.date} />
+                          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginTop: 4 }} />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 </View>
-
-                {/* Group Appointments List */}
-                <View style={styles.groupApptsList}>
-                  {group.items.map((appt) => (
-                    <TouchableOpacity
-                      key={appt.id}
-                      style={[styles.apptRowItem, { borderBottomColor: colors.border }]}
-                      onPress={() => {
-                        playClickSound();
-                        setSelectedAppt(appt);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.timeCol}>
-                        <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
-                        <Text style={[styles.dateSubText, { color: colors.textMuted }]}>{formatDateShort(appt.date)}</Text>
-                      </View>
-
-                      <View style={{ flex: 1, paddingHorizontal: 10 }}>
-                        <Text style={[styles.patientNameText, { color: colors.text }]} numberOfLines={1}>
-                          {groupingMode === 'doctor' ? appt.patientName : `${appt.doctorName}`}
-                        </Text>
-                        <Text style={[styles.serviceTypeText, { color: colors.textMuted }]}>
-                          {appt.serviceType} • {appt.appointmentType} {appt.isPackage ? '[Pkg.]' : ''}
-                        </Text>
-                        {appt.originalSchedule ? (
-                          <View style={styles.rescheduledBadgeRow}>
-                            <Ionicons name="swap-horizontal-outline" size={12} color="#D97706" />
-                            <Text style={styles.rescheduledBadgeText}>Rescheduled from {formatDateShort(appt.originalSchedule.date)}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-
-                      <View style={styles.statusCol}>
-                        <StatusChip status={appt.status} date={appt.date} />
-                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginTop: 4 }} />
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
+              );
+            })
+          )}
+        </ScrollView>
       )}
 
       {/* Appointment Detail Bottom Sheet Modal */}
@@ -683,6 +775,7 @@ const styles = StyleSheet.create({
   serviceTypeText: {
     fontSize: 12,
     marginTop: 2,
+    lineHeight: 16,
   },
   rescheduledBadgeRow: {
     flexDirection: 'row',
@@ -761,5 +854,19 @@ const styles = StyleSheet.create({
   calendarCloseText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  statusChipsScroll: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 6,
+  },
+  statusFilterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  statusFilterChipText: {
+    fontSize: 11,
   },
 });

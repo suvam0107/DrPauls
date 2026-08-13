@@ -4,9 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { playConfirmationSound, playClickSound } from '../../utils/feedback';
 
-import { usePredictiveBack } from '../../hooks/usePredictiveBack';
-import PredictiveBackWrapper from './PredictiveBackWrapper';
-
 export interface ExitConfirmationModalProps {
   visible: boolean;
   onCancel: () => void;
@@ -33,13 +30,6 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
     onConfirm();
   };
 
-  usePredictiveBack({
-    priority: 8,
-    transition: 'fade',
-    enabled: visible,
-    onCommit: handleCancel,
-  });
-
   if (!visible) return null;
 
   return (
@@ -55,36 +45,33 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <PredictiveBackWrapper transition="fade" isActive={visible}>
-          <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {/* Text Content */}
-            <Text style={[styles.title, { color: colors.text }]}>Close Dr. Paul's Clinic?</Text>
-            <Text style={[styles.message, { color: colors.textMuted }]}>
-              Are you sure you want to exit the application? Unsaved changes may be lost.
-            </Text>
+        <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Title & Warning Message */}
+          <Text style={[styles.title, { color: colors.text }]}>Exit Clinic App?</Text>
+          <Text style={[styles.message, { color: colors.textMuted }]}>
+            Are you sure you want to exit the receptionist console? Unsaved form progress may be lost.
+          </Text>
 
-            {/* Action Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
-                onPress={handleCancel}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={handleCancel}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.btn, styles.exitBtn, { backgroundColor: colors.danger }]}
-                onPress={handleConfirm}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="exit-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.exitText}>Exit App</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.btn, styles.exitBtn, { backgroundColor: colors.danger }]}
+              onPress={handleConfirm}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="exit-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.exitText}>Exit App</Text>
+            </TouchableOpacity>
           </View>
-        </PredictiveBackWrapper>
+        </View>
       </View>
     </Modal>
   );
@@ -142,9 +129,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  cancelBtn: {},
+  cancelBtn: {
+    borderWidth: 1,
+  },
   cancelText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },

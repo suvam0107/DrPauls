@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
-import { usePredictiveBack } from '../hooks/usePredictiveBack';
 import { playClickSound } from '../utils/feedback';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -37,17 +36,6 @@ export default function SidebarContainer({
 }: SidebarContainerProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-
-  // Hardware back button closes sidebar (highest priority when open)
-  usePredictiveBack({
-    priority: 2,
-    transition: 'none',
-    enabled: open,
-    onCommit: () => {
-      playClickSound();
-      onClose();
-    },
-  });
 
   // Shared animation values (stable object references — safe to close over in useMemo)
   const translateX = useSharedValue(open ? 0 : -SIDEBAR_WIDTH);

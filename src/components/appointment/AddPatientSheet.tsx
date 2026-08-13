@@ -15,9 +15,10 @@ export interface AddPatientSheetProps {
   visible: boolean;
   onClose: () => void;
   onPatientAdded?: (patient: Patient) => void;
+  onCreated?: (patientId: string) => void;
 }
 
-function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 'visible'>) {
+function AddPatientForm({ onClose, onPatientAdded, onCreated }: Omit<AddPatientSheetProps, 'visible'>) {
   const { colors } = useTheme();
   const { expandSheet } = useBottomSheet();
   const addPatientMutation = useAddPatientMutation();
@@ -49,6 +50,7 @@ function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 
     });
 
     if (onPatientAdded) onPatientAdded(newPatient);
+    if (onCreated) onCreated(newPatient.id);
     setName('');
     setMobile('');
     onClose();
@@ -113,19 +115,10 @@ function AddPatientForm({ onClose, onPatientAdded }: Omit<AddPatientSheetProps, 
   );
 }
 
-import { usePredictiveBack } from '../../hooks/usePredictiveBack';
-
-export default function AddPatientSheet({ visible, onClose, onPatientAdded }: AddPatientSheetProps) {
-  usePredictiveBack({
-    priority: 4,
-    transition: 'none',
-    enabled: visible,
-    onCommit: onClose,
-  });
-
+export default function AddPatientSheet({ visible, onClose, onPatientAdded, onCreated }: AddPatientSheetProps) {
   return (
     <BottomSheet visible={visible} onClose={onClose} snapHeight={420} keyboardBlurBehavior="restore">
-      <AddPatientForm onClose={onClose} onPatientAdded={onPatientAdded} />
+      <AddPatientForm onClose={onClose} onPatientAdded={onPatientAdded} onCreated={onCreated} />
     </BottomSheet>
   );
 }

@@ -5,6 +5,8 @@ import { getMonthGrid, todayISO } from '../../utils/dateUtils';
 import { STATUS_COLORS } from '../../constants';
 import { Appointment } from '../../types';
 
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
+
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export interface MonthGridProps {
@@ -22,6 +24,7 @@ export default function MonthGrid({
   onMonthChange,
 }: MonthGridProps) {
   const { colors } = useTheme();
+  const { handleScroll } = useScrollNavbar();
   const today = todayISO();
   const monthGrid = getMonthGrid(selectedDate);
 
@@ -34,7 +37,12 @@ export default function MonthGrid({
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 88 }]}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+    >
       {/* Week Header */}
       <View style={[styles.weekHeader, { borderBottomColor: colors.border }]}>
         {WEEK_DAYS.map((day) => (

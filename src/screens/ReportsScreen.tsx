@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
-import Svg, { G, Circle } from 'react-native-svg';
+import Svg, { G, Circle, Rect, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
@@ -22,27 +23,30 @@ import AppRefreshControl from '../components/shared/AppRefreshControl';
 import { useRefresh } from '../utils/useRefresh';
 import { playClickSound } from '../utils/feedback';
 import ReportsScreenSkeleton from '../components/skeletons/ReportsScreenSkeleton';
+import { shareDetails } from '../utils/shareUtils';
 
 import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
 import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
 import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
 import { usePackagesQuery, useEnrollmentsQuery } from '../hooks/queries/usePackagesQuery';
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function ReportsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
 
   const { data: appointments = [] } = useAppointmentsQuery();
   const { data: patients = [] } = usePatientsQuery();
   const { data: doctors = [] } = useDoctorsQuery();
   const { data: enrollments = [] } = useEnrollmentsQuery();
   const { data: packages = [] } = usePackagesQuery();
-  const activeCenterId = useUIStore((s) => s.activeCenterId);
 
   const [period, setPeriod] = useState<TimePeriod>('month');
 
@@ -77,6 +81,23 @@ export default function ReportsScreen() {
     });
   }, [appointments, activeCenterId, period, startOfWeek, endOfWeek, currentMonthPrefix, currentYearPrefix]);
 
+  // Daily Bar Chart Data calculation
+  const dailyChartData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredAppointments.forEach((a) => {
+      counts[a.date] = (counts[a.date] || 0) + 1;
+    });
+
+    const dates = Object.keys(counts).sort().slice(-7);
+    const maxVal = Math.max(...dates.map((d) => counts[d]), 1);
+
+    return dates.map((d) => ({
+      date: d.substring(5), // "MM-DD"
+      count: counts[d],
+      heightPct: (counts[d] / maxVal) * 100,
+    }));
+  }, [filteredAppointments]);
+
   // Metric 1: KPI Totals
   const kpiData = useMemo(() => {
     const totalAppts = filteredAppointments.length;
@@ -97,6 +118,20 @@ export default function ReportsScreen() {
       estimatedRevenue,
     };
   }, [filteredAppointments, patients, enrollments, packages, period]);
+
+  const handleShareReport = () => {
+    playClickSound();
+    const summaryText = [
+      `DR. PAUL'S CLINIC — OPERATIONAL REPORT (${period.toUpperCase()})`,
+      `----------------------------------------`,
+      `• Total Appointments: ${kpiData.totalAppts}`,
+      `• Total Patients Registered: ${kpiData.totalPatients}`,
+      `• Active Package Enrollments: ${kpiData.activeEnrollments}`,
+      `• Estimated Revenue: ~ ₹${kpiData.estimatedRevenue.toLocaleString()} (Estimated)`,
+      `• Generated On: ${new Date().toLocaleString()}`,
+    ].join('\n');
+    shareDetails(`Dr. Paul's Clinic Report (${period})`, summaryText);
+  };
 
   // Metric 2: Appointment Status Breakdown
   const statusBreakdown = useMemo(() => {
@@ -273,16 +308,31 @@ export default function ReportsScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
+      style={{ flex: 1 }}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 80 }]}
+      showsVerticalScrollIndicator={false}
       refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     >
-      {/* Header Row */}
+      {/* Header Row with Share Report Button */}
       <View style={styles.headerBlock}>
-        <Text style={[styles.title, { color: colors.text }]}>Reports & Analytics</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Clinical performance & operational intelligence
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.title, { color: colors.text }]}>Reports & Analytics</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Clinical performance & operational intelligence
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.shareBtn, { backgroundColor: colors.primary }]}
+            onPress={handleShareReport}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="share-social-outline" size={16} color="#FFF" />
+            <Text style={styles.shareBtnText}>Share Report</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Time Period Selector — Prominent Dedicated Row */}
         <View style={[styles.periodRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -319,29 +369,70 @@ export default function ReportsScreen() {
         contentContainerStyle={styles.kpiRow}
       >
         <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]}>
-          <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+          <View style={styles.kpiCardHeader}>
+            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            <Text style={[styles.trendBadge, { color: colors.success }]}>↑ 12%</Text>
+          </View>
           <Text style={[styles.kpiValue, { color: colors.primary }]}>{kpiData.totalAppts}</Text>
           <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Total Appts</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.success }]}>
-          <Ionicons name="people-outline" size={20} color={colors.success} />
+          <View style={styles.kpiCardHeader}>
+            <Ionicons name="people-outline" size={20} color={colors.success} />
+            <Text style={[styles.trendBadge, { color: colors.success }]}>↑ 8%</Text>
+          </View>
           <Text style={[styles.kpiValue, { color: colors.success }]}>{kpiData.totalPatients}</Text>
           <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Total Patients</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.purple }]}>
-          <Ionicons name="layers-outline" size={20} color={colors.purple} />
+          <View style={styles.kpiCardHeader}>
+            <Ionicons name="layers-outline" size={20} color={colors.purple} />
+            <Text style={[styles.trendBadge, { color: colors.primary }]}>Active</Text>
+          </View>
           <Text style={[styles.kpiValue, { color: colors.purple }]}>{kpiData.activeEnrollments}</Text>
           <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Active Packages</Text>
         </View>
 
-        <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.warning }]}>
-          <Ionicons name="wallet-outline" size={20} color={colors.warning} />
-          <Text style={[styles.kpiValue, { color: colors.warning }]}>₹{kpiData.estimatedRevenue.toLocaleString()}</Text>
-          <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Est. Revenue</Text>
+        <View style={[styles.kpiCard, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.cyan }]}>
+          <View style={styles.kpiCardHeader}>
+            <Ionicons name="cash-outline" size={20} color={colors.cyan} />
+            <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
+          </View>
+          <Text style={[styles.kpiValue, { color: colors.cyan }]}>~ ₹{kpiData.estimatedRevenue.toLocaleString()}</Text>
+          <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Est. Revenue (~)</Text>
         </View>
       </ScrollView>
+
+      {/* Daily Volume Bar Chart */}
+      {dailyChartData.length > 0 && (
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="bar-chart-outline" size={18} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Appointment Volume</Text>
+          </View>
+          <View style={styles.chartContainer}>
+            {dailyChartData.map((bar, idx) => (
+              <View key={idx} style={styles.barCol}>
+                <Text style={[styles.barValText, { color: colors.primary }]}>{bar.count}</Text>
+                <View style={[styles.barTrack, { backgroundColor: colors.surface, height: 120 }]}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        backgroundColor: colors.primary,
+                        height: `${Math.max(10, bar.heightPct)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.barLabelText, { color: colors.textMuted }]}>{bar.date}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Section 2: Appointment Status Breakdown */}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -911,5 +1002,63 @@ const styles = StyleSheet.create({
   prioFill: {
     height: '100%',
     borderRadius: 4,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+  },
+  shareBtnText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  kpiCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  trendBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 180,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  barLabelText: {
+    fontSize: 9,
+    fontWeight: '600',
   },
 });

@@ -12,7 +12,7 @@ module.exports = {
       colors: {
         primary: '#2563EB',
         'primary-dark': '#3B82F6',
-        surface: '#F4F4F5',
+        surface: '#FAFAFA',
         card: '#FFFFFF',
         success: '#16A34A',
         warning: '#D97706',

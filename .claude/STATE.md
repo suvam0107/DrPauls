@@ -6,7 +6,19 @@
 ---
 
 ## Last Updated
-`2026-08-10` — Implemented unified **Debounced Server-Side Search Architecture** across all search inputs. Resolved `PatientSearchInput` character-reset bug by converting `SearchInput` to a fully controlled component (`value` prop). Added `useDebounce` hook (200ms delay, 1-character threshold for immediate search on first keypress). Added server-side search handlers (`search_patients`, `search_packages`, `search_appointments_by_query`, `search_enrollments`, `search_doctors`), service methods, query keys, and custom query hooks (`usePatientSearchQuery`, `usePackageSearchQuery`, `useAppointmentSearchQuery`, `useEnrollmentSearchQuery`, `useDoctorSearchQuery`). Migrated all 6 search screens (`PatientSearchInput`, `PatientListScreen`, `AppointmentsScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `PastAppointmentsScreen`, `DoctorScreen`). Added `SearchDropdownSkeleton` and inline activity spinner indicators. Verified zero TypeScript errors with `npx tsc --noEmit`.
+`2026-08-13` — Completed **UI/UX Polish, Scroll-Driven Navbar Translation & PredictiveBack Cleanup**:
+1. **Scroll-Driven Navbar Translation**: Built `useScrollNavbar` hook and animated `translateY` transform (`120px` hide / `0px` show via `withTiming`) on `BottomNav.tsx`. Attached `onScroll` handlers across all scrollable screens & grids (`HomeScreen`, `CalendarScreen`, `CalendarGrid`, `MonthGrid`, `AppointmentsScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `ReportsScreen`).
+2. **PredictiveBack Removal**: Completely removed all PredictiveBack wrappers, context provider, custom hooks (`PredictiveBackContext.tsx`, `usePredictiveBack.ts`, `PredictiveBackWrapper.tsx`), and usages across 10 modal/sheet components. Retained `enableOnBackInvokedCallback: true` in `app.json`.
+3. **Standard Android BackHandler**: Replaced predictive back logic in `App.tsx` with a standard React Native `BackHandler` hardware back button listener that pops the screen history stack or opens `ExitConfirmationModal` on root.
+4. **Navigation Architecture**: Per-tab animated spring pill highlights (`TabItem` in `BottomNav.tsx`) with `scaleX` expansion and `withSpring` physics matching WhatsApp tab bar design. Hidden cleanly on `SettingsScreen`.
+5. **QuickAdd Popup Positioning**: Re-anchored `QuickAddPopup` to bottom-right (`alignItems: 'flex-end'`, `paddingRight: 16`), aligned above the `[+]` FAB circle button.
+6. **Reliability Terminology & Standardization**: Standardized "Reliability" tier terminology across `PatientListScreen`, `PatientDetailModal`, and `PatientRecordsScreen`. Fixed color tokens (`#10B981` High, `#F59E0B` Medium, `#EF4444` Low). Converted filter chips to pill-shaped elements (`borderRadius: 20`) with flex-shrink layout to eliminate sort button overlap.
+7. **HomeScreen Schedule Completion**: Rendered all non-zero status count badges (`Total`, `Confirmed`, `Paid`, `Pending`, `Scheduled`, `Rescheduled`, `Cancelled`) using theme tokens (`colors.*`) and pill-shaped styling.
+8. **Calendar Drag Handle**: Replaced icon with `⋮⋮` text character, hidden for non-draggable/cancelled appointments via `isDraggable={isEligible}` prop.
+9. **Appointments Directory Filter Overhaul**: Added full status chip row (`All`, `Scheduled`, `Confirmed`, `Paid`, `Pending`, `Rescheduled`, `Overdue`, `Unattended`, `Cancelled`). Fixed global scan logic for `Overdue` & `Unattended` to search across all dates.
+10. **Status Engine Audit (`StatusChip.tsx`)**: Disentangled `Pending`, `Overdue`, and `Unattended`. Active pending items display Amber **Pending**, past pending items evaluate to Red **Overdue**, and past confirmed/scheduled unfulfilled items evaluate to Rose **Unattended**.
+11. **JSON Seed Database Audit**: Audited `assets/data/*.json` and seeded explicit `Unattended` (`APT-008`) and `Overdue` (`APT-020`) records for comprehensive test coverage.
+12. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors** across the entire codebase.
 
 ---
 

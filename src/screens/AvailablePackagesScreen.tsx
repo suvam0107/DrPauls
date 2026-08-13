@@ -21,11 +21,13 @@ import { useRefresh } from '../utils/useRefresh';
 import PackagesCatalogSkeleton from '../components/skeletons/PackagesCatalogSkeleton';
 
 import { usePackagesQuery, usePackageSearchQuery } from '../hooks/queries/usePackagesQuery';
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export default function AvailablePackagesScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
 
   const { data: packages = [] } = usePackagesQuery();
 
@@ -106,9 +108,11 @@ export default function AvailablePackagesScreen() {
       ) : (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           {filteredPackages.length === 0 ? (
             <View style={styles.emptyBox}>

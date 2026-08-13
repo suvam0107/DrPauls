@@ -74,7 +74,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   const priority = calculatePatientPriority(rescheduleCount);
 
   const priorityColor =
-    priority === 'High' ? colors.success || '#059669' : priority === 'Medium' ? '#D97706' : colors.danger || '#DC2626';
+    priority === 'High' ? '#10B981' : priority === 'Medium' ? '#F59E0B' : '#EF4444';
 
   const priorityBg =
     priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
@@ -136,7 +136,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
             <View style={{ flex: 1 }}>
               <Text style={[styles.patientName, { color: colors.text }]}>{targetPatient.name}</Text>
               <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-                ID: {targetPatient.id} • {targetPatient.gender} {targetPatient.dob ? `• DOB: ${targetPatient.dob}` : ''} • Priority: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Priority</Text>
+                ID: {targetPatient.id} • {targetPatient.gender} {targetPatient.dob ? `• DOB: ${targetPatient.dob}` : ''} • Reliability: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Reliability</Text>
               </Text>
             </View>
           </View>

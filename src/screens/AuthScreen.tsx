@@ -18,6 +18,8 @@ import { useTheme } from '../theme/ThemeContext';
 import useAuthStore from '../store/useAuthStore';
 import { playLoginSound, playClickSound } from '../utils/feedback';
 
+import ForgotPasswordModal from '../components/shared/ForgotPasswordModal';
+
 export interface AuthScreenProps {
   onLoginSuccess?: () => void;
 }
@@ -28,6 +30,8 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
 
   // Input refs for automatic focus navigation
   const emailInputRef = useRef<TextInput>(null);
@@ -69,7 +73,6 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         text1: `Welcome back, ${res.user.name}`,
         text2: 'Session token stored persistently',
         position: 'bottom',
-        bottomOffset: 40,
       });
       if (onLoginSuccess) onLoginSuccess();
     } else {
@@ -119,8 +122,22 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           {/* Email / Username */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.textMuted }]}>Email / Username</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="mail-outline" size={18} color={colors.textMuted} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: focusedInput === 'email' ? colors.primary : colors.border,
+                  borderWidth: focusedInput === 'email' ? 2 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name="mail-outline"
+                size={18}
+                color={focusedInput === 'email' ? colors.primary : colors.textMuted}
+                style={styles.inputIcon}
+              />
               <TextInput
                 ref={emailInputRef}
                 style={[styles.input, { color: colors.text }]}
@@ -131,6 +148,8 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   setEmail(val);
                   if (errorMsg) setErrorMsg('');
                 }}
+                onFocus={() => setFocusedInput('email')}
+                onBlur={() => setFocusedInput(null)}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 returnKeyType="next"
@@ -143,8 +162,22 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           {/* Password */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.textMuted }]}>Password</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: focusedInput === 'password' ? colors.primary : colors.border,
+                  borderWidth: focusedInput === 'password' ? 2 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={focusedInput === 'password' ? colors.primary : colors.textMuted}
+                style={styles.inputIcon}
+              />
               <TextInput
                 ref={passwordInputRef}
                 style={[styles.input, { color: colors.text }]}
@@ -155,6 +188,8 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   setPassword(val);
                   if (errorMsg) setErrorMsg('');
                 }}
+                onFocus={() => setFocusedInput('password')}
+                onBlur={() => setFocusedInput(null)}
                 secureTextEntry={!showPassword}
                 keyboardType="default"
                 autoCorrect={false}
@@ -190,7 +225,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               <Text style={[styles.checkboxLabel, { color: colors.text }]}>Remember me</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => Toast.show({ type: 'info', text1: 'Password Reset', text2: 'Contact clinic admin at admin@drpauls.com' })}>
+            <TouchableOpacity onPress={() => { playClickSound(); setShowForgotModal(true); }}>
               <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
             </TouchableOpacity>
           </View>
@@ -244,6 +279,9 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
           Dr. Paul's Multispeciality Clinic
         </Text>
       </ScrollView>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal visible={showForgotModal} onClose={() => setShowForgotModal(false)} />
     </KeyboardAvoidingView>
   );
 }

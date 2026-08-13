@@ -30,6 +30,7 @@ const HEADER_HEIGHT = 44;
 
 import AppRefreshControl from '../shared/AppRefreshControl';
 import { useRefresh } from '../../utils/useRefresh';
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 export interface CalendarGridProps {
   selectedDate: string;
@@ -56,6 +57,7 @@ export default function CalendarGrid({
 }: CalendarGridProps) {
   const { colors, isDark } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll: navScrollHandler } = useScrollNavbar();
   const timeSlots = generateTimeSlots();
 
   const verticalScrollRef = useRef<ScrollView>(null);
@@ -67,8 +69,9 @@ export default function CalendarGrid({
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       scrollOffsetY.current = event.nativeEvent.contentOffset.y;
+      navScrollHandler(event);
     },
-    []
+    [navScrollHandler]
   );
 
   const isWeek = viewMode === 'week';

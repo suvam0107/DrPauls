@@ -313,7 +313,7 @@ export default function DraggableChip({
             transform: [{ translateX: pan.x }, { translateY: pan.y }],
             zIndex: isDragging ? 999 : 10 + overlapIndex,
             elevation: isDragging ? 12 : 2 + overlapIndex,
-            opacity: isDragging ? 0.85 : 1,
+            opacity: isDragging ? 0.5 : 1,
           },
         ]}
         {...panResponder.panHandlers}
@@ -322,6 +322,7 @@ export default function DraggableChip({
           appointment={appointment}
           onPress={onPress}
           isCompact={isCompact}
+          isDraggable={isEligible}
         />
       </Animated.View>
 

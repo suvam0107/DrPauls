@@ -90,6 +90,12 @@ export default function UpcomingSessionsWidget({ onSelectEnrollment }: UpcomingS
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {items.length > 1 && (
+        <View style={styles.dotsRow}>
+          <Text style={[styles.scrollHintText, { color: colors.textMuted }]}>Swipe for more ({items.length}) →</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -169,5 +175,13 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  dotsRow: {
+    alignItems: 'flex-end',
+    marginTop: -4,
+  },
+  scrollHintText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

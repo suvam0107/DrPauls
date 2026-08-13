@@ -38,7 +38,6 @@ export default function SettingsScreen() {
       text1: 'Signed Out Successfully',
       text2: 'Session token deleted from device',
       position: 'bottom',
-      bottomOffset: 40,
     });
   };
 
@@ -244,7 +243,7 @@ export default function SettingsScreen() {
 
         {/* Sign Out Button */}
         <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: colors.primary }]}
+          style={[styles.logoutBtn, { backgroundColor: colors.primary, borderColor: colors.border }]}
           onPress={() => setShowLogoutModal(true)}
           activeOpacity={0.8}
         >

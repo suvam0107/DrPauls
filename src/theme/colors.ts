@@ -26,7 +26,7 @@ export interface ColorPalette {
 export const LIGHT: ColorPalette = {
   dark: false,
   background: '#FFFFFF',
-  surface: '#F4F4F5',
+  surface: '#FAFAFA',
   card: '#FFFFFF',
   border: '#E4E4E7',
   text: '#09090B',

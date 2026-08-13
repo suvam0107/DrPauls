@@ -14,12 +14,21 @@ export interface StatusChipProps {
 /** Color-coded status badge chip */
 export default function StatusChip({ status, date, small = false }: StatusChipProps) {
   const today = todayISO();
-  const isPast = date ? date < today : false;
-  const isFinal = status === 'Paid' || status === 'Cancelled' || status === 'Overdue' || status === 'Unattended';
+  const isPastDate = date ? date < today : false;
 
-  const effectiveStatus = isPast && !isFinal ? 'Overdue' : status;
+  let effectiveStatus = status;
 
-  const color = STATUS_COLORS[effectiveStatus] || '#6B7280';
+  if (status === 'Pending') {
+    if (isPastDate) {
+      effectiveStatus = 'Overdue';
+    } else {
+      effectiveStatus = 'Pending';
+    }
+  } else if ((status === 'Scheduled' || status === 'Confirmed') && isPastDate) {
+    effectiveStatus = 'Unattended';
+  }
+
+  const color = STATUS_COLORS[effectiveStatus] || STATUS_COLORS[status] || '#6B7280';
   const bgColor = color + BG_ALPHA;
 
   return (

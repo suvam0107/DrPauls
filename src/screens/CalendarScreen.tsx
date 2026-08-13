@@ -23,9 +23,12 @@ import CalendarScreenSkeleton from '../components/skeletons/CalendarScreenSkelet
 import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
 import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
 
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
+
 export default function CalendarScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
   const { data: appointments = [] } = useAppointmentsQuery();
   const { data: doctors = [] } = useDoctorsQuery();
 
@@ -88,7 +91,28 @@ export default function CalendarScreen() {
   const filteredAppointments = appointments.filter((a) => {
     if (a.centerId && a.centerId !== activeCenterId) return false;
     if (activeDoctorFilter && a.doctorId !== activeDoctorFilter) return false;
-    if (activeStatusFilters.length > 0 && !activeStatusFilters.includes(a.status)) return false;
+    if (activeStatusFilters.length > 0) {
+      const todayStr = todayISO();
+
+      const matchesFilter = activeStatusFilters.some((status) => {
+        const isPastDate = a.date < todayStr;
+
+        if (status === 'Pending') {
+          return a.status === 'Pending' && !isPastDate;
+        }
+        if (status === 'Overdue') {
+          return a.status === 'Overdue' || (a.status === 'Pending' && isPastDate);
+        }
+        if (status === 'Unattended') {
+          return (
+            a.status === 'Unattended' ||
+            ((a.status === 'Scheduled' || a.status === 'Confirmed') && isPastDate)
+          );
+        }
+        return a.status === status;
+      });
+      if (!matchesFilter) return false;
+    }
     return true;
   });
 
@@ -118,6 +142,8 @@ export default function CalendarScreen() {
           style={styles.container}
           contentContainerStyle={styles.listContent}
           refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           <View style={styles.listHeader}>
             <Text style={[styles.listTitle, { color: colors.text }]}>

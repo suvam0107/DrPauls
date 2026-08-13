@@ -14,10 +14,12 @@ import { useRefresh } from '../utils/useRefresh';
 import DoctorScreenSkeleton from '../components/skeletons/DoctorScreenSkeleton';
 
 import { useDoctorsQuery, useDoctorSearchQuery } from '../hooks/queries/useDoctorsQuery';
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export default function DoctorScreen() {
   const { colors } = useTheme();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
   const { data: doctors = [] } = useDoctorsQuery();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 200);
@@ -81,9 +83,11 @@ export default function DoctorScreen() {
         <FlatList
           data={filteredDoctors}
           keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }: { item: Doctor }) => (
+          contentContainerStyle={[styles.list, { paddingBottom: 88 }]}
+          refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          renderItem={({ item }: { item: Doctor }) => (
           <TouchableOpacity
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => handleOpenDoctorDetail(item)}

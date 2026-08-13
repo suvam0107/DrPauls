@@ -7,11 +7,13 @@ import useCenterStore from '../store/useCenterStore';
 import useUIStore from '../store/useUIStore';
 import { playClickSound } from '../utils/feedback';
 
+import useAuthStore from '../store/useAuthStore';
 import { useCentersQuery } from '../hooks/queries/useCentersQuery';
 
 export interface HeaderProps {
   onMenuPress: () => void;
-  onThemeToggle: () => void;
+  onThemeToggle?: () => void;
+  onProfilePress?: () => void;
   onCenterPress?: () => void;
   title?: string;
 }
@@ -19,25 +21,28 @@ export interface HeaderProps {
 export default function Header({
   onMenuPress,
   onThemeToggle,
+  onProfilePress,
   onCenterPress,
   title = "Dr. Paul's Clinic",
 }: HeaderProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const topPadding = Math.max(insets.top, 0);
 
   const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
   const currentCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
+  const user = useAuthStore((s) => s.user);
+  const displayName = user?.name || 'Anita Roy';
 
   const handleMenuPress = () => {
     playClickSound();
     onMenuPress();
   };
 
-  const handleThemeToggle = () => {
+  const handleProfilePress = () => {
     playClickSound();
-    onThemeToggle();
+    if (onProfilePress) onProfilePress();
   };
 
   const handleCenterPress = () => {
@@ -87,8 +92,13 @@ export default function Header({
         )}
       </View>
 
-      <TouchableOpacity onPress={handleThemeToggle} hitSlop={8}>
-        <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={22} color={colors.text} />
+      <TouchableOpacity
+        onPress={handleProfilePress}
+        hitSlop={8}
+        style={[styles.avatarBadge, { backgroundColor: colors.primary }]}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.avatarText}>{displayName.charAt(0)}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -129,5 +139,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     maxWidth: 220,
+  },
+  avatarBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

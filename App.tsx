@@ -32,16 +32,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './src/api/queryClient';
 import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
-import { playNavigationSound, playClickSound } from './src/utils/feedback';
-
-import { PredictiveBackProvider } from './src/utils/PredictiveBackContext';
-import { usePredictiveBack } from './src/hooks/usePredictiveBack';
-import PredictiveBackWrapper from './src/components/shared/PredictiveBackWrapper';
+import { playNavigationSound } from './src/utils/feedback';
 
 function MainApp() {
   const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const checkAndVerifyAuth = useAuthStore((s) => s.checkAndVerifyAuth);
+  const setNavVisible = useUIStore((s) => s.setNavVisible);
 
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('home');
@@ -57,11 +54,73 @@ function MainApp() {
   const [showQuickAddPopup, setShowQuickAddPopup] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const setThemeMode = useUIStore((s) => s.setThemeMode);
-
   useEffect(() => {
     checkAndVerifyAuth();
   }, []);
+
+  // Standard Android Hardware Back Handler
+  useEffect(() => {
+    const backAction = () => {
+      if (drawerOpen) {
+        setDrawerOpen(false);
+        return true;
+      }
+      if (showQuickAddPopup) {
+        setShowQuickAddPopup(false);
+        return true;
+      }
+      if (showCenterSwitchModal) {
+        setShowCenterSwitchModal(false);
+        return true;
+      }
+      if (showCreateModal) {
+        setShowCreateModal(false);
+        return true;
+      }
+      if (showAddPatientModal) {
+        setShowAddPatientModal(false);
+        return true;
+      }
+      if (showAddDoctorModal) {
+        setShowAddDoctorModal(false);
+        return true;
+      }
+      if (showExitModal) {
+        setShowExitModal(false);
+        return true;
+      }
+      if (screenHistory.length > 1) {
+        playNavigationSound();
+        setScreenHistory((prev) => {
+          const updated = [...prev];
+          updated.pop();
+          const prevScreen = updated[updated.length - 1];
+          setCurrentScreen(prevScreen);
+          if (['home', 'calendar', 'patients', 'appointments'].includes(prevScreen)) {
+            setActiveTab(prevScreen);
+          }
+          return updated;
+        });
+        setNavVisible(true);
+        return true;
+      }
+      setShowExitModal(true);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [
+    drawerOpen,
+    showQuickAddPopup,
+    showCenterSwitchModal,
+    showCreateModal,
+    showAddPatientModal,
+    showAddDoctorModal,
+    showExitModal,
+    screenHistory,
+    setNavVisible,
+  ]);
 
   // Navigate & push to navigation history stack
   const handleNavigate = (screen: string, params?: { patientId?: string }) => {
@@ -71,9 +130,10 @@ function MainApp() {
     if (screen === currentScreen && !params?.patientId) return;
     setScreenHistory((prev) => [...prev, screen]);
     setCurrentScreen(screen);
-    if (screen === 'home' || screen === 'settings') {
+    if (['home', 'calendar', 'patients', 'appointments'].includes(screen)) {
       setActiveTab(screen);
     }
+    setNavVisible(true);
   };
 
   const handleTabSelect = (tab: string) => {
@@ -82,37 +142,8 @@ function MainApp() {
       return;
     }
     setActiveTab(tab);
-    if (tab === 'home') handleNavigate('home');
-    else if (tab === 'settings') handleNavigate('settings');
+    handleNavigate(tab);
   };
-
-  // Back action: Pop Screen (Priority 1)
-  usePredictiveBack({
-    priority: 1,
-    transition: 'slide',
-    enabled: screenHistory.length > 1,
-    onCommit: () => {
-      playNavigationSound();
-      const updatedHistory = [...screenHistory];
-      updatedHistory.pop();
-      const prevScreen = updatedHistory[updatedHistory.length - 1];
-      setScreenHistory(updatedHistory);
-      setCurrentScreen(prevScreen);
-      if (prevScreen === 'home' || prevScreen === 'settings') {
-        setActiveTab(prevScreen);
-      }
-    },
-  });
-
-  // Back action: Show Exit Confirmation Modal on Root Home Screen (Priority 0)
-  usePredictiveBack({
-    priority: 0,
-    transition: 'none',
-    enabled: screenHistory.length <= 1,
-    onCommit: () => {
-      setShowExitModal(true);
-    },
-  });
 
   if (!isAuthenticated) {
     return (
@@ -131,16 +162,12 @@ function MainApp() {
       {/* Top App Header with safe area inset & center toggle */}
       <Header
         onMenuPress={() => setDrawerOpen(true)}
-        onThemeToggle={() => setThemeMode(isDark ? 'light' : 'dark')}
+        onProfilePress={() => handleNavigate('settings')}
         onCenterPress={() => setShowCenterSwitchModal(true)}
       />
 
-      {/* Main Screen Content with Horizontal Slide Predictive Back */}
-      <PredictiveBackWrapper
-        transition="slide"
-        isActive={screenHistory.length > 1}
-        style={[styles.screenContainer, { backgroundColor: colors.background }]}
-      >
+      {/* Main Screen Content */}
+      <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
         {currentScreen === 'home' && <HomeScreen onNavigate={handleNavigate} />}
         {currentScreen === 'calendar' && <CalendarScreen />}
         {(currentScreen === 'appointments' || currentScreen === 'past-appointments') && <AppointmentsScreen />}
@@ -158,14 +185,16 @@ function MainApp() {
         {currentScreen === 'patient-enrollments' && <PatientEnrollmentsScreen />}
         {currentScreen === 'reports' && <ReportsScreen />}
         {currentScreen === 'settings' && <SettingsScreen />}
-      </PredictiveBackWrapper>
+      </View>
 
-      {/* Bottom Nav Bar with safe area bottom inset */}
-      <BottomNav
-        activeTab={activeTab}
-        onTabSelect={handleTabSelect}
-        onPlusPress={() => setShowQuickAddPopup((prev) => !prev)}
-      />
+      {/* Bottom Nav Bar — hidden on settings screen */}
+      {currentScreen !== 'settings' && (
+        <BottomNav
+          activeTab={activeTab}
+          onTabSelect={handleTabSelect}
+          onPlusPress={() => setShowQuickAddPopup((prev) => !prev)}
+        />
+      )}
 
       {/* Quick Add Floating Popup (above bottom nav) */}
       <QuickAddPopup
@@ -237,9 +266,7 @@ export default function App() {
         <SafeAreaProvider>
           <KeyboardProvider>
             <ThemeProvider>
-              <PredictiveBackProvider>
-                <MainApp />
-              </PredictiveBackProvider>
+              <MainApp />
             </ThemeProvider>
           </KeyboardProvider>
         </SafeAreaProvider>

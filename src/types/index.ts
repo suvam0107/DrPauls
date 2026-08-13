@@ -314,6 +314,8 @@ export interface UIState {
   setDoctorFilter: (id: string | null) => void;
   activeCenterId: string;
   setActiveCenterId: (id: string) => void;
+  navVisible: boolean;
+  setNavVisible: (visible: boolean) => void;
 }
 
 export interface AppointmentState {

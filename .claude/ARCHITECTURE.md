@@ -86,18 +86,18 @@ DrPauls/
     ├── types/
     │   └── index.ts               # Central TypeScript type definitions & interfaces (Center, Doctor, Appointment)
     ├── components/
-    │   ├── Header.tsx             # Top app bar with center toggle badge & theme toggle
-    │   ├── BottomNav.tsx          # 3-tab bottom navigation bar with center + QuickAdd trigger
-    │   ├── SidebarDrawer.tsx      # Reanimated slide-in/out navigation drawer
+    │   ├── Header.tsx             # Top app bar with center toggle badge & staff profile avatar button
+    │   ├── BottomNav.tsx          # Floating bottom row: 4-tab pill (Home, Calendar, Patients, Appts) with Reanimated sliding indicator + 52px [+] FAB
+    │   ├── SidebarDrawer.tsx      # Reanimated slide-in/out navigation drawer for secondary items (Home, Reports, Packages)
     │   ├── appointment/
-    │   │   ├── AddPatientSheet.tsx       # Quick patient creation bottom sheet
+    │   │   ├── AddPatientSheet.tsx       # Quick patient creation bottom sheet (returns new patientId onCreated)
     │   │   ├── CreateAppointmentSheet.tsx # Validated appointment creation bottom sheet with date picker & slots
     │   │   └── PatientSearchInput.tsx     # Search dropdown component
     │   ├── calendar/
     │   │   ├── CalendarHeader.tsx # Date navigator, view mode, list/grid toggle & status filters
     │   │   ├── CalendarGrid.tsx   # Time grid (Day & Week views) with red unavailable slot overlays during drag
-    │   │   ├── DraggableChip.tsx  # Drag-and-Drop rescheduling wrapper with PanResponder
-    │   │   ├── AppointmentChip.tsx# Individual appointment card component
+    │   │   ├── DraggableChip.tsx  # Drag-and-Drop rescheduling wrapper with PanResponder (ghost opacity 0.5)
+    │   │   ├── AppointmentChip.tsx# Individual appointment card component with right-side drag handle
     │   │   ├── MonthGrid.tsx      # 7x5 month view matrix with out-of-month navigation
     │   │   ├── RescheduleModal.tsx# Validated appointment edit modal (date, doctor, slot)
     │   │   └── AppointmentDetailModal.tsx # Appointment detail sheet with Edit action button & reschedule log
@@ -105,12 +105,13 @@ DrPauls/
     │   │   ├── AddDoctorSheet.tsx # Doctor creation bottom sheet
     │   │   └── DoctorDetailModal.tsx # Doctor schedule & contact details sheet
     │   ├── patient/
-    │   │   └── PatientDetailModal.tsx # Patient detail sheet with priority metadata & past records link
+    │   │   └── PatientDetailModal.tsx # Patient detail sheet with reliability metadata & past records link
     │   └── shared/
     │       ├── AppRefreshControl.tsx # Theme-aligned pull-to-refresh control component matching dark/light mode
     │       ├── BottomSheet.tsx    # @gorhom/bottom-sheet wrapper with dual snap points & backdrop
     │       ├── CenterSwitchSheet.tsx # Bottom sheet for switching clinic center
-    │       ├── QuickAddPopup.tsx  # Floating popup above navbar with New Appt & New Patient options
+    │       ├── ForgotPasswordModal.tsx# Modal dialog directing password resets to admin email with one-tap copy
+    │       ├── QuickAddPopup.tsx  # Floating popup above navbar with New Appt, New Patient & New Doctor options
     │       ├── ExitConfirmationModal.tsx  # Theme-aligned exit confirmation modal dialog
     │       ├── LogoutConfirmationModal.tsx# Theme-aligned sign out confirmation modal dialog
     │       ├── RescheduleConfirmationModal.tsx # Theme-aligned popup dialog for appointment reschedule confirmation
@@ -197,28 +198,51 @@ App Root (SafeAreaProvider)
     └── Bottom Nav Bar (Home | Quick Add [+] | Settings)
 ```
 
-### Back Button Policy:
-1. Exit Modal open → Dismiss exit modal.
-2. Center Switch Sheet open → Dismiss sheet.
-3. Quick Add Popup open → Dismiss popup.
-4. Add Patient Sheet open → Dismiss sheet.
-5. Create Appointment Sheet open → Dismiss sheet.
-6. Sidebar Drawer open → Close drawer.
-7. Screen History length > 1 → Pop top screen (`router.back()`).
-8. On `HomeScreen` → Show `ExitConfirmationModal`.
+### Navigation & Scroll-Driven BottomNav Behavior:
+1. **Scroll Translate Animation (`useScrollNavbar.ts`)**:
+   - Scrolling down on any scrollable screen or component (`HomeScreen`, `CalendarScreen`, `CalendarGrid`, `MonthGrid`, `AppointmentsScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `ReportsScreen`) smoothly translates `BottomNav` down on the Y-axis (`translateY: 120px`) via Reanimated `withTiming`.
+   - Scrolling up or returning near top (`contentOffset.y <= 10`) translates `BottomNav` back up (`translateY: 0`).
+   - Navigating between screens or selecting tabs automatically resets `navVisible = true`.
+
+### Back Button Policy (`BackHandler`):
+1. Modal open (QuickAdd, CenterSwitch, CreateAppt, AddPatient, AddDoctor, ExitConfirmation) → Dismiss active modal.
+2. Sidebar Drawer open → Close drawer.
+3. Screen History length > 1 → Pop top screen from navigation stack (`screenHistory.pop()`).
+4. On `HomeScreen` → Show `ExitConfirmationModal`.
+5. Android `enableOnBackInvokedCallback: true` maintained in `app.json`.
 
 ---
 
-## 6. Patient Priority Calculation & Visual Accent Engine
+## 6. Patient Reliability System & Visual Accent Engine
 
-1. **Priority Formula (`usePatientStore.ts`)**:
+1. **Reliability Formula (`usePatientStore.ts`)**:
    - Evaluated dynamically via `calculatePatientPriority(rescheduleCount)`:
-     - `0 reschedules` -> 🟢 **High Priority** (`#10B981`)
-     - `1–2 reschedules` -> 🟡 **Medium Priority** (`#F59E0B`)
-     - `3+ reschedules` -> 🔴 **Low Priority** (`#EF4444`)
+     - `0 reschedules` -> 🟢 **High Reliability** (`#10B981`)
+     - `1–2 reschedules` -> 🟡 **Medium Reliability** (`#F59E0B`)
+     - `3+ reschedules` -> 🔴 **Low Reliability** (`#EF4444`)
 2. **Visual Highlight Format**:
    - Cards across `PatientListScreen`, `PatientDetailModal`, `PatientRecordsScreen`, and `AppointmentsScreen` are highlighted with prominent 5px left accent borders (`borderLeftWidth: 5`, `borderLeftColor: priorityColor`) and subtle 1px outlines (`borderColor: priorityColor + '40'`).
-   - Priority metadata is rendered as text-only (`Priority: High Priority`) inside detail sheets and headers without badge pills.
+   - Filter chips on `PatientListScreen` and `AppointmentsScreen` are pill-shaped (`borderRadius: 20`) with flex-shrink controls to prevent overflow when sorting by Reliability.
+   - Reliability metadata is rendered as text-only (`Reliability: High Reliability`) inside detail sheets and headers without badge pills.
+
+---
+
+## 7. Status Engine & Appointment Directory Filters
+
+1. **Canonical Status Classification System**:
+   - **`Scheduled`**: Future booking awaiting attendance (`#2563EB`).
+   - **`Confirmed`**: Confirmed upcoming booking (`#16A34A`).
+   - **`Paid`**: Successfully completed & billed session (`#7C3AED`).
+   - **`Pending`**: Active/upcoming booking awaiting pre-payment or receptionist action (`#D97706`).
+   - **`Rescheduled`**: Booking moved from an earlier slot (`#0891B2`).
+   - **`Overdue`**: Booking explicitly marked `'Overdue'` OR past `Pending` sessions (`date < today`) (`#EF4444`).
+   - **`Unattended`**: Booking explicitly marked `'Unattended'` OR past unfulfilled `Scheduled`/`Confirmed` sessions (`date < today`) (`#E11D48`).
+   - **`Cancelled`**: Cancelled appointment (`#DC2626`).
+2. **StatusChip Component Behavior (`StatusChip.tsx`)**:
+   - Evaluates `effectiveStatus` without conflating Pending and Overdue: active `Pending` items remain Amber **Pending**; past `Pending` items evaluate to Red **Overdue**; past `Confirmed`/`Scheduled` items evaluate to Rose **Unattended**.
+3. **Appointments Directory Filtering (`AppointmentsScreen.tsx`)**:
+   - Full status chip row: `All`, `Scheduled`, `Confirmed`, `Paid`, `Pending`, `Rescheduled`, `Overdue`, `Unattended`, `Cancelled`.
+   - Global status filters (`Overdue` & `Unattended`) scan across all dates regardless of range mode.
 
 ---
 

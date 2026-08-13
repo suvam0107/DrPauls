@@ -28,10 +28,15 @@ import EnrollmentsSkeleton from '../components/skeletons/EnrollmentsSkeleton';
 import { useEnrollmentsQuery, useEnrollmentSearchQuery } from '../hooks/queries/usePackagesQuery';
 import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
 
+import { useScrollNavbar } from '../hooks/useScrollNavbar';
+import useUIStore from '../store/useUIStore';
+
 export default function PatientEnrollmentsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const activeCenterId = useUIStore((s) => s.activeCenterId);
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
+  const { handleScroll } = useScrollNavbar();
 
   const { data: enrollments = [] } = useEnrollmentsQuery();
   const { data: appointments = [] } = useAppointmentsQuery();
@@ -118,6 +123,8 @@ export default function PatientEnrollmentsScreen() {
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           {filteredEnrollments.length === 0 ? (
             <View style={styles.emptyBox}>

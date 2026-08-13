@@ -11,6 +11,7 @@ export interface AppointmentChipProps {
   appointment: Appointment;
   onPress?: (appointment: Appointment) => void;
   isCompact?: boolean;
+  isDraggable?: boolean;
 }
 
 /** Renders appointment card inside the calendar slot with solid background card protection & clean margins */
@@ -18,6 +19,7 @@ export default function AppointmentChip({
   appointment,
   onPress,
   isCompact = false,
+  isDraggable = false,
 }: AppointmentChipProps) {
   const { colors, isDark } = useTheme();
   const status = appointment.status;
@@ -90,11 +92,16 @@ export default function AppointmentChip({
           >
             {appointment.patientName}
           </Text>
-          {appointment.visitType === 'Home' && (
-            <View style={[styles.badge, { backgroundColor: isDark ? '#14B8A6' : '#0D9488' }]}>
-              <Ionicons name="home-outline" size={10} color="#FFFFFF" />
-            </View>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {appointment.visitType === 'Home' && (
+              <View style={[styles.badge, { backgroundColor: isDark ? '#14B8A6' : '#0D9488' }]}>
+                <Ionicons name="home-outline" size={10} color="#FFFFFF" />
+              </View>
+            )}
+            {isDraggable && (
+              <Text style={[styles.dragHandle, { color: subtextColor }]}>⋮⋮</Text>
+            )}
+          </View>
         </View>
 
         <Text style={[styles.details, { color: subtextColor }]} numberOfLines={1}>
@@ -182,5 +189,11 @@ const styles = StyleSheet.create({
   },
   cancelledText: {
     textDecorationLine: 'line-through',
+  },
+  dragHandle: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -1,
+    opacity: 0.6,
   },
 });

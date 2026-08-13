@@ -45,6 +45,10 @@ const useUIStore = create<UIState>((set) => ({
   // --- Center state ---
   activeCenterId: 'CC-001',
   setActiveCenterId: (id: string) => set({ activeCenterId: id }),
+
+  // --- BottomNav Scroll Translate Visibility ---
+  navVisible: true,
+  setNavVisible: (v: boolean) => set((s) => (s.navVisible === v ? s : { navVisible: v })),
 }));
 
 export default useUIStore;
