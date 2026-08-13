@@ -9,6 +9,9 @@ export interface SkeletonBoxProps {
   borderRadius?: number;
   radius?: number | 'round';
   style?: StyleProp<ViewStyle>;
+  colors?: string[];
+  duration?: number;
+  backgroundSize?: number;
 }
 
 export default function SkeletonBox({
@@ -17,13 +20,20 @@ export default function SkeletonBox({
   borderRadius = 8,
   radius,
   style,
+  colors: customColors,
+  duration = 1200,
+  backgroundSize = 3,
 }: SkeletonBoxProps) {
-  const { colors } = useTheme();
+  const { colors: themeColors } = useTheme();
 
-  const colorMode = colors.dark ? 'dark' : 'light';
-  const skeletonColors = colors.dark
-    ? [colors.card, colors.border, colors.card]
-    : [colors.surface, colors.border, colors.surface];
+  const colorMode = themeColors.dark ? 'dark' : 'light';
+
+  // High-contrast shimmer color stops [base, highlight, base]
+  const defaultColors = themeColors.dark
+    ? ['#0E131F', '#2C3A59', '#0E131F']
+    : ['#E4E4E7', '#FFFFFF', '#E4E4E7'];
+
+  const skeletonColors = customColors ?? defaultColors;
 
   const skeleton = (
     <Skeleton
@@ -32,6 +42,13 @@ export default function SkeletonBox({
       width={width as any}
       height={height as any}
       radius={radius ?? borderRadius}
+      backgroundSize={backgroundSize}
+      transition={{
+        translateX: {
+          type: 'timing',
+          duration,
+        },
+      }}
     />
   );
 
@@ -41,3 +58,4 @@ export default function SkeletonBox({
 
   return skeleton;
 }
+

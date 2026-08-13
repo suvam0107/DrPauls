@@ -57,41 +57,36 @@ export default function ExitConfirmationModal({ visible, onCancel, onConfirm }: 
 
         <PredictiveBackWrapper transition="fade" isActive={visible}>
           <View style={[styles.dialogCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {/* Icon Badge */}
-          <View style={[styles.iconCircle, { backgroundColor: colors.dangerBg }]}>
-            <Ionicons name="power-outline" size={26} color={colors.danger} />
+            {/* Text Content */}
+            <Text style={[styles.title, { color: colors.text }]}>Close Dr. Paul's Clinic?</Text>
+            <Text style={[styles.message, { color: colors.textMuted }]}>
+              Are you sure you want to exit the application? Unsaved changes may be lost.
+            </Text>
+
+            {/* Action Buttons */}
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
+                onPress={handleCancel}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.btn, styles.exitBtn, { backgroundColor: colors.danger }]}
+                onPress={handleConfirm}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="exit-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.exitText}>Exit App</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Text Content */}
-          <Text style={[styles.title, { color: colors.text }]}>Close Dr. Paul's Clinic?</Text>
-          <Text style={[styles.message, { color: colors.textMuted }]}>
-            Are you sure you want to exit the application? Unsaved changes may be lost.
-          </Text>
-
-          {/* Action Buttons */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.btn, styles.cancelBtn, { backgroundColor: '#52525B' }]}
-              onPress={handleCancel}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.exitBtn, { backgroundColor: colors.danger }]}
-              onPress={handleConfirm}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="exit-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.exitText}>Exit App</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </PredictiveBackWrapper>
-    </View>
-  </Modal>
+        </PredictiveBackWrapper>
+      </View>
+    </Modal>
   );
 }
 
@@ -120,14 +115,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     zIndex: 100,
     gap: 4,
-  },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
   },
   title: {
     fontSize: 18,
