@@ -6,8 +6,15 @@
 ---
 
 ## Last Updated
-`2026-08-13` — Completed **UI/UX Polish, Scroll-Driven Navbar Translation & Sidebar Border Fix**:
-1. **Sidebar Drawer Left Border Fix**: Removed static `borderLeftWidth: 3` from `SidebarDrawer.tsx` stylesheet and conditionally set `borderLeftWidth: 3` with `colors.primary` only when active (`isChildActive` / `isActive`), eliminating the unwanted default black left border on inactive collapsible items (like Packages).
+`2026-08-13` — Completed **Session Card Action Logic & Modal Toast Layer Architecture**:
+1. **Package Session Card Exact Action Logic (`PackageSessionCard.tsx`)**:
+   - **Past Sessions (`date < today`)**: No action buttons rendered (`showActions = false`). Past un-attended sessions remain marked as Overdue.
+   - **Current Date Session (`date === today`) AFTER/AT Timeslot**: Displays **Attended**, **Reschedule**, and **Cancel** buttons.
+   - **Current Date Session (`date === today`) BEFORE Timeslot**: Displays **Reschedule** and **Cancel** buttons ONLY (No Attended button).
+   - **Future Sessions (`date > today`)**: Displays **Reschedule** and **Cancel** buttons ONLY (No Attended button). Future sessions are NEVER marked as unattended or overdue.
+   - **Paid / Cancelled Sessions**: No action buttons rendered.
+2. **Modal Toast Layer Architecture (`AppToast.tsx`, `PackageEnrollmentDetailSheet`, `AppointmentDetailModal`, `RescheduleModal`, `PatientDetailModal`, `DoctorDetailModal`)**: Mounted `<AppToast />` directly inside active modal container layers with max elevation (`elevation: 999999`, `zIndex: 999999`). Toasts triggered during modal interactions now display at top z-index directly on top of active modals without blocking touch gestures.
+3. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
 2. **Scroll-Driven Navbar Translation**: Built `useScrollNavbar` hook and animated `translateY` transform (`120px` hide / `0px` show via `withTiming`) on `BottomNav.tsx`. Attached `onScroll` handlers across all scrollable screens & grids (`HomeScreen`, `CalendarScreen`, `CalendarGrid`, `MonthGrid`, `AppointmentsScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `ReportsScreen`).
 2. **PredictiveBack Removal**: Completely removed all PredictiveBack wrappers, context provider, custom hooks (`PredictiveBackContext.tsx`, `usePredictiveBack.ts`, `PredictiveBackWrapper.tsx`), and usages across 10 modal/sheet components. Retained `enableOnBackInvokedCallback: true` in `app.json`.
 3. **Standard Android BackHandler**: Replaced predictive back logic in `App.tsx` with a standard React Native `BackHandler` hardware back button listener that pops the screen history stack or opens `ExitConfirmationModal` on root.

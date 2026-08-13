@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { Package, PackageEnrollment, Appointment } from '../types';
+import { Package, PackageEnrollment, Appointment, EnrollmentStatus } from '../types';
 import useAppointmentStore from './useAppointmentStore';
 import useDoctorStore from './useDoctorStore';
 import { addDays, todayISO } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS, LEAD_STATUS } from '../constants';
 import enrollmentsRaw from '../../assets/data/enrollments.json';
 import { packageService } from '../api/services/packageService';
+import { packageEnrollmentService } from '../api/services/packageEnrollmentService';
 
 export interface EnrollParams {
   packageId: string;
@@ -49,10 +50,10 @@ const seedPackages: Package[] = [
     name: 'Hair Rejuvenation Pack',
     serviceType: 'Hair',
     totalSessions: 10,
-    price: 15000,
-    perSessionPrice: 1500,
-    description: 'Advanced PRP scalp therapy + laser helmet stimulation for hair follicle rejuvenation and density improvement.',
-    includedServices: ['Scalp PRP Therapy', 'Low-Level Laser Therapy', 'Trico Analysis'],
+    price: 35000,
+    perSessionPrice: 3500,
+    description: 'Comprehensive hair growth package including GFC therapy & laser bio-stimulation.',
+    includedServices: ['GFC Therapy', 'Laser Bio-stimulation', 'Micro-needling'],
     status: 'Active',
   },
   {
@@ -60,21 +61,21 @@ const seedPackages: Package[] = [
     name: 'Skin Glow Package',
     serviceType: 'Skin',
     totalSessions: 6,
-    price: 9000,
-    perSessionPrice: 1500,
-    description: 'Deep hydration HydraFacial + Glutathione peel for even skin tone and glowing complexion.',
-    includedServices: ['HydraFacial MD', 'Carbon Laser Peel', 'Vitamin C Infusion'],
-    status: 'Completed',
+    price: 15000,
+    perSessionPrice: 2500,
+    description: 'Advanced skin brightening & hydrating facial peel sessions.',
+    includedServices: ['Chemical Peel', 'HydraFacial', 'Vitamin C Serum Infusion'],
+    status: 'Active',
   },
   {
     id: 'PKG-003',
     name: 'Scalp Revitalize Package',
     serviceType: 'Hair',
     totalSessions: 8,
-    price: 12000,
-    perSessionPrice: 1500,
-    description: 'Anti-dandruff detox + micro-needling peptide infusion for healthy scalp environment.',
-    includedServices: ['Scalp Detox Peel', 'Peptide Micro-needling', 'Oxygen Therapy'],
+    price: 22000,
+    perSessionPrice: 2750,
+    description: 'Scalp detox, anti-dandruff therapy and root strengthening.',
+    includedServices: ['Scalp Detox', 'Ozone Hair Spa', 'PRP Session'],
     status: 'Active',
   },
   {
@@ -82,10 +83,10 @@ const seedPackages: Package[] = [
     name: 'Anti-Aging Glow Package',
     serviceType: 'Skin',
     totalSessions: 5,
-    price: 10000,
-    perSessionPrice: 2000,
-    description: 'RF Collagen tightening + hyaluronic acid mesotherapy for anti-wrinkle skin restoration.',
-    includedServices: ['Micro-needling RF', 'Hyaluronic Mesotherapy', 'LED Light Therapy'],
+    price: 28000,
+    perSessionPrice: 5600,
+    description: 'Collagen boosting radiofrequency & HIFU skin tightening treatment.',
+    includedServices: ['RF Tightening', 'HIFU Lifting', 'Collagen Mask'],
     status: 'Active',
   },
   {
@@ -223,6 +224,7 @@ const usePackageStore = create<PackageState>((set, get) => ({
       sessionIds,
     };
 
+    packageEnrollmentService.add(newEnrollment);
     set((state) => ({ enrollments: [newEnrollment, ...state.enrollments] }));
     return newEnrollment;
   },
@@ -239,15 +241,21 @@ const usePackageStore = create<PackageState>((set, get) => ({
 
     // 2. Increment completedSessions in enrollment
     set((state) => {
+      let updatedCompleted = 0;
+      let updatedStatus: EnrollmentStatus = 'Active';
       const enrollments = state.enrollments.map((e) => {
         if (e.enrollmentId !== enrollmentId) return e;
-        const newCompleted = Math.min(e.totalSessions, e.completedSessions + 1);
-        const newStatus = newCompleted >= e.totalSessions ? 'Completed' : e.status;
+        updatedCompleted = Math.min(e.totalSessions, e.completedSessions + 1);
+        updatedStatus = updatedCompleted >= e.totalSessions ? 'Completed' : e.status;
         return {
           ...e,
-          completedSessions: newCompleted,
-          status: newStatus as any,
+          completedSessions: updatedCompleted,
+          status: updatedStatus,
         };
+      });
+      packageEnrollmentService.update(enrollmentId, {
+        completedSessions: updatedCompleted,
+        status: updatedStatus,
       });
       return { enrollments };
     });
@@ -322,6 +330,8 @@ const usePackageStore = create<PackageState>((set, get) => ({
     const enrollment = get().getEnrollmentById(enrollmentId);
     if (!enrollment) return;
 
+    packageEnrollmentService.update(enrollmentId, { status: 'Paused' });
+
     set((state) => ({
       enrollments: state.enrollments.map((e) =>
         e.enrollmentId === enrollmentId ? { ...e, status: 'Paused' } : e
@@ -342,6 +352,8 @@ const usePackageStore = create<PackageState>((set, get) => ({
   resumeEnrollment: (enrollmentId, newStartDate) => {
     const enrollment = get().getEnrollmentById(enrollmentId);
     if (!enrollment) return;
+
+    packageEnrollmentService.update(enrollmentId, { status: 'Active', startDate: newStartDate });
 
     set((state) => ({
       enrollments: state.enrollments.map((e) =>

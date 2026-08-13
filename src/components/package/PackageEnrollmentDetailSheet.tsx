@@ -11,6 +11,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import BottomSheet from '../shared/BottomSheet';
+import AppToast from '../shared/AppToast';
 import SessionProgressRing from './SessionProgressRing';
 import PackageSessionCard from './PackageSessionCard';
 import { useTheme } from '../../theme/ThemeContext';
@@ -357,6 +358,7 @@ export default function PackageEnrollmentDetailSheet({
             />
           ))}
         </BottomSheetScrollView>
+        <AppToast />
       </BottomSheet>
 
       {/* ── Pause / Resume Confirmation Modal ──────────────────────────────────

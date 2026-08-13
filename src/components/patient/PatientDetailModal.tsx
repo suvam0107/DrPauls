@@ -9,6 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import BottomSheet from '../shared/BottomSheet';
+import AppToast from '../shared/AppToast';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
 import usePatientStore from '../../store/usePatientStore';
@@ -21,6 +22,7 @@ import { copyToClipboard } from '../../utils/clipboardUtils';
 
 import { formatPatientText, shareDetails } from '../../utils/shareUtils';
 
+import { usePatientsQuery } from '../../hooks/queries/usePatientsQuery';
 import { useUpdatePatientMutation } from '../../hooks/mutations/usePatientMutations';
 
 export interface PatientDetailModalProps {
@@ -31,12 +33,14 @@ export interface PatientDetailModalProps {
 }
 
 export default function PatientDetailModal({
-  patient,
+  patient: initialPatient,
   visible,
   onClose,
   onViewPastRecords,
 }: PatientDetailModalProps) {
   const { colors } = useTheme();
+  const { data: patients = [] } = usePatientsQuery();
+  const patient = initialPatient ? (patients.find((p) => p.id === initialPatient.id) || initialPatient) : null;
   const updatePatientMutation = useUpdatePatientMutation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -583,6 +587,7 @@ export default function PatientDetailModal({
           )}
         </BottomSheetScrollView>
       ) : null}
+      <AppToast />
     </BottomSheet>
   );
 }

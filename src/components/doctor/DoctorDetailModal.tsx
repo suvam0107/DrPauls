@@ -10,6 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import BottomSheet from '../shared/BottomSheet';
+import AppToast from '../shared/AppToast';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
 import useDoctorStore from '../../store/useDoctorStore';
@@ -24,6 +25,7 @@ import { formatDoctorText, shareDetails } from '../../utils/shareUtils';
 const SPECIALTIES = ['Hair', 'Skin', 'Cosmetic', 'Hair Transplant', 'Laser', 'General'];
 const WEEKDAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+import { useDoctorsQuery } from '../../hooks/queries/useDoctorsQuery';
 import { useUpdateDoctorMutation } from '../../hooks/mutations/useDoctorMutations';
 
 export interface DoctorDetailModalProps {
@@ -33,11 +35,13 @@ export interface DoctorDetailModalProps {
 }
 
 export default function DoctorDetailModal({
-  doctor,
+  doctor: initialDoctor,
   visible,
   onClose,
 }: DoctorDetailModalProps) {
   const { colors } = useTheme();
+  const { data: doctors = [] } = useDoctorsQuery();
+  const doctor = initialDoctor ? (doctors.find((d) => d.id === initialDoctor.id) || initialDoctor) : null;
   const updateDoctorMutation = useUpdateDoctorMutation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -536,6 +540,7 @@ export default function DoctorDetailModal({
           )}
         </BottomSheetScrollView>
       ) : null}
+      <AppToast />
     </BottomSheet>
   );
 }

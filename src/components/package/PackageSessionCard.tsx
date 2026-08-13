@@ -48,8 +48,17 @@ export default function PackageSessionCard({
   const isPast = appointment.date < today;
   const isOverdue = isPast && !isPaid && !isCancelled;
 
-  // Show action buttons only for future/today sessions that aren't settled
+  // Calculate if current time is after or at appointment start time for today's session
+  const now = new Date();
+  const currentHHMM =
+    String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const isAfterTimeslot = isToday && currentHHMM >= (appointment.startTime || '00:00');
+
+  // Past sessions get NO buttons; Paid/Cancelled get NO buttons
   const showActions = !isCancelled && !isPaid && !isPast;
+
+  // Attended button is ONLY shown if on current date AND after the timeslot
+  const canMarkAttended = isToday && isAfterTimeslot && !isCancelled && !isPaid;
 
   const dotColor = isCancelled
     ? colors.danger
@@ -149,17 +158,19 @@ export default function PackageSessionCard({
 
       {showActions && (
         <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.success }]}
-            onPress={() => {
-              playClickSound();
-              onMarkAttended(appointment.id);
-            }}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
-            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Attended</Text>
-          </TouchableOpacity>
+          {canMarkAttended && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.success }]}
+              onPress={() => {
+                playClickSound();
+                onMarkAttended(appointment.id);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
+              <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Attended</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.primary }]}

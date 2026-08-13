@@ -122,12 +122,17 @@ function MainApp() {
     setNavVisible,
   ]);
 
+  const [appointmentsFilterParams, setAppointmentsFilterParams] = useState<{ statusFilter?: string } | null>(null);
+
   // Navigate & push to navigation history stack
-  const handleNavigate = (screen: string, params?: { patientId?: string }) => {
+  const handleNavigate = (screen: string, params?: { patientId?: string; statusFilter?: string }) => {
     if (params?.patientId) {
       setActivePatientIdForRecords(params.patientId);
     }
-    if (screen === currentScreen && !params?.patientId) return;
+    if (params?.statusFilter) {
+      setAppointmentsFilterParams({ statusFilter: params.statusFilter });
+    }
+    if (screen === currentScreen && !params?.patientId && !params?.statusFilter) return;
     setScreenHistory((prev) => [...prev, screen]);
     setCurrentScreen(screen);
     if (['home', 'calendar', 'patients', 'appointments'].includes(screen)) {
@@ -170,7 +175,9 @@ function MainApp() {
       <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
         {currentScreen === 'home' && <HomeScreen onNavigate={handleNavigate} />}
         {currentScreen === 'calendar' && <CalendarScreen />}
-        {(currentScreen === 'appointments' || currentScreen === 'past-appointments') && <AppointmentsScreen />}
+        {(currentScreen === 'appointments' || currentScreen === 'past-appointments') && (
+          <AppointmentsScreen initialStatusFilter={appointmentsFilterParams?.statusFilter as any} />
+        )}
         {currentScreen === 'patients' && <PatientListScreen onNavigate={handleNavigate} />}
         {currentScreen === 'patient-records' && (
           <PatientRecordsScreen

@@ -24,7 +24,7 @@ import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
 import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export interface HomeScreenProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, params?: { patientId?: string; statusFilter?: string }) => void;
 }
 
 export default function HomeScreen({ onNavigate }: HomeScreenProps) {
@@ -121,12 +121,15 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       {overdueCount > 0 && (
         <TouchableOpacity
           style={[styles.overdueBanner, { backgroundColor: colors.dangerBg, borderColor: colors.danger }]}
-          onPress={() => onNavigate('appointments')}
+          onPress={() => {
+            playClickSound();
+            onNavigate('appointments', { statusFilter: 'Overdue' });
+          }}
           activeOpacity={0.8}
         >
           <Ionicons name="alert-circle" size={20} color={colors.danger} />
           <Text style={[styles.overdueText, { color: colors.danger }]}>
-            {overdueCount} {overdueCount === 1 ? 'appointment requires' : 'appointments require'} receptionist action (Pending)
+            {overdueCount} {overdueCount === 1 ? 'appointment requires' : 'appointments require'} receptionist action (Overdue)
           </Text>
           <Ionicons name="chevron-forward" size={16} color={colors.danger} />
         </TouchableOpacity>

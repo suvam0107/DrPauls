@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -69,7 +69,11 @@ const STATUS_FILTER_OPTIONS: StatusFilter[] = [
   'Cancelled',
 ];
 
-export default function AppointmentsScreen() {
+export interface AppointmentsScreenProps {
+  initialStatusFilter?: StatusFilter;
+}
+
+export default function AppointmentsScreen({ initialStatusFilter }: AppointmentsScreenProps = {}) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshing, onRefresh } = useRefresh();
@@ -79,9 +83,15 @@ export default function AppointmentsScreen() {
   const { data: doctors = [] } = useDoctorsQuery();
   const { data: patients = [] } = usePatientsQuery();
 
-  const [rangeMode, setRangeMode] = useState<RangeMode>('today');
+  const [rangeMode, setRangeMode] = useState<RangeMode>(initialStatusFilter === 'Overdue' || initialStatusFilter === 'Unattended' ? 'custom' : 'today');
   const [groupingMode, setGroupingMode] = useState<GroupingMode>('doctor');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter || 'All');
+
+  useEffect(() => {
+    if (initialStatusFilter) {
+      setStatusFilter(initialStatusFilter);
+    }
+  }, [initialStatusFilter]);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 200);
 

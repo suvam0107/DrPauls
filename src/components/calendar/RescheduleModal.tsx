@@ -23,8 +23,10 @@ import { playAppointmentSuccessSound, playAppointmentFailureSound, playClickSoun
 import { Ionicons } from '@expo/vector-icons';
 
 import RescheduleConfirmationModal from '../shared/RescheduleConfirmationModal';
+import AppToast from '../shared/AppToast';
 
 import { useDoctorsQuery } from '../../hooks/queries/useDoctorsQuery';
+import { useAppointmentsQuery } from '../../hooks/queries/useAppointmentsQuery';
 import { useMoveAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
 
 export interface RescheduleModalProps {
@@ -33,8 +35,10 @@ export interface RescheduleModalProps {
   onClose: () => void;
 }
 
-export default function RescheduleModal({ visible, appointment, onClose }: RescheduleModalProps) {
+export default function RescheduleModal({ visible, appointment: initialAppt, onClose }: RescheduleModalProps) {
   const { colors } = useTheme();
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const appointment = initialAppt ? (appointments.find((a) => a.id === initialAppt.id) || initialAppt) : null;
 
   const { data: doctors = [] } = useDoctorsQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
@@ -348,6 +352,7 @@ export default function RescheduleModal({ visible, appointment, onClose }: Resch
           onConfirm={handleConfirmReschedule}
         />
       )}
+      <AppToast />
     </>
   );
 }

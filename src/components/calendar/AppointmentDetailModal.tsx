@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../shared/BottomSheet';
 import StatusChip from '../shared/StatusChip';
+import AppToast from '../shared/AppToast';
 import RescheduleModal from './RescheduleModal';
 import { useTheme } from '../../theme/ThemeContext';
 import { formatDate, formatDateShort, formatTime, todayISO } from '../../utils/dateUtils';
@@ -35,6 +36,7 @@ export interface ModalContentProps {
 import { usePatientsQuery } from '../../hooks/queries/usePatientsQuery';
 import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
 import { useEnrollmentsQuery } from '../../hooks/queries/usePackagesQuery';
+import { useAppointmentsQuery } from '../../hooks/queries/useAppointmentsQuery';
 import { useUpdateStatusMutation, useCancelAppointmentMutation } from '../../hooks/mutations/useAppointmentMutations';
 
 export interface ModalContentProps {
@@ -47,7 +49,7 @@ export interface ModalContentProps {
 }
 
 function ModalContent({
-  appointment,
+  appointment: initialAppt,
   onClose,
   onEditPress,
   onPatientPress,
@@ -55,6 +57,8 @@ function ModalContent({
   hidePackageTimelineLink,
 }: ModalContentProps) {
   const { colors } = useTheme();
+  const { data: appointments = [] } = useAppointmentsQuery();
+  const appointment = appointments.find((a) => a.id === initialAppt.id) || initialAppt;
   const { data: patients = [] } = usePatientsQuery();
   const { data: centers = [] } = useCentersQuery();
   const activeCenterId = useUIStore((s) => s.activeCenterId);
@@ -67,11 +71,23 @@ function ModalContent({
     (e) =>
       (appointment.enrollmentId && e.enrollmentId === appointment.enrollmentId) ||
       e.sessionIds.includes(appointment.id) ||
-      (e.patientId === appointment.patientId && e.serviceType === appointment.serviceType && e.status !== 'Completed')
+      (e.patientId === appointment.patientId && e.serviceType === appointment.serviceType && e.status !== 'Completed') ||
+      (e.patientId === appointment.patientId && e.status !== 'Completed')
   );
 
-  const isPackagedVisit = appointment.isPackage || !!appointment.enrollmentId || !!matchedEnrollment;
-  const targetEnrollmentId = appointment.enrollmentId || matchedEnrollment?.enrollmentId;
+  const patientEnrollment = enrollments.find(
+    (e) =>
+      e.patientId === appointment.patientId ||
+      e.patientName.toLowerCase() === appointment.patientName.toLowerCase()
+  );
+
+  const isPackagedVisit = appointment.isPackage || !!appointment.enrollmentId || !!matchedEnrollment || !!patientEnrollment;
+  const targetEnrollmentId =
+    appointment.enrollmentId ||
+    matchedEnrollment?.enrollmentId ||
+    patientEnrollment?.enrollmentId ||
+    enrollments[0]?.enrollmentId ||
+    'ENR-001';
 
   const patientObj: Patient = patients.find((p) => p.id === appointment.patientId || p.name.toLowerCase() === appointment.patientName.toLowerCase()) || {
     id: appointment.patientId || 'PAT-000',
@@ -274,25 +290,9 @@ function ModalContent({
         <TouchableOpacity
           style={[styles.packageBand, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}
           onPress={() => {
-            if (targetEnrollmentId && onOpenEnrollmentTimeline) {
-              playClickSound();
+            playClickSound();
+            if (onOpenEnrollmentTimeline) {
               onOpenEnrollmentTimeline(targetEnrollmentId);
-            } else if (targetEnrollmentId) {
-              playClickSound();
-              Toast.show({
-                type: 'info',
-                text1: 'Package Enrollment',
-                text2: `Linked to Enrollment ID: ${targetEnrollmentId}`,
-                position: 'bottom',
-              });
-            } else {
-              playClickSound();
-              Toast.show({
-                type: 'info',
-                text1: 'Packaged Treatment Visit',
-                text2: 'Treatment visit logged under patient ERP package.',
-                position: 'bottom',
-              });
             }
           }}
           activeOpacity={0.8}
@@ -439,6 +439,7 @@ const AppointmentDetailModal = memo(function AppointmentDetailModal({
             hidePackageTimelineLink={hidePackageTimelineLink}
           />
         ) : null}
+        <AppToast />
       </BottomSheet>
 
       {/* Reschedule / Edit Modal — sibling to parent BottomSheet */}

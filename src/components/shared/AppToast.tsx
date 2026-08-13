@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import Toast, { ToastConfig, ToastConfigParams } from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
@@ -8,14 +7,20 @@ import { Ionicons } from '@expo/vector-icons';
 /**
  * Custom themed Toast component for Dr. Paul's Clinic.
  * Dynamically binds background color, text color, and border styling to the application's active theme (Light/Dark).
- * Positioned cleanly above the bottom navigation bar with safe area inset protection.
+ * Rendered inside a transparent Modal layer with pointerEvents="box-none" to display above all native modals & bottom nav.
  */
-export default function AppToast() {
+export interface AppToastProps {
+  position?: 'top' | 'bottom';
+  bottomOffset?: number;
+  topOffset?: number;
+}
+
+export default function AppToast({ position = 'bottom', bottomOffset: customBottomOffset, topOffset }: AppToastProps = {}) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Bottom offset calculated to sit cleanly above bottom navigation bar
-  const bottomOffset = Math.max(insets.bottom + 74, 84);
+  const defaultBottomOffset = Math.max(insets.bottom + 74, 84);
+  const effectiveBottomOffset = customBottomOffset ?? defaultBottomOffset;
 
   const toastConfig: ToastConfig = {
     success: (props: ToastConfigParams<any>) => (
@@ -74,7 +79,14 @@ export default function AppToast() {
     ),
   };
 
-  return <Toast config={toastConfig} bottomOffset={bottomOffset} />;
+  return (
+    <Toast
+      config={toastConfig}
+      position={position}
+      bottomOffset={effectiveBottomOffset}
+      topOffset={topOffset || Math.max(insets.top + 10, 40)}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -89,11 +101,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 8,
+    elevation: 999999,
+    zIndex: 999999,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   icon: {
     marginRight: 10,
