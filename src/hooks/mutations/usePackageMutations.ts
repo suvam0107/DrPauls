@@ -5,8 +5,8 @@ import usePackageStore, { EnrollParams } from '../../store/usePackageStore';
 
 export function useEnrollPatientMutation() {
   return useMutation({
-    mutationFn: (params: EnrollParams) =>
-      Promise.resolve(usePackageStore.getState().enrollPatientInPackage(params)),
+    mutationFn: async (params: EnrollParams) =>
+      await usePackageStore.getState().enrollPatientInPackage(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
@@ -16,8 +16,8 @@ export function useEnrollPatientMutation() {
 
 export function useMarkSessionCompletedMutation() {
   return useMutation({
-    mutationFn: ({ enrollmentId, sessionId }: { enrollmentId: string; sessionId: string }) =>
-      Promise.resolve(usePackageStore.getState().markSessionCompleted(enrollmentId, sessionId)),
+    mutationFn: async ({ enrollmentId, sessionId }: { enrollmentId: string; sessionId: string }) =>
+      await usePackageStore.getState().markSessionCompleted(enrollmentId, sessionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
@@ -27,7 +27,7 @@ export function useMarkSessionCompletedMutation() {
 
 export function useCancelSessionMutation() {
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       enrollmentId,
       sessionId,
       shiftRemaining,
@@ -36,7 +36,7 @@ export function useCancelSessionMutation() {
       sessionId: string;
       shiftRemaining?: boolean;
     }) =>
-      Promise.resolve(usePackageStore.getState().cancelSession(enrollmentId, sessionId, shiftRemaining)),
+      await usePackageStore.getState().cancelSession(enrollmentId, sessionId, shiftRemaining),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
@@ -46,7 +46,7 @@ export function useCancelSessionMutation() {
 
 export function useRescheduleSessionMutation() {
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       enrollmentId,
       sessionId,
       newDate,
@@ -59,14 +59,12 @@ export function useRescheduleSessionMutation() {
       newStartTime: string;
       shiftRemaining?: boolean;
     }) =>
-      Promise.resolve(
-        usePackageStore.getState().rescheduleSession(
-          enrollmentId,
-          sessionId,
-          newDate,
-          newStartTime,
-          shiftRemaining
-        )
+      await usePackageStore.getState().rescheduleSession(
+        enrollmentId,
+        sessionId,
+        newDate,
+        newStartTime,
+        shiftRemaining
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
@@ -77,8 +75,8 @@ export function useRescheduleSessionMutation() {
 
 export function usePauseEnrollmentMutation() {
   return useMutation({
-    mutationFn: (enrollmentId: string) =>
-      Promise.resolve(usePackageStore.getState().pauseEnrollment(enrollmentId)),
+    mutationFn: async (enrollmentId: string) =>
+      await usePackageStore.getState().pauseEnrollment(enrollmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
@@ -88,8 +86,8 @@ export function usePauseEnrollmentMutation() {
 
 export function useResumeEnrollmentMutation() {
   return useMutation({
-    mutationFn: ({ enrollmentId, newStartDate }: { enrollmentId: string; newStartDate: string }) =>
-      Promise.resolve(usePackageStore.getState().resumeEnrollment(enrollmentId, newStartDate)),
+    mutationFn: async ({ enrollmentId, newStartDate }: { enrollmentId: string; newStartDate: string }) =>
+      await usePackageStore.getState().resumeEnrollment(enrollmentId, newStartDate),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.enrollments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });

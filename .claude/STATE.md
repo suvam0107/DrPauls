@@ -6,7 +6,25 @@
 ---
 
 ## Last Updated
-`2026-08-13` — Completed **Session Card Action Logic & Modal Toast Layer Architecture**:
+`2026-08-14` — Fixed **Today's Overview Live Indicator Operating Hours Status**:
+1. **Dynamic Operating Hours Detection (`HomeScreen.tsx`)**:
+   - Integrated `useCentersQuery` to dynamically look up the active clinic's `openHours` (e.g. `10:00`–`19:00`) and `closedDays`.
+   - Calculated `isClinicOpen` based on current time (`currentMins`) relative to clinic start/end working hours.
+2. **Live Pulsing Dot Color State**:
+   - **During Clinic Timing**: Evaluates to Green (`colors.success`).
+   - **Before Clinic Timing, After Clinic Timing, or Closed Days**: Evaluates to Red (`colors.danger`).
+3. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+1. **Root Cause Diagnosis**:
+   - `nonnestedHandlers.update_appointment` was mutating elements of `store.appointments` in-place, modifying the exact same array reference held in TanStack Query's cache. When `queryClient.invalidateQueries` fired `queryFn` (`appointmentService.getAll()`), TanStack Query compared `oldData === newData` (or structural sharing on the mutated reference), saw no object difference, and suppressed re-renders.
+   - `useAppointmentStore` store mutation methods (`moveAppointment`, `updateStatus`, `updateAppointment`, `cancelAppointment`) were firing `appointmentService.update(...)` asynchronously without `await`. In `useAppointmentMutations`, `mutationFn` resolved immediately, causing `onSuccess` invalidations to run before `dataStore` finished updating.
+2. **Immutable DataStore & Refetching overhaul (`nonnestedHandlers.ts`, `useAppointmentsQuery.ts`)**:
+   - Replaced in-place array element mutations in `nonnestedHandlers.ts` with immutable array replacements (`store.appointments = store.appointments.map(...)`).
+   - Ensured all `get_all_*` handlers return a fresh shallow array copy (`[...store.appointments]`).
+   - Updated `useAppointmentsQuery` `initialData` to return `[...dataStore.getData().appointments]` shallow array copies so cached data is decoupled from the mutable singleton store instance.
+3. **Async Mutation Synchronization (`useAppointmentStore.ts`, `useAppointmentMutations.ts`, `usePackageStore.ts`, `usePackageMutations.ts`)**:
+   - Converted store mutation methods (`moveAppointment`, `updateStatus`, `updateAppointment`, `addAppointment`, `cancelAppointment`, `rescheduleSession`, etc.) to `async` functions that `await appointmentService.*` operations.
+   - Converted all TanStack `mutationFn` definitions to `async/await` so `onSuccess` invalidations fire strictly after `dataStore` updates resolve.
+4. **Result**: Rescheduling an appointment (via modal or calendar drag-and-drop) or pulling to refresh now immediately updates the Calendar Screen and all listening screens in real time without needing to reopen the screen.
 1. **Package Session Card Exact Action Logic (`PackageSessionCard.tsx`)**:
    - **Past Sessions (`date < today`)**: No action buttons rendered (`showActions = false`). Past un-attended sessions remain marked as Overdue.
    - **Current Date Session (`date === today`) AFTER/AT Timeslot**: Displays **Attended**, **Reschedule**, and **Cancel** buttons.

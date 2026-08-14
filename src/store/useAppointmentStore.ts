@@ -18,17 +18,17 @@ export interface AppointmentValidationResult {
 export interface ExtendedAppointmentState {
   appointments: Appointment[];
   slotMap: Record<string, string>;
-  addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Appointment;
-  updateStatus: (id: string, status: string) => void;
-  updateAppointment: (id: string, updates: Partial<Appointment>) => void;
+  addAppointment: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Appointment>;
+  updateStatus: (id: string, status: string) => Promise<void>;
+  updateAppointment: (id: string, updates: Partial<Appointment>) => Promise<void>;
   moveAppointment: (
     id: string,
     newDate: string,
     newStartTime: string,
     newEndTime: string,
     newDoctorId?: string
-  ) => void;
-  cancelAppointment: (id: string) => void;
+  ) => Promise<void>;
+  cancelAppointment: (id: string) => Promise<void>;
   validateSlot: (
     date: string,
     startTime: string,
@@ -66,7 +66,7 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   slotMap: buildSlotMap(initialSeed),
 
   /** Add a new appointment */
-  addAppointment: (data) => {
+  addAppointment: async (data) => {
     const newAppt: Appointment = {
       ...data,
       id: nextAppointmentId(get().appointments),
@@ -74,7 +74,7 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     // Call service to mutate JSON-backed dataStore
-    appointmentService.add(data);
+    await appointmentService.add(data);
 
     set((s) => {
       const updated = [newAppt, ...s.appointments];
@@ -84,8 +84,8 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   },
 
   /** Update status of an appointment */
-  updateStatus: (id, status) => {
-    appointmentService.update(id, { status });
+  updateStatus: async (id, status) => {
+    await appointmentService.update(id, { status });
     set((s) => {
       const updated = s.appointments.map((a) =>
         a.id === id ? { ...a, status, updatedAt: new Date().toISOString() } : a
@@ -95,8 +95,8 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   },
 
   /** Update generic fields of an appointment */
-  updateAppointment: (id, updates) => {
-    appointmentService.update(id, updates);
+  updateAppointment: async (id, updates) => {
+    await appointmentService.update(id, updates);
     set((s) => {
       const updated = s.appointments.map((a) =>
         a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
@@ -106,7 +106,7 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   },
 
   /** Move/reschedule appointment to new date/time - Permanent Persistence & Original Schedule Logging */
-  moveAppointment: (id, newDate, newStartTime, newEndTime, newDoctorId) => {
+  moveAppointment: async (id, newDate, newStartTime, newEndTime, newDoctorId) => {
     const appt = get().appointments.find((a) => a.id === id);
     if (!appt) return;
 
@@ -135,7 +135,7 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
 
-    appointmentService.update(id, updates);
+    await appointmentService.update(id, updates);
 
     // Increment patient reschedule count
     if (appt.patientId) {
@@ -157,7 +157,7 @@ const useAppointmentStore = create<ExtendedAppointmentState>((set, get) => ({
   },
 
   /** Cancel appointment */
-  cancelAppointment: (id) => get().updateStatus(id, APPOINTMENT_STATUS.CANCELLED),
+  cancelAppointment: async (id) => await get().updateStatus(id, APPOINTMENT_STATUS.CANCELLED),
 
   /**
    * Validate if a target date/time range is valid & free:

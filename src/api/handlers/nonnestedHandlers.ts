@@ -9,7 +9,7 @@ import { nextPatientId, nextAppointmentId, nextDoctorId } from '../../utils/sear
 export const nonnestedHandlers = {
   // --- Patients ---
   get_all_patients: () => {
-    return dataStore.getData().patients;
+    return [...dataStore.getData().patients];
   },
 
   get_patient_by_id: (payload: { id: string }) => {
@@ -26,7 +26,7 @@ export const nonnestedHandlers = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    store.patients.unshift(newPatient);
+    store.patients = [newPatient, ...store.patients];
     return newPatient;
   },
 
@@ -39,7 +39,7 @@ export const nonnestedHandlers = {
       ...payload.updates,
       updatedAt: new Date().toISOString(),
     };
-    store.patients[index] = updated;
+    store.patients = store.patients.map((p) => (p.id === payload.id ? updated : p));
     return updated;
   },
 
@@ -51,7 +51,7 @@ export const nonnestedHandlers = {
 
   // --- Doctors ---
   get_all_doctors: () => {
-    return dataStore.getData().doctors;
+    return [...dataStore.getData().doctors];
   },
 
   get_doctor_by_id: (payload: { id: string }) => {
@@ -71,7 +71,7 @@ export const nonnestedHandlers = {
         },
       ],
     };
-    store.doctors.unshift(newDoc);
+    store.doctors = [newDoc, ...store.doctors];
     return newDoc;
   },
 
@@ -83,14 +83,13 @@ export const nonnestedHandlers = {
       ...store.doctors[index],
       ...payload.updates,
     };
-    store.doctors[index] = updated;
+    store.doctors = store.doctors.map((d) => (d.id === payload.id ? updated : d));
     return updated;
   },
 
-
   // --- Centers ---
   get_all_centers: () => {
-    return dataStore.getData().centers;
+    return [...dataStore.getData().centers];
   },
 
   get_center_by_id: (payload: { id: string }) => {
@@ -99,18 +98,18 @@ export const nonnestedHandlers = {
 
   // --- Therapists ---
   get_all_therapists: () => {
-    return dataStore.getData().therapists;
+    return [...dataStore.getData().therapists];
   },
 
   get_therapists_by_service: (payload: { serviceType?: string }) => {
     const therapists = dataStore.getData().therapists;
-    if (!payload?.serviceType) return therapists;
+    if (!payload?.serviceType) return [...therapists];
     return therapists.filter((t) => t.specialization === payload.serviceType);
   },
 
   // --- Packages ---
   get_all_packages: () => {
-    return dataStore.getData().packages;
+    return [...dataStore.getData().packages];
   },
 
   get_package_by_id: (payload: { id: string }) => {
@@ -127,7 +126,7 @@ export const nonnestedHandlers = {
       ...payload,
       id: `PKG-${String(maxId + 1).padStart(3, '0')}`,
     };
-    store.packages.unshift(newPkg);
+    store.packages = [newPkg, ...store.packages];
     return newPkg;
   },
 
@@ -136,13 +135,13 @@ export const nonnestedHandlers = {
     const index = store.packages.findIndex((p) => p.id === payload.id);
     if (index === -1) throw new Error(`Package ${payload.id} not found`);
     const updated = { ...store.packages[index], ...payload.updates };
-    store.packages[index] = updated;
+    store.packages = store.packages.map((p) => (p.id === payload.id ? updated : p));
     return updated;
   },
 
   // --- Package Enrollments ---
   get_all_enrollments: () => {
-    return dataStore.getData().enrollments;
+    return [...dataStore.getData().enrollments];
   },
 
   get_enrollments_by_patient: (payload: { patientId: string }) => {
@@ -164,7 +163,7 @@ export const nonnestedHandlers = {
       enrollmentId: `ENR-${String(maxId + 1).padStart(3, '0')}`,
       enrolledAt: new Date().toISOString(),
     };
-    store.enrollments.unshift(newEnrollment);
+    store.enrollments = [newEnrollment, ...store.enrollments];
     return newEnrollment;
   },
 
@@ -173,7 +172,7 @@ export const nonnestedHandlers = {
     const index = store.enrollments.findIndex((e) => e.enrollmentId === payload.enrollmentId);
     if (index === -1) throw new Error(`Enrollment ${payload.enrollmentId} not found`);
     const updated = { ...store.enrollments[index], ...payload.updates };
-    store.enrollments[index] = updated;
+    store.enrollments = store.enrollments.map((e) => (e.enrollmentId === payload.enrollmentId ? updated : e));
     return updated;
   },
 
@@ -184,7 +183,7 @@ export const nonnestedHandlers = {
 
   // --- Appointments Flat CRUD ---
   get_all_appointments: () => {
-    return dataStore.getData().appointments;
+    return [...dataStore.getData().appointments];
   },
 
   add_appointment: (payload: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -195,7 +194,7 @@ export const nonnestedHandlers = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    store.appointments.unshift(newAppt);
+    store.appointments = [newAppt, ...store.appointments];
     return newAppt;
   },
 
@@ -208,7 +207,7 @@ export const nonnestedHandlers = {
       ...payload.updates,
       updatedAt: new Date().toISOString(),
     };
-    store.appointments[index] = updated;
+    store.appointments = store.appointments.map((a) => (a.id === payload.id ? updated : a));
     return updated;
   },
 

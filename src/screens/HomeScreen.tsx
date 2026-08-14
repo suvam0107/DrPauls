@@ -8,7 +8,7 @@ import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
-import { todayISO, formatDateShort, formatTime, isPastSlot } from '../utils/dateUtils';
+import { todayISO, formatDateShort, formatTime, isPastSlot, timeToMins } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
@@ -21,6 +21,7 @@ import HomeScreenSkeleton from '../components/skeletons/HomeScreenSkeleton';
 import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
 import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
 import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
+import { useCentersQuery } from '../hooks/queries/useCentersQuery';
 import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export interface HomeScreenProps {
@@ -35,8 +36,25 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { data: appointments = [] } = useAppointmentsQuery();
   const { data: patients = [] } = usePatientsQuery();
   const { data: doctors = [] } = useDoctorsQuery();
+  const { data: centers = [] } = useCentersQuery();
   const patientCount = patients.length;
   const doctorCount = doctors.length;
+
+  const activeCenter = centers.find((c) => c.id === activeCenterId) || centers[0];
+  const openStart = activeCenter?.openHours?.start || '10:00';
+  const openEnd = activeCenter?.openHours?.end || '19:00';
+
+  const now = new Date();
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+  const startMins = timeToMins(openStart);
+  const endMins = timeToMins(openEnd);
+
+  const daysMap: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+  const todayDayName = daysMap[now.getDay()];
+  const isClosedDay = activeCenter?.closedDays?.includes(todayDayName as any) ?? false;
+
+  const isClinicOpen = !isClosedDay && currentMins >= startMins && currentMins < endMins;
+  const dotColor = isClinicOpen ? colors.success : colors.danger;
 
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -109,7 +127,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       <View style={[styles.bannerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.bannerTextCol}>
           <View style={styles.bannerBadgeRow}>
-            <Animated.View style={[styles.liveDot, { backgroundColor: colors.success }, pulseStyle]} />
+            <Animated.View style={[styles.liveDot, { backgroundColor: dotColor }, pulseStyle]} />
             <Text style={[styles.bannerTitle, { color: colors.text }]}>Today's Overview</Text>
           </View>
           <Text style={[styles.bannerSub, { color: colors.textMuted }]}>{formatDateShort(today)}</Text>

@@ -6,8 +6,8 @@ import { Appointment } from '../../types';
 
 export function useAddAppointmentMutation() {
   return useMutation({
-    mutationFn: (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) =>
-      Promise.resolve(useAppointmentStore.getState().addAppointment(data)),
+    mutationFn: async (data: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>) =>
+      await useAppointmentStore.getState().addAppointment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
     },
@@ -16,8 +16,8 @@ export function useAddAppointmentMutation() {
 
 export function useUpdateAppointmentMutation() {
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Appointment> }) =>
-      Promise.resolve(useAppointmentStore.getState().updateAppointment(id, updates)),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Appointment> }) =>
+      await useAppointmentStore.getState().updateAppointment(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
     },
@@ -26,7 +26,7 @@ export function useUpdateAppointmentMutation() {
 
 export function useMoveAppointmentMutation() {
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       newDate,
       newStartTime,
@@ -39,9 +39,9 @@ export function useMoveAppointmentMutation() {
       newEndTime: string;
       newDoctorId?: string;
     }) =>
-      Promise.resolve(
-        useAppointmentStore.getState().moveAppointment(id, newDate, newStartTime, newEndTime, newDoctorId)
-      ),
+      await useAppointmentStore
+        .getState()
+        .moveAppointment(id, newDate, newStartTime, newEndTime, newDoctorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.patients.all() });
@@ -51,8 +51,8 @@ export function useMoveAppointmentMutation() {
 
 export function useCancelAppointmentMutation() {
   return useMutation({
-    mutationFn: (id: string) =>
-      Promise.resolve(useAppointmentStore.getState().cancelAppointment(id)),
+    mutationFn: async (id: string) =>
+      await useAppointmentStore.getState().cancelAppointment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
     },
@@ -61,8 +61,8 @@ export function useCancelAppointmentMutation() {
 
 export function useUpdateStatusMutation() {
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      Promise.resolve(useAppointmentStore.getState().updateStatus(id, status)),
+    mutationFn: async ({ id, status }: { id: string; status: string }) =>
+      await useAppointmentStore.getState().updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all() });
     },

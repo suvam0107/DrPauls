@@ -29,19 +29,19 @@ export interface PackageState {
   getEnrollmentById: (enrollmentId: string) => PackageEnrollment | undefined;
   getEnrollmentsByPatient: (patientId: string) => PackageEnrollment[];
   getActiveEnrollments: () => PackageEnrollment[];
-  enrollPatientInPackage: (params: EnrollParams) => PackageEnrollment;
-  assignPackageToPatient: (params: EnrollParams) => Appointment[];
-  markSessionCompleted: (enrollmentId: string, sessionId: string) => void;
-  cancelSession: (enrollmentId: string, sessionId: string, shiftRemaining?: boolean) => void;
+  enrollPatientInPackage: (params: EnrollParams) => Promise<PackageEnrollment>;
+  assignPackageToPatient: (params: EnrollParams) => Promise<Appointment[]>;
+  markSessionCompleted: (enrollmentId: string, sessionId: string) => Promise<void>;
+  cancelSession: (enrollmentId: string, sessionId: string, shiftRemaining?: boolean) => Promise<void>;
   rescheduleSession: (
     enrollmentId: string,
     sessionId: string,
     newDate: string,
     newStartTime: string,
     shiftRemaining?: boolean
-  ) => void;
-  pauseEnrollment: (enrollmentId: string) => void;
-  resumeEnrollment: (enrollmentId: string, newStartDate: string) => void;
+  ) => Promise<void>;
+  pauseEnrollment: (enrollmentId: string) => Promise<void>;
+  resumeEnrollment: (enrollmentId: string, newStartDate: string) => Promise<void>;
 }
 
 const seedPackages: Package[] = [
@@ -138,7 +138,7 @@ const usePackageStore = create<PackageState>((set, get) => ({
   getActiveEnrollments: () =>
     get().enrollments.filter((e) => e.status === 'Active' || e.status === 'Paused'),
 
-  enrollPatientInPackage: (params) => {
+  enrollPatientInPackage: async (params) => {
     const {
       packageId,
       patientId,
@@ -149,24 +149,22 @@ const usePackageStore = create<PackageState>((set, get) => ({
       therapistId,
       therapistName,
       startDate = todayISO(),
-      startTime = '11:00',
+      startTime = '10:00',
       sessionInterval = 7,
     } = params;
 
-    const pkg = get().packages.find((p) => p.id === packageId);
-    if (!pkg) throw new Error('Package not found');
+    const pkg = get().getPackageById(packageId);
+    if (!pkg) throw new Error(`Package ${packageId} not found`);
 
-    const doctor = useDoctorStore.getState().doctors.find((d) => d.id === doctorId);
-    const doctorName = doctor ? doctor.name : 'Doctor';
+    const doctorObj = useDoctorStore.getState().doctors.find((d) => d.id === doctorId);
+    const doctorName = doctorObj ? doctorObj.name : 'Duty Doctor';
 
-    // Generate enrollment ID
     const enrollments = get().enrollments;
     const maxId = enrollments.reduce((m, e) => {
       const n = parseInt(e.enrollmentId.replace('ENR-', ''), 10);
       return !isNaN(n) && n > m ? n : m;
     }, 0);
     const enrollmentId = `ENR-${String(maxId + 1).padStart(3, '0')}`;
-
     const sessionIds: string[] = [];
 
     // Auto-schedule appointments spaced by sessionInterval days
@@ -198,7 +196,7 @@ const usePackageStore = create<PackageState>((set, get) => ({
         remark: `Session ${i + 1} of ${pkg.totalSessions} (${pkg.name})`,
       };
 
-      const newAppt = useAppointmentStore.getState().addAppointment(apptData);
+      const newAppt = await useAppointmentStore.getState().addAppointment(apptData);
       sessionIds.push(newAppt.id);
     }
 
@@ -229,15 +227,15 @@ const usePackageStore = create<PackageState>((set, get) => ({
     return newEnrollment;
   },
 
-  assignPackageToPatient: (params) => {
-    const enrollment = get().enrollPatientInPackage(params);
+  assignPackageToPatient: async (params) => {
+    const enrollment = await get().enrollPatientInPackage(params);
     const appointments = useAppointmentStore.getState().appointments;
     return appointments.filter((a) => enrollment.sessionIds.includes(a.id));
   },
 
-  markSessionCompleted: (enrollmentId, sessionId) => {
+  markSessionCompleted: async (enrollmentId, sessionId) => {
     // 1. Update appointment status to Paid
-    useAppointmentStore.getState().updateStatus(sessionId, APPOINTMENT_STATUS.PAID);
+    await useAppointmentStore.getState().updateStatus(sessionId, APPOINTMENT_STATUS.PAID);
 
     // 2. Increment completedSessions in enrollment
     set((state) => {
@@ -261,12 +259,12 @@ const usePackageStore = create<PackageState>((set, get) => ({
     });
   },
 
-  cancelSession: (enrollmentId, sessionId, shiftRemaining = false) => {
+  cancelSession: async (enrollmentId, sessionId, shiftRemaining = false) => {
     const appointments = useAppointmentStore.getState().appointments;
     const canceledAppt = appointments.find((a) => a.id === sessionId);
 
     // Mark current session cancelled
-    useAppointmentStore.getState().updateStatus(sessionId, APPOINTMENT_STATUS.CANCELLED);
+    await useAppointmentStore.getState().updateStatus(sessionId, APPOINTMENT_STATUS.CANCELLED);
 
     if (shiftRemaining && canceledAppt) {
       const enrollment = get().getEnrollmentById(enrollmentId);
@@ -276,24 +274,24 @@ const usePackageStore = create<PackageState>((set, get) => ({
         enrollment.sessionIds.indexOf(sessionId) + 1
       );
 
-      futureSessionIds.forEach((sId) => {
+      for (const sId of futureSessionIds) {
         const appt = appointments.find((a) => a.id === sId);
         if (appt && appt.status !== APPOINTMENT_STATUS.CANCELLED) {
           const newDate = addDays(appt.date, enrollment.sessionInterval);
-          useAppointmentStore.getState().updateAppointment(sId, { date: newDate });
+          await useAppointmentStore.getState().updateAppointment(sId, { date: newDate });
         }
-      });
+      }
     }
   },
 
-  rescheduleSession: (enrollmentId, sessionId, newDate, newStartTime, shiftRemaining = false) => {
+  rescheduleSession: async (enrollmentId, sessionId, newDate, newStartTime, shiftRemaining = false) => {
     const appointments = useAppointmentStore.getState().appointments;
     const targetAppt = appointments.find((a) => a.id === sessionId);
     if (!targetAppt) return;
 
     const oldDate = targetAppt.date;
 
-    useAppointmentStore.getState().moveAppointment(
+    await useAppointmentStore.getState().moveAppointment(
       sessionId,
       newDate,
       newStartTime,
@@ -315,18 +313,18 @@ const usePackageStore = create<PackageState>((set, get) => ({
         const futureSessionIds = enrollment.sessionIds.slice(
           enrollment.sessionIds.indexOf(sessionId) + 1
         );
-        futureSessionIds.forEach((sId) => {
+        for (const sId of futureSessionIds) {
           const appt = appointments.find((a) => a.id === sId);
           if (appt && appt.status !== APPOINTMENT_STATUS.CANCELLED) {
             const shiftedDate = addDays(appt.date, dayDiff);
-            useAppointmentStore.getState().updateAppointment(sId, { date: shiftedDate });
+            await useAppointmentStore.getState().updateAppointment(sId, { date: shiftedDate });
           }
-        });
+        }
       }
     }
   },
 
-  pauseEnrollment: (enrollmentId) => {
+  pauseEnrollment: async (enrollmentId) => {
     const enrollment = get().getEnrollmentById(enrollmentId);
     if (!enrollment) return;
 
@@ -341,15 +339,15 @@ const usePackageStore = create<PackageState>((set, get) => ({
     // Update future sessions to Pending
     const today = todayISO();
     const appointments = useAppointmentStore.getState().appointments;
-    enrollment.sessionIds.forEach((sId) => {
+    for (const sId of enrollment.sessionIds) {
       const appt = appointments.find((a) => a.id === sId);
       if (appt && appt.date >= today && appt.status !== APPOINTMENT_STATUS.CANCELLED) {
-        useAppointmentStore.getState().updateStatus(sId, APPOINTMENT_STATUS.PENDING);
+        await useAppointmentStore.getState().updateStatus(sId, APPOINTMENT_STATUS.PENDING);
       }
-    });
+    }
   },
 
-  resumeEnrollment: (enrollmentId, newStartDate) => {
+  resumeEnrollment: async (enrollmentId, newStartDate) => {
     const enrollment = get().getEnrollmentById(enrollmentId);
     if (!enrollment) return;
 
@@ -368,13 +366,14 @@ const usePackageStore = create<PackageState>((set, get) => ({
       return appt && appt.status !== APPOINTMENT_STATUS.PAID && appt.status !== APPOINTMENT_STATUS.CANCELLED;
     });
 
-    remainingSessionIds.forEach((sId, index) => {
+    for (let index = 0; index < remainingSessionIds.length; index++) {
+      const sId = remainingSessionIds[index];
       const nextDate = addDays(newStartDate, index * enrollment.sessionInterval);
-      useAppointmentStore.getState().updateAppointment(sId, {
+      await useAppointmentStore.getState().updateAppointment(sId, {
         date: nextDate,
         status: APPOINTMENT_STATUS.CONFIRMED,
       });
-    });
+    }
   },
 }));
 

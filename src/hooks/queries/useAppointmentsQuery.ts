@@ -8,7 +8,7 @@ export function useAppointmentsQuery() {
   return useQuery<Appointment[]>({
     queryKey: queryKeys.appointments.all(),
     queryFn: () => appointmentService.getAll(),
-    initialData: () => dataStore.getData().appointments,
+    initialData: () => [...dataStore.getData().appointments],
   });
 }
 
