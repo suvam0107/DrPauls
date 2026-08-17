@@ -5,15 +5,18 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
-  ScrollView,
   StyleSheet,
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
+import FormField from '../shared/FormField';
 import PatientSearchInput from './PatientSearchInput';
 import AddPatientSheet from './AddPatientSheet';
 import { useTheme } from '../../theme/ThemeContext';
@@ -24,9 +27,7 @@ import {
   APPOINTMENT_STATUS,
   LEAD_STATUS,
 } from '../../constants';
-import useDoctorStore from '../../store/useDoctorStore';
 import useAppointmentStore from '../../store/useAppointmentStore';
-import useCenterStore from '../../store/useCenterStore';
 import useUIStore from '../../store/useUIStore';
 import {
   todayISO,
@@ -38,14 +39,17 @@ import {
   formatMonthYear,
   offsetMonth,
 } from '../../utils/dateUtils';
-import { Patient, Doctor } from '../../types';
+import { Patient } from '../../types';
 import {
   playAppointmentSuccessSound,
   playAppointmentFailureSound,
   playEnrollmentCreatedSound,
   playClickSound,
 } from '../../utils/feedback';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  CreateAppointmentSchema,
+  CreateAppointmentFormValues,
+} from '../../schemas';
 
 export interface InitialData {
   date?: string;
@@ -58,7 +62,6 @@ export interface CreateSheetFormProps {
   onClose: () => void;
 }
 
-import usePackageStore from '../../store/usePackageStore';
 import { useDoctorsQuery, useTherapistsQuery } from '../../hooks/queries/useDoctorsQuery';
 import { useCentersQuery } from '../../hooks/queries/useCentersQuery';
 import { usePackagesQuery } from '../../hooks/queries/usePackagesQuery';
@@ -82,123 +85,160 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
   const therapistsByService = (svc?: string) =>
     therapists.filter((t) => !svc || t.specialization === svc);
 
-  const [centerId, setCenterId] = useState(globalCenterId);
-  const [activeTab, setActiveTab] = useState('Normal'); // 'Normal' | 'Package'
-  const [selectedPackageId, setSelectedPackageId] = useState(packages[0]?.id || '');
-  const selectedPkg = packages.find((p) => p.id === selectedPackageId);
-
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
-
-  const [date, setDate] = useState(todayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [pickerMonth, setPickerMonth] = useState(todayISO());
+  const [pickerMonth, setPickerMonth] = useState(initialData?.date || todayISO());
 
-  // Filter doctors for the selected center
+  const initialCenterId = globalCenterId || centers[0]?.id || 'CC-001';
+
   const centerDoctors = useMemo(() => {
+    return allDoctors.filter((d) => {
+      if (!d.centerSchedule || d.centerSchedule.length === 0) return true;
+      return d.centerSchedule.some((cs) => cs.centerId === initialCenterId);
+    });
+  }, [allDoctors, initialCenterId]);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<CreateAppointmentFormValues>({
+    resolver: zodResolver(CreateAppointmentSchema),
+    defaultValues: {
+      activeTab: 'Normal',
+      centerId: initialCenterId,
+      patientId: '',
+      patientName: '',
+      patientMobile: '',
+      doctorId: initialData?.doctorId || centerDoctors[0]?.id || allDoctors[0]?.id || '',
+      date: initialData?.date || todayISO(),
+      startTime: initialData?.time || '10:00',
+      appointmentType: APPOINTMENT_TYPES[0],
+      serviceType: SERVICE_TYPES[0],
+      visitType: VISIT_TYPES[0],
+      therapistId: '',
+      packageId: packages[0]?.id || '',
+      sessionInterval: 7,
+      prePaymentRequired: false,
+      prePaymentAmount: '0',
+      remark: '',
+    },
+  });
+
+  const activeTab = watch('activeTab');
+  const centerId = watch('centerId');
+  const doctorId = watch('doctorId');
+  const date = watch('date');
+  const startTime = watch('startTime');
+  const serviceType = watch('serviceType');
+  const packageId = (watch as any)('packageId') || packages[0]?.id || '';
+  const sessionInterval = (watch as any)('sessionInterval') || 7;
+  const prePaymentRequired = watch('prePaymentRequired');
+
+  const selectedDoctor = allDoctors.find((d) => d.id === doctorId);
+  const selectedPkg = packages.find((p) => p.id === packageId);
+
+  // Doctors for currently active center in form
+  const activeCenterDoctors = useMemo(() => {
     return allDoctors.filter((d) => {
       if (!d.centerSchedule || d.centerSchedule.length === 0) return true;
       return d.centerSchedule.some((cs) => cs.centerId === centerId);
     });
   }, [allDoctors, centerId]);
 
-  const [doctorId, setDoctorId] = useState(initialData?.doctorId || centerDoctors[0]?.id || allDoctors[0]?.id || '');
-  const selectedDoctor = allDoctors.find((d) => d.id === doctorId);
+  // Sync package serviceType when package selected
+  useEffect(() => {
+    if (activeTab === 'Package' && selectedPkg) {
+      setValue('serviceType' as any, selectedPkg.serviceType as string);
+      setValue('appointmentType' as any, 'Package Session');
+    }
+  }, [activeTab, packageId, selectedPkg, setValue]);
+
+  // Sync initialData
+  useEffect(() => {
+    if (initialData?.date) setValue('date', initialData.date);
+    if (initialData?.doctorId) setValue('doctorId', initialData.doctorId);
+    if (initialData?.time) setValue('startTime', initialData.time);
+  }, [initialData, setValue]);
+
+  // Update doctor if center changes
+  useEffect(() => {
+    if (activeCenterDoctors.length > 0 && !activeCenterDoctors.some((d) => d.id === doctorId)) {
+      setValue('doctorId', activeCenterDoctors[0].id);
+    }
+  }, [centerId, activeCenterDoctors, doctorId, setValue]);
 
   // Available slots for selected doctor, date & center
   const availableSlots = useMemo(() => {
     return getDoctorAvailableSlots(selectedDoctor, date, centerId);
   }, [selectedDoctor, date, centerId]);
 
-  const [startTime, setStartTime] = useState(availableSlots[0]?.time || '10:00');
-  const [appointmentType, setAppointmentType] = useState(APPOINTMENT_TYPES[0]);
-  const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
-  const [therapistId, setTherapistId] = useState('');
-  const [visitType, setVisitType] = useState(VISIT_TYPES[0]);
-  const [sessionInterval, setSessionInterval] = useState<number>(7);
-
-  const [prePaymentRequired, setPrePaymentRequired] = useState(false);
-  const [prePaymentAmount, setPrePaymentAmount] = useState('0');
-  const [remark, setRemark] = useState('');
-  const [error, setError] = useState('');
-
-  // Sync package serviceType when package selected
-  useEffect(() => {
-    if (activeTab === 'Package' && selectedPkg) {
-      setServiceType(selectedPkg.serviceType as string);
-      setAppointmentType('Package Session');
-    }
-  }, [activeTab, selectedPackageId, selectedPkg]);
-
-  // Sync initialData
-  useEffect(() => {
-    if (initialData?.date) setDate(initialData.date);
-    if (initialData?.doctorId) setDoctorId(initialData.doctorId);
-  }, [initialData]);
-
   // Update time when availableSlots change
   useEffect(() => {
     if (availableSlots.length > 0) {
       if (!availableSlots.some((s) => s.time === startTime)) {
-        setStartTime(availableSlots[0].time);
+        setValue('startTime', availableSlots[0].time);
       }
     }
-  }, [availableSlots]);
-
-  // Update doctor if center changes
-  useEffect(() => {
-    if (centerDoctors.length > 0 && !centerDoctors.some((d) => d.id === doctorId)) {
-      setDoctorId(centerDoctors[0].id);
-    }
-  }, [centerId, centerDoctors]);
+  }, [availableSlots, startTime, setValue]);
 
   const availableTherapists = therapistsByService(serviceType);
   const isDoctorAvailableToday = isDoctorAvailableOnDate(selectedDoctor, date, centerId);
 
-  const handleCreate = async () => {
-    if (!selectedPatient) {
-      setError('Please select or add a patient');
-      playAppointmentFailureSound();
-      return;
+  const handleSelectPatient = (patient: Patient | null) => {
+    setSelectedPatient(patient);
+    if (patient) {
+      setValue('patientId', patient.id, { shouldValidate: true });
+      setValue('patientName', patient.name, { shouldValidate: true });
+      setValue('patientMobile', patient.mobile || '', { shouldValidate: true });
+    } else {
+      setValue('patientId', '', { shouldValidate: true });
+      setValue('patientName', '');
+      setValue('patientMobile', '');
     }
-    if (!doctorId) {
-      setError('Please select a doctor');
-      playAppointmentFailureSound();
-      return;
-    }
-    if (date < todayISO()) {
-      setError('Cannot create appointment for a past date');
+  };
+
+  const handleCreate = handleSubmit(async (data) => {
+    clearErrors('root');
+
+    if (data.date < todayISO()) {
+      setError('root', { message: 'Cannot create appointment for a past date' });
       playAppointmentFailureSound();
       return;
     }
     if (!isDoctorAvailableToday) {
-      setError(`${selectedDoctor?.name || 'Doctor'} is not available on this date at this center`);
+      setError('root', { message: `${selectedDoctor?.name || 'Doctor'} is not available on this date at this center` });
       playAppointmentFailureSound();
       return;
     }
-    if (!startTime) {
-      setError('Please select a valid time slot');
+    if (!data.startTime) {
+      setError('root', { message: 'Please select a valid time slot' });
       playAppointmentFailureSound();
       return;
     }
 
-    setError('');
-    const endTime = addMins(startTime, 30);
+    const endTime = addMins(data.startTime, 30);
 
     // Conflict Validation
     const val = useAppointmentStore
       .getState()
-      .validateSlot(date, startTime, endTime, doctorId);
+      .validateSlot(data.date, data.startTime, endTime, data.doctorId);
 
     if (!val.valid) {
-      setError(val.message || 'Time slot collision detected');
+      setError('root', { message: val.message || 'Time slot collision detected' });
       playAppointmentFailureSound();
       return;
     }
 
     // Check Max Patients Per Day Warning
     const existingCount = appointments.filter(
-      (a) => a.doctorId === doctorId && a.date === date && a.status !== APPOINTMENT_STATUS.CANCELLED
+      (a) => a.doctorId === data.doctorId && a.date === data.date && a.status !== APPOINTMENT_STATUS.CANCELLED
     ).length;
 
     const maxLimit = selectedDoctor?.maxPatientsPerDay || 20;
@@ -212,64 +252,69 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
       });
     }
 
-    if (activeTab === 'Package' && selectedPkg) {
-      // Auto-schedule package sessions and create enrollment
-      const enrollment = await enrollPatientMutation.mutateAsync({
-        packageId: selectedPkg.id,
-        patientId: selectedPatient.id,
-        patientName: selectedPatient.name,
-        patientMobile: selectedPatient.mobile,
-        doctorId,
-        centerId,
-        therapistId,
-        therapistName: availableTherapists.find((t) => t.id === therapistId)?.name || '',
-        startDate: date,
-        startTime,
-        sessionInterval,
-      });
+    try {
+      if (data.activeTab === 'Package' && selectedPkg) {
+        const enrollment = await enrollPatientMutation.mutateAsync({
+          packageId: selectedPkg.id,
+          patientId: data.patientId,
+          patientName: data.patientName,
+          patientMobile: data.patientMobile,
+          doctorId: data.doctorId,
+          centerId: data.centerId,
+          therapistId: data.therapistId || '',
+          therapistName: availableTherapists.find((t) => t.id === data.therapistId)?.name || '',
+          startDate: data.date,
+          startTime: data.startTime,
+          sessionInterval: data.sessionInterval,
+        });
 
-      playEnrollmentCreatedSound();
-      Toast.show({
-        type: 'success',
-        text1: 'Package Enrollment Created',
-        text2: `${selectedPkg.totalSessions} sessions auto-scheduled every ${sessionInterval} days (${enrollment.enrollmentId})`,
-        position: 'bottom',
-      });
-    } else {
-      await addAppointmentMutation.mutateAsync({
-        centerId,
-        patientId: selectedPatient.id,
-        patientName: selectedPatient.name,
-        patientMobile: selectedPatient.mobile,
-        doctorId,
-        doctorName: selectedDoctor?.name || '',
-        date,
-        startTime,
-        endTime,
-        appointmentType,
-        serviceType,
-        visitType,
-        therapistId,
-        therapistName: availableTherapists.find((t) => t.id === therapistId)?.name || '',
-        isPackage: false,
-        prePaymentRequired,
-        prePaymentAmount: prePaymentRequired ? parseFloat(prePaymentAmount) || 0 : 0,
-        status: APPOINTMENT_STATUS.SCHEDULED,
-        leadStatus: LEAD_STATUS.NEW,
-        remark,
-      });
+        playEnrollmentCreatedSound();
+        Toast.show({
+          type: 'success',
+          text1: 'Package Enrollment Created',
+          text2: `${selectedPkg.totalSessions} sessions auto-scheduled every ${data.sessionInterval} days (${enrollment.enrollmentId})`,
+          position: 'bottom',
+        });
+      } else if (data.activeTab === 'Normal') {
+        await addAppointmentMutation.mutateAsync({
+          centerId: data.centerId,
+          patientId: data.patientId,
+          patientName: data.patientName,
+          patientMobile: data.patientMobile,
+          doctorId: data.doctorId,
+          doctorName: selectedDoctor?.name || '',
+          date: data.date,
+          startTime: data.startTime,
+          endTime,
+          appointmentType: data.appointmentType,
+          serviceType: data.serviceType,
+          visitType: data.visitType,
+          therapistId: data.therapistId || '',
+          therapistName: availableTherapists.find((t) => t.id === data.therapistId)?.name || '',
+          isPackage: false,
+          prePaymentRequired: data.prePaymentRequired,
+          prePaymentAmount: data.prePaymentRequired ? parseFloat(data.prePaymentAmount) || 0 : 0,
+          status: APPOINTMENT_STATUS.SCHEDULED,
+          leadStatus: LEAD_STATUS.NEW,
+          remark: data.remark || '',
+        });
 
-      playAppointmentSuccessSound();
-      Toast.show({
-        type: 'success',
-        text1: 'Appointment Created',
-        text2: `${selectedPatient.name} booked with ${selectedDoctor?.name} at ${startTime}`,
-        position: 'bottom',
-      });
+        playAppointmentSuccessSound();
+        Toast.show({
+          type: 'success',
+          text1: 'Appointment Created',
+          text2: `${data.patientName} booked with ${selectedDoctor?.name} at ${data.startTime}`,
+          position: 'bottom',
+        });
+      }
+
+      reset();
+      setSelectedPatient(null);
+      onClose();
+    } catch (err: any) {
+      setError('root', { message: err?.message || 'Failed to create appointment.' });
     }
-
-    onClose();
-  };
+  });
 
   const monthGridCells = useMemo(() => getMonthGrid(pickerMonth), [pickerMonth]);
 
@@ -286,7 +331,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
         <View style={styles.topHeader}>
           <Text style={[styles.title, { color: colors.text }]}>Create Appointment</Text>
           <View style={[styles.tabGroup, { backgroundColor: colors.surface }]}>
-            {['Normal', 'Package'].map((tab) => (
+            {(['Normal', 'Package'] as const).map((tab) => (
               <TouchableOpacity
                 key={tab}
                 style={[
@@ -295,7 +340,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
                 ]}
                 onPress={() => {
                   playClickSound();
-                  setActiveTab(tab);
+                  setValue('activeTab', tab, { shouldValidate: true });
                 }}
               >
                 <Text
@@ -311,57 +356,83 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
           </View>
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {errors.root?.message ? (
+          <View style={[styles.errorBanner, { backgroundColor: colors.dangerBg }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
+            <Text style={[styles.errorBannerText, { color: colors.danger }]}>{errors.root.message}</Text>
+          </View>
+        ) : null}
 
         {/* Center Switcher inside form */}
         <View style={styles.field}>
-          <Select
-            label="Clinic Center"
-            value={centerId}
-            options={centers.map((c) => ({ label: c.cc_name, value: c.id }))}
-            onChange={(val) => {
-              playClickSound();
-              setCenterId(val);
-            }}
+          <Controller
+            control={control}
+            name="centerId"
+            render={({ field: { onChange, value } }) => (
+              <Select
+                label="Clinic Center"
+                value={value}
+                options={centers.map((c) => ({ label: c.cc_name, value: c.id }))}
+                onChange={(val) => {
+                  playClickSound();
+                  onChange(val);
+                }}
+              />
+            )}
           />
         </View>
 
         {/* Patient Search & Add */}
         <PatientSearchInput
           selectedPatient={selectedPatient}
-          onSelectPatient={setSelectedPatient}
+          onSelectPatient={handleSelectPatient}
           onAddNewPress={() => setShowAddPatient(true)}
         />
+        {errors.patientId?.message ? (
+          <Text style={[styles.fieldErrorText, { color: colors.danger }]}>{errors.patientId.message}</Text>
+        ) : null}
 
         {/* Package Selector & Interval if Package Mode */}
         {activeTab === 'Package' && (
           <View style={styles.row}>
             <View style={{ flex: 2 }}>
-              <Select
-                label="Select Package *"
-                value={selectedPackageId}
-                options={packages.map((p) => ({
-                  label: `${p.name} (${p.serviceType} • ₹${p.price.toLocaleString()})`,
-                  value: p.id,
-                }))}
-                onChange={(val) => {
-                  playClickSound();
-                  setSelectedPackageId(val);
-                }}
+              <Controller
+                control={control}
+                name={"packageId" as any}
+                render={({ field: { onChange, value } }) => (
+                  <Select
+                    label="Select Package *"
+                    value={value || packages[0]?.id || ''}
+                    options={packages.map((p) => ({
+                      label: `${p.name} (${p.serviceType} • ₹${p.price.toLocaleString()})`,
+                      value: p.id,
+                    }))}
+                    onChange={(val) => {
+                      playClickSound();
+                      onChange(val);
+                    }}
+                  />
+                )}
               />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Select
-                label="Session Interval"
-                value={String(sessionInterval)}
-                options={[
-                  { label: 'Every 7 Days', value: '7' },
-                  { label: 'Every 14 Days', value: '14' },
-                  { label: 'Every 21 Days', value: '21' },
-                  { label: 'Every 30 Days', value: '30' },
-                ]}
-                onChange={(val) => setSessionInterval(parseInt(val, 10))}
+              <Controller
+                control={control}
+                name={"sessionInterval" as any}
+                render={({ field: { onChange, value } }) => (
+                  <Select
+                    label="Session Interval"
+                    value={String(value || 7)}
+                    options={[
+                      { label: 'Every 7 Days', value: '7' },
+                      { label: 'Every 14 Days', value: '14' },
+                      { label: 'Every 21 Days', value: '21' },
+                      { label: 'Every 30 Days', value: '30' },
+                    ]}
+                    onChange={(val) => onChange(parseInt(val, 10))}
+                  />
+                )}
               />
             </View>
           </View>
@@ -376,7 +447,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
               </Text>
               <Text style={[styles.pricingValue, { color: colors.primary }]}>
                 {activeTab === 'Package'
-                  ? `Total: ₹${selectedPkg?.price.toLocaleString()} (${selectedPkg?.totalSessions} Sessions)`
+                  ? `Total: ₹${selectedPkg?.price?.toLocaleString() || 0} (${selectedPkg?.totalSessions || 0} Sessions)`
                   : `Doctor Consult Fee: ₹${selectedDoctor?.consultFee || 500}`}
               </Text>
             </View>
@@ -393,25 +464,37 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
         {/* Doctor & Service */}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Select
-              label="Doctor"
-              value={doctorId}
-              options={centerDoctors.map((d) => ({
-                label: `${d.name} (${d.specialty})`,
-                value: d.id,
-              }))}
-              onChange={(val) => {
-                playClickSound();
-                setDoctorId(val);
-              }}
+            <Controller
+              control={control}
+              name="doctorId"
+              render={({ field: { onChange, value } }) => (
+                <Select
+                  label="Doctor"
+                  value={value}
+                  options={activeCenterDoctors.map((d) => ({
+                    label: `${d.name} (${d.specialty})`,
+                    value: d.id,
+                  }))}
+                  onChange={(val) => {
+                    playClickSound();
+                    onChange(val);
+                  }}
+                />
+              )}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Select
-              label={activeTab === 'Package' ? 'Service Type (Packaged)' : 'Service Type'}
-              value={serviceType}
-              options={SERVICE_TYPES}
-              onChange={setServiceType}
+            <Controller
+              control={control}
+              name={"serviceType" as any}
+              render={({ field: { onChange, value } }) => (
+                <Select
+                  label={activeTab === 'Package' ? 'Service Type (Packaged)' : 'Service Type'}
+                  value={value || SERVICE_TYPES[0]}
+                  options={SERVICE_TYPES}
+                  onChange={onChange}
+                />
+              )}
             />
           </View>
         </View>
@@ -440,15 +523,21 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
 
           {/* Time Slot Selector */}
           <View style={{ flex: 1 }}>
-            <Select
-              label="Time Slot"
-              value={startTime}
-              options={
-                availableSlots.length > 0
-                  ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
-                  : [{ label: 'No slots available', value: '' }]
-              }
-              onChange={(val) => setStartTime(val)}
+            <Controller
+              control={control}
+              name="startTime"
+              render={({ field: { onChange, value } }) => (
+                <Select
+                  label="Time Slot"
+                  value={value}
+                  options={
+                    availableSlots.length > 0
+                      ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
+                      : [{ label: 'No slots available', value: '' }]
+                  }
+                  onChange={onChange}
+                />
+              )}
             />
           </View>
         </View>
@@ -466,22 +555,34 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
         {/* Appointment Type & Therapist */}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Select
-              label="Appointment Type"
-              value={appointmentType}
-              options={APPOINTMENT_TYPES}
-              onChange={setAppointmentType}
+            <Controller
+              control={control}
+              name={"appointmentType" as any}
+              render={({ field: { onChange, value } }) => (
+                <Select
+                  label="Appointment Type"
+                  value={value || APPOINTMENT_TYPES[0]}
+                  options={APPOINTMENT_TYPES}
+                  onChange={onChange}
+                />
+              )}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Select
-              label="Therapist (Optional)"
-              value={therapistId}
-              options={[
-                { label: 'None', value: '' },
-                ...availableTherapists.map((t) => ({ label: `${t.name} (${t.specialization})`, value: t.id })),
-              ]}
-              onChange={setTherapistId}
+            <Controller
+              control={control}
+              name={"therapistId" as any}
+              render={({ field: { onChange, value } }) => (
+                <Select
+                  label={activeTab === 'Package' ? 'Therapist' : 'Therapist (Optional)'}
+                  value={value || ''}
+                  options={[
+                    { label: 'None', value: '' },
+                    ...availableTherapists.map((t) => ({ label: `${t.name} (${t.specialization})`, value: t.id })),
+                  ]}
+                  onChange={onChange}
+                />
+              )}
             />
           </View>
         </View>
@@ -495,56 +596,74 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
                 Require upfront payment for this booking
               </Text>
             </View>
-            <Switch
-              value={prePaymentRequired}
-              onValueChange={(val) => {
-                playClickSound();
-                setPrePaymentRequired(val);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={prePaymentRequired ? '#FFFFFF' : '#F4F3F4'}
+            <Controller
+              control={control}
+              name="prePaymentRequired"
+              render={({ field: { onChange, value } }) => (
+                <Switch
+                  value={value}
+                  onValueChange={(val) => {
+                    playClickSound();
+                    onChange(val);
+                  }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={value ? '#FFFFFF' : '#F4F3F4'}
+                />
+              )}
             />
           </View>
 
           {prePaymentRequired && (
             <View style={{ marginTop: 10 }}>
-              <Text style={[styles.label, { color: colors.textMuted }]}>Amount (₹)</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text }]}
-                value={prePaymentAmount}
-                onChangeText={setPrePaymentAmount}
-                onFocus={expandSheet}
-                keyboardType="numeric"
-                placeholder="500"
-                placeholderTextColor={colors.textMuted}
+              <Controller
+                control={control}
+                name="prePaymentAmount"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <FormField label="Amount (₹)" error={errors.prePaymentAmount?.message}>
+                    <TextInput
+                      style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text }]}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      onFocus={expandSheet}
+                      keyboardType="numeric"
+                      placeholder="500"
+                      placeholderTextColor={colors.textMuted}
+                    />
+                  </FormField>
+                )}
               />
             </View>
           )}
         </View>
 
         {/* Remark / Notes */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Remark / Clinical Notes</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-                color: colors.text,
-                height: 70,
-                textAlignVertical: 'top',
-              },
-            ]}
-            value={remark}
-            onChangeText={setRemark}
-            onFocus={expandSheet}
-            placeholder="Add optional clinical notes..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            numberOfLines={3}
-          />
-        </View>
+        <Controller
+          control={control}
+          name="remark"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <FormField label="Remark / Clinical Notes" error={errors.remark?.message}>
+              <TextInput
+                style={[
+                  styles.textArea,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                  },
+                ]}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                onFocus={expandSheet}
+                placeholder="Add optional clinical notes..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={3}
+              />
+            </FormField>
+          )}
+        />
 
         {/* Submit Button */}
         <TouchableOpacity
@@ -618,7 +737,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
                       disabled={isPast}
                       onPress={() => {
                         playClickSound();
-                        setDate(cell.date);
+                        setValue('date', cell.date, { shouldValidate: true });
                         setShowDatePicker(false);
                       }}
                     >
@@ -653,7 +772,7 @@ function CreateSheetForm({ initialData, onClose }: CreateSheetFormProps) {
       <AddPatientSheet
         visible={showAddPatient}
         onClose={() => setShowAddPatient(false)}
-        onPatientAdded={(p) => setSelectedPatient(p)}
+        onPatientAdded={(p) => handleSelectPatient(p)}
       />
     </>
   );
@@ -734,18 +853,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  warningBox: {
+  errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
-    gap: 8,
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+    gap: 6,
+  },
+  errorBannerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  fieldErrorText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: -8,
+    marginBottom: 8,
   },
   errorBox: {
     flexDirection: 'row',
@@ -774,20 +900,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  warningText: {
-    fontSize: 12,
-    color: '#D97706',
-    fontWeight: '600',
-    flex: 1,
-  },
   row: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
-  },
-  switchCol: {
-    flex: 1,
-    justifyContent: 'center',
   },
   field: {
     marginBottom: 12,

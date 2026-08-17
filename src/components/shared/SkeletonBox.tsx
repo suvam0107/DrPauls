@@ -1,6 +1,14 @@
-import React from 'react';
-import { View, ViewStyle, StyleProp } from 'react-native';
-import { Skeleton } from 'moti/skeleton';
+import React, { useEffect, useState } from 'react';
+import { View, ViewStyle, StyleProp, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+  interpolate,
+} from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
 
 export interface SkeletonBoxProps {
@@ -20,42 +28,105 @@ export default function SkeletonBox({
   borderRadius = 8,
   radius,
   style,
-  colors: customColors,
-  duration = 1200,
-  backgroundSize = 3,
+  duration = 1400,
 }: SkeletonBoxProps) {
   const { colors: themeColors } = useTheme();
+  const [layoutWidth, setLayoutWidth] = useState(300);
 
-  const colorMode = themeColors.dark ? 'dark' : 'light';
+  const progress = useSharedValue(0);
 
-  // High-contrast shimmer color stops [base, highlight, base]
-  const defaultColors = themeColors.dark
-    ? ['#0E131F', '#2C3A59', '#0E131F']
-    : ['#E4E4E7', '#FFFFFF', '#E4E4E7'];
+  useEffect(() => {
+    progress.value = 0;
+    progress.value = withRepeat(
+      withTiming(1, {
+        duration,
+        easing: Easing.bezier(0.35, 0, 0.25, 1),
+      }),
+      -1,
+      false
+    );
+  }, [duration, progress]);
 
-  const skeletonColors = customColors ?? defaultColors;
+  // Beam width spans the full element width (minimum 120px for small circles/badges)
+  const beamWidth = Math.max(layoutWidth, 120);
 
-  const skeleton = (
-    <Skeleton
-      colorMode={colorMode}
-      colors={skeletonColors}
-      width={width as any}
-      height={height as any}
-      radius={radius ?? borderRadius}
-      backgroundSize={backgroundSize}
-      transition={{
-        translateX: {
-          type: 'timing',
-          duration,
-        },
+  const animatedStyle = useAnimatedStyle(() => {
+    // Start strictly outside the left bound (-beamWidth) and finish strictly outside the right bound (+layoutWidth)
+    const translateX = interpolate(
+      progress.value,
+      [0, 1],
+      [-beamWidth, layoutWidth]
+    );
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
+  const baseRadius =
+    radius === 'round'
+      ? typeof height === 'number'
+        ? height / 2
+        : 9999
+      : typeof radius === 'number'
+      ? radius
+      : borderRadius;
+
+  const baseBg = themeColors.dark ? '#1A2133' : '#E2E8F0';
+
+  // Transparent feathering on edges so the beam seamlessly enters and leaves the container
+  const gradientColors = themeColors.dark
+    ? ([
+        'rgba(255, 255, 255, 0)',
+        'rgba(255, 255, 255, 0.04)',
+        'rgba(255, 255, 255, 0.14)',
+        'rgba(255, 255, 255, 0.04)',
+        'rgba(255, 255, 255, 0)',
+      ] as const)
+    : ([
+        'rgba(255, 255, 255, 0)',
+        'rgba(255, 255, 255, 0.4)',
+        'rgba(255, 255, 255, 0.95)',
+        'rgba(255, 255, 255, 0.4)',
+        'rgba(255, 255, 255, 0)',
+      ] as const);
+
+  return (
+    <View
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0 && Math.abs(w - layoutWidth) > 1) {
+          setLayoutWidth(w);
+        }
       }}
-    />
+      style={[
+        {
+          width: width as any,
+          height: height as any,
+          borderRadius: baseRadius,
+          overflow: 'hidden',
+          backgroundColor: baseBg,
+        },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: beamWidth,
+          },
+          animatedStyle,
+        ]}
+      >
+        <LinearGradient
+          colors={gradientColors as any}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </Animated.View>
+    </View>
   );
-
-  if (style) {
-    return <View style={style}>{skeleton}</View>;
-  }
-
-  return skeleton;
 }
-

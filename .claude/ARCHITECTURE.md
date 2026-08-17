@@ -17,6 +17,7 @@
 - **Full TypeScript Security**: Strict TypeScript configuration (`"strict": true`, `"noImplicitAny": true`) with central domain interfaces in `src/types/index.ts`.
 - **JSON File-System Data Layer & Axios Interceptor Engine**: All domain records originate from static JSON files (`assets/data/*.json`). Data access is routed through an elaborate Axios interceptor layer (`src/api/`) with custom in-memory adapter routing requests to `/nested` and `/nonnested` endpoint families keyed by `spc`.
 
+- **React Hook Form + Zod Form Validation Engine**: All form surfaces across the application (`AuthScreen`, `AddPatientSheet`, `AddDoctorSheet`, `CreateAppointmentSheet`, `RescheduleModal`) utilize a standardized **React Hook Form + Zod** architecture with `@hookform/resolvers/zod`. Domain schemas are centrally maintained under `src/schemas/` with strict type safety (`z.infer`). Custom controls (`Select`, day chips, calendar date pickers, switches, `PatientSearchInput`) are seamlessly wrapped via RHF's `<Controller>` pattern. Form fields utilize a reusable `FormField.tsx` wrapper for consistent label and inline error display, while server/business logic validations (doctor availability, slot conflict detection) surface dynamically via `setError('root')` error banners.
 - **TanStack Query + Zustand Coexistence**: Server-state (remote data fetching, caching, background refetch, deduplication, loading/error state) is owned by **TanStack Query** (@tanstack/react-query). Client/UI state (theme, activeCenterId, modals, auth token) and write-through optimistic mutations are owned by **Zustand**. Screens and components consume data exclusively via custom query hooks (src/hooks/queries/) and mutation hooks (src/hooks/mutations/). Zustand stores no longer expose fetch* methods or loading flags — those responsibilities belong to TanStack Query. Pull-to-refresh is handled by queryClient.invalidateQueries() in useRefresh.ts. Query keys are centralized in src/api/queryKeys.ts (no magic strings). staleTime = 2 min, gcTime = 10 min. For entity list queries, initialData is seeded from dataStore.getData() for zero-flicker instant render. For detail/secondary queries, skeleton loaders are shown while isLoading = true.
 - **Debounced Server-Side Search Architecture**: Search inputs across all screens (`SearchInput`, `PatientSearchInput`, `PatientListScreen`, `AppointmentsScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `PastAppointmentsScreen`, `DoctorScreen`) utilize controlled input components powered by a custom `useDebounce` hook (200ms delay, 1-character threshold). Keystrokes update local UI state immediately for responsive typing, while debounced values trigger TanStack Query server-side search hooks (`usePatientSearchQuery`, `usePackageSearchQuery`, `useAppointmentSearchQuery`, `useEnrollmentSearchQuery`, `useDoctorSearchQuery`) starting on the very first character typed. Uncontrolled `defaultValue` re-render issues are eliminated. Loading states display an activity indicator inside the input suffix and skeleton loading cards during active fetches.
 - **Robinhood-Style OLED Dark Aesthetics**: Deep pitch-black background (`#000000`), elevated dark card surfaces (`#131722`), sleek subtle dark borders (`#1E2432`), high-contrast crisp white typography (`#FFFFFF`), and high-energy electric Robinhood accent tokens (`#3875F6` blue, `#00C805` emerald green, `#FF9500` amber, `#FF3B30` red).
@@ -83,6 +84,13 @@ DrPauls/
     │       ├── usePatientMutations.ts      # add, update patient
     │       ├── useDoctorMutations.ts       # add, update doctor
     │       └── usePackageMutations.ts      # enroll, markCompleted, cancel/reschedule session, pause/resume
+    ├── schemas/                   # Zod Validation Schemas (@DataEngineer & @Frontend)
+    │   ├── index.ts               # Barrel export for validation schemas
+    │   ├── authSchema.ts          # Sign In form schema & inferred types
+    │   ├── patientSchema.ts       # Quick patient registration schema
+    │   ├── doctorSchema.ts        # Doctor registration & schedule schema
+    │   ├── appointmentSchema.ts   # Discriminated union appointment creation schema (Normal vs Package)
+    │   └── rescheduleSchema.ts    # Appointment reschedule & slot change schema
     ├── types/
     │   └── index.ts               # Central TypeScript type definitions & interfaces (Center, Doctor, Appointment)
     ├── components/
@@ -111,6 +119,7 @@ DrPauls/
     │       ├── BottomSheet.tsx    # @gorhom/bottom-sheet wrapper with dual snap points & backdrop
     │       ├── CenterSwitchSheet.tsx # Bottom sheet for switching clinic center
     │       ├── ForgotPasswordModal.tsx# Modal dialog directing password resets to admin email with one-tap copy
+    │       ├── FormField.tsx      # Reusable typed form field wrapper with inline error display
     │       ├── QuickAddPopup.tsx  # Floating popup above navbar with New Appt, New Patient & New Doctor options
     │       ├── ExitConfirmationModal.tsx  # Theme-aligned exit confirmation modal dialog
     │       ├── LogoutConfirmationModal.tsx# Theme-aligned sign out confirmation modal dialog

@@ -6,6 +6,26 @@
 ---
 
 ## Last Updated
+`2026-08-17` — Completed **React Hook Form + Zod Form Engine Migration (`@DataEngineer`, `@Frontend`, `@UXEngineer`)**:
+1. **Installed Form Stack**: Installed `react-hook-form`, `zod`, and `@hookform/resolvers` via Expo SDK 54 package manager.
+2. **Domain Schemas (`src/schemas/`)**:
+   - `authSchema.ts` (`AuthSchema`, `AuthFormValues`)
+   - `patientSchema.ts` (`AddPatientSchema`, `AddPatientFormValues`)
+   - `doctorSchema.ts` (`AddDoctorSchema`, `AddDoctorFormValues`)
+   - `appointmentSchema.ts` (`CreateAppointmentSchema` with `z.discriminatedUnion` on `activeTab`, `NormalAppointmentSchema`, `PackageAppointmentSchema`)
+   - `rescheduleSchema.ts` (`RescheduleSchema`, `RescheduleFormValues`)
+   - `index.ts` barrel export
+3. **Shared Form Component (`src/components/shared/FormField.tsx`)**: Built a reusable, theme-aware typed `FormField` component for consistent label, required asterisk, input slot, and inline error styling.
+4. **Complete Form Migration (5 Form Surfaces)**:
+   - `AuthScreen.tsx` — RHF `useForm` + `Controller` with inline field errors and demo account auto-population.
+   - `AddPatientSheet.tsx` — RHF `useForm` + `Controller` + `FormField` with phone regex validation and instant reset.
+   - `AddDoctorSheet.tsx` — Full 11-field RHF migration with `Controller` for `Select`, `Switch`, and interactive day chip selection.
+   - `CreateAppointmentSheet.tsx` — Dual-mode Normal / Package discriminated union schema with patient search, package interval, pricing calculation, and slot conflict guards.
+   - `RescheduleModal.tsx` — RHF `useForm` + `Controller` with calendar date picker and doctor availability validations.
+5. **Seamless Native Left-to-Right Gradient Shimmer Engine (`SkeletonBox.tsx`)**: Built a continuous, seamless left-to-right gradient sweep in `SkeletonBox.tsx` using `expo-linear-gradient` and `react-native-reanimated`. The beam traverses from strictly `-beamWidth` (off-screen left) to `+layoutWidth` (off-screen right) with transparent gradient feathered borders and cubic bezier momentum easing (`Easing.bezier(0.35, 0, 0.25, 1)`), eliminating any abrupt visual looping or jump.
+6. **Deduplicated React Engine**: `npm ls react` returns 0 errors with 100% deduplication to `react@19.1.0`.
+7. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors** across the entire codebase.
+
 `2026-08-17` — Fixed **Pie / Donut Slice Touch Angle Alignment (`@Frontend`)**:
 1. **Geometric Angle Alignment (`findSliceFromTouch` in `ReportsScreen.tsx`)**:
    - Realigned the canvas touch angle math to match Skia's `Path.arcToOval` layout geometry (which begins at `0°` / 3 o'clock / East and rotates clockwise).
@@ -204,12 +224,24 @@ src/components/package/PackageEnrollmentDetailSheet.tsx
 
 ## Status
 
+### React Hook Form + Zod Form Engine Migration
+- [x] Installed `react-hook-form`, `zod`, and `@hookform/resolvers`
+- [x] Created `src/schemas/` directory with 5 domain schemas and barrel export
+- [x] Created `FormField.tsx` shared component for inline error display
+- [x] Migrated `AuthScreen.tsx` (Sign In)
+- [x] Migrated `AddPatientSheet.tsx` (Quick Patient Registration)
+- [x] Migrated `AddDoctorSheet.tsx` (Doctor Registration)
+- [x] Migrated `CreateAppointmentSheet.tsx` (Normal & Package Appointment Creation)
+- [x] Migrated `RescheduleModal.tsx` (Appointment Reschedule)
+- [x] Zero TypeScript errors (`npx tsc --noEmit`)
+
 ### Infrastructure & Dependencies
 - [x] Full TypeScript strict mode (`tsconfig.json`, `src/types/index.ts`)
 - [x] Expo SDK 54.0.36
 - [x] `@gorhom/bottom-sheet`, `react-native-keyboard-controller`, `expo-clipboard` installed
 - [x] `react-native-svg` (required by `SessionProgressRing.tsx`)
 - [x] `@tanstack/react-query` v5 installed
+- [x] `react-hook-form`, `zod`, `@hookform/resolvers` installed
 - [x] All screens & components type-checked with zero errors (`npx tsc --noEmit`)
 
 ### TanStack Query Migration

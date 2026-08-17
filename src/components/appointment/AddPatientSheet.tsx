@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { useBottomSheet } from '../shared/BottomSheet';
 import Select from '../shared/Select';
+import FormField from '../shared/FormField';
 import { useTheme } from '../../theme/ThemeContext';
 import { GENDERS, ENQUIRY_SOURCE } from '../../constants';
-import usePatientStore from '../../store/usePatientStore';
 import { Patient, Gender } from '../../types';
-import { Ionicons } from '@expo/vector-icons';
-
+import { playClickSound, playAppointmentSuccessSound } from '../../utils/feedback';
+import { AddPatientSchema, AddPatientFormValues } from '../../schemas';
 import { useAddPatientMutation } from '../../hooks/mutations/usePatientMutations';
 
 export interface AddPatientSheetProps {
@@ -23,91 +26,155 @@ function AddPatientForm({ onClose, onPatientAdded, onCreated }: Omit<AddPatientS
   const { expandSheet } = useBottomSheet();
   const addPatientMutation = useAddPatientMutation();
 
-  const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [gender, setGender] = useState<string>('Male');
-  const [enquirySource, setEnquirySource] = useState('Walk-in');
-  const [error, setError] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<AddPatientFormValues>({
+    resolver: zodResolver(AddPatientSchema),
+    defaultValues: {
+      name: '',
+      mobile: '',
+      gender: 'Male',
+      enquirySource: 'Walk-in',
+    },
+  });
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      setError('Patient name is required');
-      return;
+  const handleSave = handleSubmit(async (data) => {
+    clearErrors('root');
+    try {
+      const newPatient = await addPatientMutation.mutateAsync({
+        name: data.name.trim(),
+        mobile: data.mobile.trim(),
+        gender: data.gender as Gender,
+        enquirySource: data.enquirySource,
+        parentDetails: [],
+        therapistDetails: [],
+      });
+
+      playAppointmentSuccessSound();
+      if (onPatientAdded) onPatientAdded(newPatient);
+      if (onCreated) onCreated(newPatient.id);
+      reset();
+      onClose();
+    } catch (err: any) {
+      setError('root', { message: err?.message || 'Failed to create patient.' });
     }
-    if (!mobile.trim() || mobile.trim().length < 10) {
-      setError('Enter a valid 10-digit mobile number');
-      return;
-    }
-
-    setError('');
-    const newPatient = await addPatientMutation.mutateAsync({
-      name: name.trim(),
-      mobile: mobile.trim(),
-      gender: gender as Gender,
-      enquirySource,
-      parentDetails: [],
-      therapistDetails: [],
-    });
-
-    if (onPatientAdded) onPatientAdded(newPatient);
-    if (onCreated) onCreated(newPatient.id);
-    setName('');
-    setMobile('');
-    onClose();
-  };
+  });
 
   return (
-    <BottomSheetScrollView style={{ paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 220 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <BottomSheetScrollView
+      style={{ paddingHorizontal: 16 }}
+      contentContainerStyle={{ paddingBottom: 220 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={[styles.title, { color: colors.text }]}>Quick Patient Registration</Text>
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {errors.root?.message ? (
+        <View style={[styles.errorBanner, { backgroundColor: colors.dangerBg }]}>
+          <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
+          <Text style={[styles.errorBannerText, { color: colors.danger }]}>{errors.root.message}</Text>
+        </View>
+      ) : null}
 
-      <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Patient Name *</Text>
-        <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-          value={name}
-          onChangeText={setName}
-          onFocus={expandSheet}
-          placeholder="e.g. Rahul Sharma"
-          placeholderTextColor={colors.textMuted}
-        />
-      </View>
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <FormField label="Patient Name" required error={errors.name?.message}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: errors.name ? colors.danger : colors.border,
+                  backgroundColor: colors.surface,
+                },
+              ]}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              onFocus={expandSheet}
+              placeholder="e.g. Rahul Sharma"
+              placeholderTextColor={colors.textMuted}
+            />
+          </FormField>
+        )}
+      />
 
-      <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>Mobile Number *</Text>
-        <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-          value={mobile}
-          onChangeText={setMobile}
-          onFocus={expandSheet}
-          keyboardType="phone-pad"
-          maxLength={10}
-          placeholder="10-digit mobile number"
-          placeholderTextColor={colors.textMuted}
-        />
-      </View>
+      <Controller
+        control={control}
+        name="mobile"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <FormField label="Mobile Number" required error={errors.mobile?.message}>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: errors.mobile ? colors.danger : colors.border,
+                  backgroundColor: colors.surface,
+                },
+              ]}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              onFocus={expandSheet}
+              keyboardType="phone-pad"
+              maxLength={10}
+              placeholder="10-digit mobile number"
+              placeholderTextColor={colors.textMuted}
+            />
+          </FormField>
+        )}
+      />
 
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Select
-            label="Gender"
-            value={gender}
-            options={GENDERS}
-            onChange={setGender}
+          <Controller
+            control={control}
+            name="gender"
+            render={({ field: { onChange, value } }) => (
+              <Select
+                label="Gender"
+                value={value}
+                options={GENDERS}
+                onChange={(val) => {
+                  playClickSound();
+                  onChange(val);
+                }}
+              />
+            )}
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Select
-            label="Enquiry Source"
-            value={enquirySource}
-            options={ENQUIRY_SOURCE}
-            onChange={setEnquirySource}
+          <Controller
+            control={control}
+            name="enquirySource"
+            render={({ field: { onChange, value } }) => (
+              <Select
+                label="Enquiry Source"
+                value={value}
+                options={ENQUIRY_SOURCE}
+                onChange={(val) => {
+                  playClickSound();
+                  onChange(val);
+                }}
+              />
+            )}
           />
         </View>
       </View>
 
-      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
+      <TouchableOpacity
+        style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+        onPress={handleSave}
+        activeOpacity={0.8}
+      >
         <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
         <Text style={styles.saveBtnText}>Save & Select Patient</Text>
       </TouchableOpacity>
@@ -129,18 +196,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
   },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 13,
-    marginBottom: 8,
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+    gap: 6,
   },
-  field: {
-    marginBottom: 12,
-  },
-  label: {
+  errorBannerText: {
     fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontWeight: '600',
+    flex: 1,
   },
   input: {
     height: 44,

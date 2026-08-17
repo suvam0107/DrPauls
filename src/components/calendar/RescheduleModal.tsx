@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import BottomSheet from '../shared/BottomSheet';
 import Select from '../shared/Select';
 import { useTheme } from '../../theme/ThemeContext';
-import useDoctorStore from '../../store/useDoctorStore';
-import useAppointmentStore from '../../store/useAppointmentStore';
 import useUIStore from '../../store/useUIStore';
 import {
   todayISO,
@@ -21,6 +21,7 @@ import {
 import { Appointment } from '../../types';
 import { playAppointmentSuccessSound, playAppointmentFailureSound, playClickSound } from '../../utils/feedback';
 import { Ionicons } from '@expo/vector-icons';
+import { RescheduleSchema, RescheduleFormValues } from '../../schemas';
 
 import RescheduleConfirmationModal from '../shared/RescheduleConfirmationModal';
 import AppToast from '../shared/AppToast';
@@ -54,68 +55,82 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
     });
   }, [doctors, apptCenterId]);
 
-  const [doctorId, setDoctorId] = useState(appointment?.doctorId || centerDoctors[0]?.id || '');
-  const [date, setDate] = useState(appointment?.date || todayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [pickerMonth, setPickerMonth] = useState(date);
-  const [error, setError] = useState('');
+  const [pickerMonth, setPickerMonth] = useState(appointment?.date || todayISO());
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<RescheduleFormValues>({
+    resolver: zodResolver(RescheduleSchema),
+    defaultValues: {
+      doctorId: appointment?.doctorId || centerDoctors[0]?.id || '',
+      date: appointment?.date || todayISO(),
+      startTime: appointment?.startTime || '10:00',
+    },
+  });
+
+  const doctorId = watch('doctorId');
+  const date = watch('date');
+  const startTime = watch('startTime');
 
   const selectedDoctor = doctors.find((d) => d.id === doctorId);
-
-  const [showConfirm, setShowConfirm] = useState(false);
 
   // Sync state on appointment change
   useEffect(() => {
     if (appointment) {
-      setDoctorId(appointment.doctorId);
-      setDate(appointment.date);
+      reset({
+        doctorId: appointment.doctorId,
+        date: appointment.date,
+        startTime: appointment.startTime,
+      });
       setPickerMonth(appointment.date);
-      setError('');
       setShowConfirm(false);
       setShowDatePicker(false);
     }
-  }, [appointment]);
+  }, [appointment, reset]);
 
   // Available slots for doctor + date + center
   const availableSlots = useMemo(() => {
     return getDoctorAvailableSlots(selectedDoctor, date, apptCenterId);
   }, [selectedDoctor, date, apptCenterId]);
 
-  const [startTime, setStartTime] = useState(appointment?.startTime || availableSlots[0]?.time || '10:00');
-
   useEffect(() => {
     if (availableSlots.length > 0 && !availableSlots.some((s) => s.time === startTime)) {
-      setStartTime(availableSlots[0].time);
+      setValue('startTime', availableSlots[0].time);
     }
-  }, [availableSlots]);
+  }, [availableSlots, startTime, setValue]);
 
   const isDoctorAvailableToday = isDoctorAvailableOnDate(selectedDoctor, date, apptCenterId);
 
-  const handleInitialSaveClick = () => {
-    if (!doctorId) {
-      setError('Please select a doctor');
-      playAppointmentFailureSound();
-      return;
-    }
-    if (date < todayISO()) {
-      setError('Cannot reschedule to a past date');
+  const handleInitialSaveClick = handleSubmit((data) => {
+    clearErrors('root');
+
+    if (data.date < todayISO()) {
+      setError('root', { message: 'Cannot reschedule to a past date' });
       playAppointmentFailureSound();
       return;
     }
     if (!isDoctorAvailableToday) {
-      setError(`${selectedDoctor?.name || 'Doctor'} is not available on this date`);
+      setError('root', { message: `${selectedDoctor?.name || 'Doctor'} is not available on this date` });
       playAppointmentFailureSound();
       return;
     }
-    if (!startTime) {
-      setError('Please select a valid time slot');
+    if (!data.startTime) {
+      setError('root', { message: 'Please select a valid time slot' });
       playAppointmentFailureSound();
       return;
     }
 
-    setError('');
     setShowConfirm(true);
-  };
+  });
 
   const handleConfirmReschedule = async () => {
     if (!appointment) return;
@@ -141,8 +156,6 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
 
   const monthGridCells = getMonthGrid(pickerMonth);
 
-  // Keep bottom sheet visible even when confirm dialog is shown —
-  // hiding it causes a blank flash mid-interaction.
   return (
     <>
       <BottomSheet visible={visible && !!appointment} onClose={onClose} snapHeight={580} keyboardBlurBehavior="none">
@@ -160,22 +173,32 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
               </Text>
             </View>
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {errors.root?.message ? <Text style={styles.errorText}>{errors.root.message}</Text> : null}
 
             {/* Doctor Selector */}
             <View style={styles.field}>
-              <Select
-                label="Doctor"
-                value={doctorId}
-                options={centerDoctors.map((d) => ({
-                  label: `${d.name} (${d.specialty})`,
-                  value: d.id,
-                }))}
-                onChange={(val) => {
-                  playClickSound();
-                  setDoctorId(val);
-                }}
+              <Controller
+                control={control}
+                name="doctorId"
+                render={({ field: { onChange, value } }) => (
+                  <Select
+                    label="Doctor"
+                    value={value}
+                    options={centerDoctors.map((d) => ({
+                      label: `${d.name} (${d.specialty})`,
+                      value: d.id,
+                    }))}
+                    onChange={(val) => {
+                      playClickSound();
+                      onChange(val);
+                      if (errors.root) clearErrors('root');
+                    }}
+                  />
+                )}
               />
+              {errors.doctorId?.message ? (
+                <Text style={styles.errorText}>{errors.doctorId.message}</Text>
+              ) : null}
             </View>
 
             {/* Date & Time Row */}
@@ -195,20 +218,35 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
                     {formatDateShort(date)}
                   </Text>
                 </TouchableOpacity>
+                {errors.date?.message ? (
+                  <Text style={styles.errorText}>{errors.date.message}</Text>
+                ) : null}
               </View>
 
               {/* Time Slot Dropdown */}
               <View style={{ flex: 1 }}>
-                <Select
-                  label="Time Slot"
-                  value={startTime}
-                  options={
-                    availableSlots.length > 0
-                      ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
-                      : [{ label: 'No slots available', value: '' }]
-                  }
-                  onChange={(val) => setStartTime(val)}
+                <Controller
+                  control={control}
+                  name="startTime"
+                  render={({ field: { onChange, value } }) => (
+                    <Select
+                      label="Time Slot"
+                      value={value}
+                      options={
+                        availableSlots.length > 0
+                          ? availableSlots.map((s) => ({ label: s.label, value: s.time }))
+                          : [{ label: 'No slots available', value: '' }]
+                      }
+                      onChange={(val) => {
+                        onChange(val);
+                        if (errors.root) clearErrors('root');
+                      }}
+                    />
+                  )}
                 />
+                {errors.startTime?.message ? (
+                  <Text style={styles.errorText}>{errors.startTime.message}</Text>
+                ) : null}
               </View>
             </View>
 
@@ -250,8 +288,7 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
         ) : null}
       </BottomSheet>
 
-      {/* Date Picker Modal — rendered OUTSIDE the BottomSheet to avoid double-Modal nesting.
-          Double-nested Modals are unreliable on Android and cause the inner one to be invisible. */}
+      {/* Date Picker Modal */}
       <Modal
         visible={showDatePicker}
         transparent
@@ -310,7 +347,8 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
                     disabled={isPast}
                     onPress={() => {
                       playClickSound();
-                      setDate(cell.date);
+                      setValue('date', cell.date, { shouldValidate: true });
+                      if (errors.root) clearErrors('root');
                       setShowDatePicker(false);
                     }}
                   >
@@ -339,7 +377,7 @@ export default function RescheduleModal({ visible, appointment: initialAppt, onC
         </View>
       </Modal>
 
-      {/* Standalone Reschedule Confirmation Popup Modal — sibling to BottomSheet, not nested inside */}
+      {/* Standalone Reschedule Confirmation Popup Modal */}
       {appointment && (
         <RescheduleConfirmationModal
           visible={showConfirm}
@@ -441,7 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Calendar Modal — now rendered outside BottomSheet as a proper top-level Modal
+  // Calendar Modal
   calendarModalOverlay: {
     flex: 1,
     justifyContent: 'center',

@@ -14,9 +14,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTheme } from '../theme/ThemeContext';
 import useAuthStore from '../store/useAuthStore';
 import { playLoginSound, playClickSound } from '../utils/feedback';
+import { AuthSchema, AuthFormValues } from '../schemas';
 
 import ForgotPasswordModal from '../components/shared/ForgotPasswordModal';
 
@@ -37,33 +40,37 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
-  // Sign In Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-
-  const [errorMsg, setErrorMsg] = useState('');
-
   const login = useAuthStore((s) => s.login);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<AuthFormValues>({
+    resolver: zodResolver(AuthSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: true,
+    },
+  });
 
   // Auto-fill demo credentials helper
   const handleQuickLogin = (demoEmail: string, demoPass: string) => {
     playClickSound();
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrorMsg('');
+    setValue('email', demoEmail, { shouldValidate: true });
+    setValue('password', demoPass, { shouldValidate: true });
+    clearErrors('root');
   };
 
-  const handleLoginSubmit = async () => {
-    if (!email.trim() || !password) {
-      setErrorMsg('Please enter both email and password.');
-      return;
-    }
-
-    setErrorMsg('');
+  const handleLoginSubmit = handleSubmit(async (data) => {
+    clearErrors('root');
     setLoading(true);
 
-    const res = await login(email, password);
+    const res = await login(data.email, data.password);
     setLoading(false);
 
     if (res.success && res.user) {
@@ -76,9 +83,9 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       });
       if (onLoginSuccess) onLoginSuccess();
     } else {
-      setErrorMsg(res.message || 'Login failed.');
+      setError('root', { message: res.message || 'Login failed.' });
     }
-  };
+  });
 
   return (
     <KeyboardAvoidingView
@@ -112,118 +119,178 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Sign In</Text>
 
-          {errorMsg ? (
+          {errors.root?.message ? (
             <View style={[styles.errorBanner, { backgroundColor: colors.dangerBg }]}>
               <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
-              <Text style={[styles.errorBannerText, { color: colors.danger }]}>{errorMsg}</Text>
+              <Text style={[styles.errorBannerText, { color: colors.danger }]}>{errors.root.message}</Text>
             </View>
           ) : null}
 
           {/* Email / Username */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.textMuted }]}>Email / Username</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: focusedInput === 'email' ? colors.primary : colors.border,
-                  borderWidth: focusedInput === 'email' ? 2 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={18}
-                color={focusedInput === 'email' ? colors.primary : colors.textMuted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                ref={emailInputRef}
-                style={[styles.input, { color: colors.text }]}
-                placeholder="e.g. anita.reception@drpauls.com"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={(val) => {
-                  setEmail(val);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                onFocus={() => setFocusedInput('email')}
-                onBlur={() => setFocusedInput(null)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordInputRef.current?.focus()}
-                blurOnSubmit={false}
-              />
-            </View>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value, ref } }) => (
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: errors.email
+                        ? colors.danger
+                        : focusedInput === 'email'
+                        ? colors.primary
+                        : colors.border,
+                      borderWidth: errors.email || focusedInput === 'email' ? 2 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={
+                      errors.email
+                        ? colors.danger
+                        : focusedInput === 'email'
+                        ? colors.primary
+                        : colors.textMuted
+                    }
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    ref={(instance) => {
+                      ref(instance);
+                      (emailInputRef as any).current = instance;
+                    }}
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder="e.g. anita.reception@drpauls.com"
+                    placeholderTextColor={colors.textMuted}
+                    value={value}
+                    onChangeText={(val) => {
+                      onChange(val);
+                      if (errors.root) clearErrors('root');
+                    }}
+                    onFocus={() => setFocusedInput('email')}
+                    onBlur={() => {
+                      onBlur();
+                      setFocusedInput(null);
+                    }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordInputRef.current?.focus()}
+                    blurOnSubmit={false}
+                  />
+                </View>
+              )}
+            />
+            {errors.email?.message ? (
+              <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
+                {errors.email.message}
+              </Text>
+            ) : null}
           </View>
 
           {/* Password */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.textMuted }]}>Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: focusedInput === 'password' ? colors.primary : colors.border,
-                  borderWidth: focusedInput === 'password' ? 2 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={18}
-                color={focusedInput === 'password' ? colors.primary : colors.textMuted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                ref={passwordInputRef}
-                style={[styles.input, { color: colors.text }]}
-                placeholder="Enter your password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={(val) => {
-                  setPassword(val);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                onFocus={() => setFocusedInput('password')}
-                onBlur={() => setFocusedInput(null)}
-                secureTextEntry={!showPassword}
-                keyboardType="default"
-                autoCorrect={false}
-                autoComplete="off"
-                spellCheck={false}
-                textContentType="password"
-                importantForAutofill="no"
-                returnKeyType="done"
-                onSubmitEditing={handleLoginSubmit}
-              />
-              <TouchableOpacity onPress={() => { playClickSound(); setShowPassword(!showPassword); }} hitSlop={8}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </TouchableOpacity>
-            </View>
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value, ref } }) => (
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: errors.password
+                        ? colors.danger
+                        : focusedInput === 'password'
+                        ? colors.primary
+                        : colors.border,
+                      borderWidth: errors.password || focusedInput === 'password' ? 2 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={18}
+                    color={
+                      errors.password
+                        ? colors.danger
+                        : focusedInput === 'password'
+                        ? colors.primary
+                        : colors.textMuted
+                    }
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    ref={(instance) => {
+                      ref(instance);
+                      (passwordInputRef as any).current = instance;
+                    }}
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.textMuted}
+                    value={value}
+                    onChangeText={(val) => {
+                      onChange(val);
+                      if (errors.root) clearErrors('root');
+                    }}
+                    onFocus={() => setFocusedInput('password')}
+                    onBlur={() => {
+                      onBlur();
+                      setFocusedInput(null);
+                    }}
+                    secureTextEntry={!showPassword}
+                    keyboardType="default"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    spellCheck={false}
+                    textContentType="password"
+                    importantForAutofill="no"
+                    returnKeyType="done"
+                    onSubmitEditing={handleLoginSubmit}
+                  />
+                  <TouchableOpacity onPress={() => { playClickSound(); setShowPassword(!showPassword); }} hitSlop={8}>
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+            {errors.password?.message ? (
+              <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
+                {errors.password.message}
+              </Text>
+            ) : null}
           </View>
 
           {/* Remember Me & Forgot Password */}
           <View style={styles.rowBetween}>
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={rememberMe ? 'checkbox' : 'square-outline'}
-                size={18}
-                color={rememberMe ? colors.primary : colors.textMuted}
-              />
-              <Text style={[styles.checkboxLabel, { color: colors.text }]}>Remember me</Text>
-            </TouchableOpacity>
+            <Controller
+              control={control}
+              name="rememberMe"
+              render={({ field: { value, onChange } }) => (
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => onChange(!value)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={value ? 'checkbox' : 'square-outline'}
+                    size={18}
+                    color={value ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[styles.checkboxLabel, { color: colors.text }]}>Remember me</Text>
+                </TouchableOpacity>
+              )}
+            />
 
             <TouchableOpacity onPress={() => { playClickSound(); setShowForgotModal(true); }}>
               <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
@@ -351,6 +418,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
+  },
+  inlineErrorText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
