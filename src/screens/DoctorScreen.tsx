@@ -77,7 +77,7 @@ export default function DoctorScreen() {
         />
       </View>
 
-      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
+      {isSearchFetching && isSearchActive && searchResults.length === 0 ? (
         <DoctorScreenSkeleton />
       ) : (
         <FlatList

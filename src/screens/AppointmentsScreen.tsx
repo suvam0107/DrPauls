@@ -387,7 +387,7 @@ export default function AppointmentsScreen({ initialStatusFilter }: Appointments
       </View>
 
       {/* Main Grouped List */}
-      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
+      {isSearchFetching && isSearchActive && searchResults.length === 0 ? (
         <AppointmentsScreenSkeleton />
       ) : (
         <ScrollView

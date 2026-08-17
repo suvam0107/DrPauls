@@ -1,6 +1,16 @@
-import { createAudioPlayer } from 'expo-audio';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { Vibration } from 'react-native';
+
+// Allow Expo audio playback to mix with other media and behave like standard system sound
+try {
+  setAudioModeAsync({
+    playsInSilentMode: true,
+    interruptionMode: 'mixWithOthers',
+  });
+} catch (error) {
+  console.warn('Failed to configure feedback audio mode:', error);
+}
 
 // Audio Player Instances for the 7 UI sound assets
 let clickPlayer: any = null;

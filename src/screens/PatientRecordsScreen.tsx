@@ -79,10 +79,6 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
   const priorityBg =
     priority === 'High' ? '#D1FAE5' : priority === 'Medium' ? '#FEF3C7' : '#FEE2E2';
 
-  if (refreshing) {
-    return <PatientRecordsSkeleton />;
-  }
-
   if (!targetPatient) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, padding: 20 }]}>

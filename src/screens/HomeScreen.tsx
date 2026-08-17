@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
@@ -8,6 +8,7 @@ import StatusChip from '../components/shared/StatusChip';
 import AppointmentDetailModal from '../components/calendar/AppointmentDetailModal';
 import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
+import AppRefreshControl from '../components/shared/AppRefreshControl';
 import { todayISO, formatDateShort, formatTime, isPastSlot, timeToMins } from '../utils/dateUtils';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
@@ -109,17 +110,13 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
     opacity: pulseOpacity.value,
   }));
 
-  if (refreshing) {
-    return <HomeScreenSkeleton />;
-  }
-
   const completionPct = todayAppts.length > 0 ? Math.round((paidCount / todayAppts.length) * 100) : 0;
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={[styles.content, { paddingBottom: 88 }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onScroll={handleScroll}
       scrollEventThrottle={16}
     >

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +31,18 @@ import { useScrollNavbar } from '../hooks/useScrollNavbar';
 
 export type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
+export interface ChartDetailItem {
+  title: string;
+  category: string;
+  count: number;
+  total: number;
+  percentage: number;
+  color: string;
+  subtitle?: string;
+  contextText?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+}
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // Month name constants
@@ -47,13 +60,6 @@ const AXIS_FONT = matchFont({
 const LABEL_FONT = matchFont({
   fontFamily: Platform.select({ ios: 'Helvetica Neue', android: 'sans-serif', default: 'sans-serif' }),
   fontSize: 11,
-  fontStyle: 'normal',
-  fontWeight: 'bold',
-});
-
-const PIE_LABEL_FONT = matchFont({
-  fontFamily: Platform.select({ ios: 'Helvetica Neue', android: 'sans-serif', default: 'sans-serif' }),
-  fontSize: 12,
   fontStyle: 'normal',
   fontWeight: 'bold',
 });
@@ -186,11 +192,11 @@ export default function ReportsScreen() {
     };
   }, [filteredAppointments, period]);
 
-  // Dynamic width for Volume chart if items exceed standard width
+  // Dynamic width for Volume chart if items exceed standard width (ample padding so end bars don't clip)
   const volumeChartWidth = useMemo(() => {
-    const minWidthPerBar = 42;
+    const minWidthPerBar = 54;
     const baseWidth = SCREEN_WIDTH - 64;
-    return Math.max(baseWidth, chartData.length * minWidthPerBar);
+    return Math.max(baseWidth, chartData.length * minWidthPerBar + 30);
   }, [chartData.length]);
 
   // ── KPI Totals ──────────────────────────────────────────────────────────
@@ -234,12 +240,12 @@ export default function ReportsScreen() {
     });
     const total = filteredAppointments.length || 1;
     const items = [
-      { label: 'Confirmed',  count: counts.Confirmed,  value: counts.Confirmed,  color: colors.success },
-      { label: 'Scheduled',  count: counts.Scheduled,  value: counts.Scheduled,  color: colors.primary },
-      { label: 'Paid',       count: counts.Paid,       value: counts.Paid,       color: colors.purple  },
-      { label: 'Pending',    count: counts.Pending,    value: counts.Pending,    color: colors.warning },
-      { label: 'Cancelled',  count: counts.Cancelled,  value: counts.Cancelled,  color: colors.danger  },
-      { label: 'Rescheduled',count: counts.Rescheduled,value: counts.Rescheduled,color: colors.cyan    },
+      { label: 'Confirmed', count: counts.Confirmed, value: counts.Confirmed, color: colors.success },
+      { label: 'Scheduled', count: counts.Scheduled, value: counts.Scheduled, color: colors.primary },
+      { label: 'Paid', count: counts.Paid, value: counts.Paid, color: colors.purple },
+      { label: 'Pending', count: counts.Pending, value: counts.Pending, color: colors.warning },
+      { label: 'Cancelled', count: counts.Cancelled, value: counts.Cancelled, color: colors.danger },
+      { label: 'Rescheduled', count: counts.Rescheduled, value: counts.Rescheduled, color: colors.cyan },
     ];
     return items.map((item) => ({ ...item, pct: Math.round((item.count / total) * 100) }));
   }, [filteredAppointments, colors]);
@@ -327,12 +333,163 @@ export default function ReportsScreen() {
   }, [patients]);
 
   const acquisitionChartWidth = useMemo(() => {
-    const minWidthPerBar = 55;
+    const minWidthPerBar = 76;
     const baseWidth = SCREEN_WIDTH - 64;
-    return Math.max(baseWidth, acquisitionChartData.length * minWidthPerBar);
+    return Math.max(baseWidth, acquisitionChartData.length * minWidthPerBar + 40);
   }, [acquisitionChartData.length]);
 
-  if (refreshing) return <ReportsScreenSkeleton />;
+  // ── Detail Modal State & Interaction Handlers ────────────────────────────
+  const [selectedDetail, setSelectedDetail] = useState<ChartDetailItem | null>(null);
+
+  const openDetail = (item: ChartDetailItem) => {
+    playClickSound();
+    setSelectedDetail(item);
+  };
+
+  const handleVolumeBarPress = (index: number) => {
+    const datum = chartData[index];
+    if (!datum) return;
+    const label = chartLabels[index] || `Day ${index + 1}`;
+    const count = datum.count;
+    const total = kpiData.totalAppts || 1;
+    const pct = Math.round((count / total) * 100);
+    openDetail({
+      title: `${label}`,
+      category: 'Appointment Volume',
+      count,
+      total,
+      percentage: pct,
+      color: colors.primary,
+      subtitle: `Recorded for ${periodLabel}`,
+      contextText: `${count} appointments scheduled (${pct}% of period total).`,
+      icon: 'calendar-outline',
+    });
+  };
+
+  const handleAcquisitionBarPress = (index: number) => {
+    const datum = acquisitionChartData[index];
+    if (!datum) return;
+    const source = acquisitionLabels[index] || 'Other';
+    const count = datum.count;
+    const total = patients.length || 1;
+    const pct = Math.round((count / total) * 100);
+    openDetail({
+      title: source,
+      category: 'Patient Enquiry Source',
+      count,
+      total,
+      percentage: pct,
+      color: colors.cyan,
+      subtitle: `${count} registered patients`,
+      contextText: `${source} contributed ${pct}% of all recorded patient registrations.`,
+      icon: 'compass-outline',
+    });
+  };
+
+  const findSliceFromTouch = (
+    touchX: number,
+    touchY: number,
+    size: number,
+    innerRadiusPct: number,
+    data: Array<{ label?: string; name?: string; value: number; color: string; count?: number; pct?: number }>
+  ) => {
+    const cx = size / 2;
+    const cy = size / 2;
+    const dx = touchX - cx;
+    const dy = touchY - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const outerR = size / 2;
+    const innerR = outerR * innerRadiusPct;
+    if (dist > outerR || dist < innerR) return null;
+
+    const validItems = data.filter((d) => (d.value || 0) > 0);
+    const total = validItems.reduce((sum, d) => sum + (d.value || 0), 0);
+    if (total <= 0) return null;
+
+    // Skia Path.arcToOval starts at 0° (3 o'clock / positive X) and sweeps clockwise:
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    if (angle < 0) angle += 360;
+
+    let currentAngle = 0;
+    for (const item of validItems) {
+      const sweep = (item.value / total) * 360;
+      if (angle >= currentAngle && angle <= currentAngle + sweep) {
+        return item;
+      }
+      currentAngle += sweep;
+    }
+    return validItems[validItems.length - 1] || null;
+  };
+
+  const handleStatusPieTouch = (x: number, y: number) => {
+    const slice = findSliceFromTouch(x, y, 160, 0, activeStatusPieData);
+    if (slice && slice.label && slice.label !== 'Empty') {
+      const item = statusBreakdown.find((s) => s.label === slice.label);
+      if (item) openStatusDetail(item);
+    }
+  };
+
+  const openStatusDetail = (item: (typeof statusBreakdown)[0]) => {
+    openDetail({
+      title: `${item.label} Status`,
+      category: 'Appointment Status',
+      count: item.count,
+      total: filteredAppointments.length || 1,
+      percentage: item.pct,
+      color: item.color,
+      subtitle: `${item.count} out of ${filteredAppointments.length} appointments`,
+      contextText: `${item.label} status represents ${item.pct}% of appointments in ${periodLabel}.`,
+      icon: 'pie-chart-outline',
+    });
+  };
+
+  const handleServiceDonutTouch = (x: number, y: number) => {
+    const slice = findSliceFromTouch(x, y, 140, 0.55, activeServicePieData);
+    if (slice && slice.name && slice.name !== 'None') {
+      const item = serviceDistribution.entries.find((s) => s.name === slice.name);
+      if (item) openServiceDetail(item);
+    }
+  };
+
+  const openServiceDetail = (item: (typeof serviceDistribution.entries)[0]) => {
+    const total = serviceDistribution.total || 1;
+    const pct = Math.round((item.count / total) * 100);
+    openDetail({
+      title: item.name,
+      category: 'Clinical Service',
+      count: item.count,
+      total,
+      percentage: pct,
+      color: item.color,
+      subtitle: `${item.count} sessions conducted`,
+      contextText: `${item.name} represents ${pct}% of clinic procedure demand.`,
+      icon: 'medical-outline',
+    });
+  };
+
+  const handleEnrollmentPieTouch = (x: number, y: number) => {
+    const slice = findSliceFromTouch(x, y, 120, 0, activeEnrollmentPieData);
+    if (slice && (slice.label && slice.label !== 'Active' || slice?.count)) {
+      const item = enrollmentSummary.find((e) => e.status === slice?.label);
+      if (item) openEnrollmentDetail(item);
+    }
+  };
+
+  const openEnrollmentDetail = (item: (typeof enrollmentSummary)[0]) => {
+    const total = enrollments.length || 1;
+    const pct = Math.round((item.count / total) * 100);
+    openDetail({
+      title: `${item.status} Packages`,
+      category: 'Package Lifecycle',
+      count: item.count,
+      total,
+      percentage: pct,
+      color: item.color,
+      subtitle: `${item.completedSessions}/${item.totalSessions} sessions completed (${item.completionRate}%)`,
+      contextText: `${item.count} patients currently in ${item.status.toLowerCase()} package stage. Treatment compliance rate is ${item.completionRate}%.`,
+      icon: 'cube-outline',
+    });
+  };
 
   return (
     <ScrollView
@@ -424,18 +581,18 @@ export default function ReportsScreen() {
           <Ionicons name="bar-chart-outline" size={18} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Appointment Volume</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>{periodLabel}</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>{periodLabel} • Tap bar for details</Text>
           </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={[styles.chartArea, { width: volumeChartWidth }]}>
+          <View style={[styles.chartArea, { width: volumeChartWidth, position: 'relative' }]}>
             <CartesianChart
               data={chartData}
               xKey="idx"
               yKeys={['count']}
               domain={chartDomain}
-              domainPadding={{ left: 20, right: 20, top: 28, bottom: 0 }}
+              domainPadding={{ left: 36, right: 36, top: 32, bottom: 0 }}
               xAxis={{
                 font: AXIS_FONT,
                 labelColor: colors.textMuted,
@@ -478,6 +635,20 @@ export default function ReportsScreen() {
                 </>
               )}
             </CartesianChart>
+
+            {/* Interactive Tap Zones over each bar */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+              <View style={{ flex: 1, flexDirection: 'row', paddingHorizontal: 36 }}>
+                {chartData.map((_, i) => (
+                  <TouchableOpacity
+                    key={`volume-touch-${i}`}
+                    style={{ flex: 1, height: '100%' }}
+                    activeOpacity={0.4}
+                    onPress={() => handleVolumeBarPress(i)}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -490,35 +661,36 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.chartWithLegendRow}>
-          {/* Full Pie Chart with innerRadius=0 and in-slice child Pie.Label */}
-          <View style={styles.pieContainer}>
+          {/* Interactive Pie Chart Container */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={(e) => handleStatusPieTouch(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+            style={styles.pieContainer}
+          >
             <PolarChart data={activeStatusPieData} labelKey="label" valueKey="value" colorKey="color">
               <Pie.Chart innerRadius={0}>
-                {({ slice }) => (
-                  <Pie.Slice animate={{ type: 'timing', duration: 400 }}>
-                    {slice.value > 0 && (
-                      <Pie.Label
-                        font={PIE_LABEL_FONT}
-                        color="#FFFFFF"
-                        radiusOffset={0.5}
-                        text={`${slice.value}`}
-                      />
-                    )}
-                  </Pie.Slice>
+                {() => (
+                  <Pie.Slice animate={{ type: 'timing', duration: 400 }} />
                 )}
               </Pie.Chart>
             </PolarChart>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.legendGrid}>
             {statusBreakdown.map((item) => (
-              <View key={item.label} style={styles.legendItem}>
+              <TouchableOpacity
+                key={item.label}
+                style={styles.legendItem}
+                activeOpacity={0.7}
+                onPress={() => openStatusDetail(item)}
+              >
                 <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>
                   {item.label}: <Text style={{ fontWeight: '700' }}>{item.count}</Text>
                   {item.count > 0 && <Text style={{ color: colors.textMuted }}> ({item.pct}%)</Text>}
                 </Text>
-              </View>
+                <Ionicons name="chevron-forward" size={12} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -532,21 +704,16 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.servicesRowContainer}>
-          <View style={styles.donutWrapper}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={(e) => handleServiceDonutTouch(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+            style={styles.donutWrapper}
+          >
             <View style={styles.pieContainerMedium}>
               <PolarChart data={activeServicePieData} labelKey="label" valueKey="value" colorKey="color">
                 <Pie.Chart innerRadius="60%">
-                  {({ slice }) => (
-                    <Pie.Slice animate={{ type: 'timing', duration: 400 }}>
-                      {slice.value > 0 && (
-                        <Pie.Label
-                          font={PIE_LABEL_FONT}
-                          color="#FFFFFF"
-                          radiusOffset={0.7}
-                          text={`${slice.value}`}
-                        />
-                      )}
-                    </Pie.Slice>
+                  {() => (
+                    <Pie.Slice animate={{ type: 'timing', duration: 400 }} />
                   )}
                 </Pie.Chart>
               </PolarChart>
@@ -555,18 +722,24 @@ export default function ReportsScreen() {
               <Text style={[styles.donutCenterNum, { color: colors.text }]}>{serviceDistribution.total}</Text>
               <Text style={[styles.donutCenterSub, { color: colors.textMuted }]}>Sessions</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.fullServiceLegend}>
             {serviceDistribution.entries.map((item) => (
-              <View key={item.name} style={styles.donutLegendRow}>
+              <TouchableOpacity
+                key={item.name}
+                style={styles.donutLegendRow}
+                activeOpacity={0.7}
+                onPress={() => openServiceDetail(item)}
+              >
                 <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                 <Text style={[styles.donutLegendLabel, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={[styles.donutLegendVal, { color: colors.text }]}>{item.count}</Text>
                 <Text style={[styles.donutLegendPct, { color: colors.textMuted }]}>
                   ({Math.round((item.count / serviceDistribution.total) * 100)}%)
                 </Text>
-              </View>
+                <Ionicons name="chevron-forward" size={12} color={colors.textMuted} />
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -618,38 +791,35 @@ export default function ReportsScreen() {
         </View>
 
         <View style={styles.chartWithLegendRow}>
-          {/* Full Pie Chart with innerRadius=0 and in-slice child Pie.Label */}
-          <View style={styles.pieContainerSmall}>
+          {/* Interactive Pie Chart */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={(e) => handleEnrollmentPieTouch(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+            style={styles.pieContainerSmall}
+          >
             <PolarChart data={activeEnrollmentPieData} labelKey="label" valueKey="value" colorKey="color">
               <Pie.Chart innerRadius={0}>
-                {({ slice }) => (
-                  <Pie.Slice animate={{ type: 'timing', duration: 400 }}>
-                    {slice.value > 0 && (
-                      <Pie.Label
-                        font={PIE_LABEL_FONT}
-                        color="#FFFFFF"
-                        radiusOffset={0.5}
-                        text={`${slice.value}`}
-                      />
-                    )}
-                  </Pie.Slice>
+                {() => (
+                  <Pie.Slice animate={{ type: 'timing', duration: 400 }} />
                 )}
               </Pie.Chart>
             </PolarChart>
-          </View>
+          </TouchableOpacity>
 
           <View style={[styles.enrollmentGrid, { flex: 1 }]}>
             {enrollmentSummary.map((item) => (
-              <View
+              <TouchableOpacity
                 key={item.status}
                 style={[styles.enrollmentCard, { backgroundColor: colors.surface, borderColor: colors.border, borderLeftColor: item.color, borderLeftWidth: 3 }]}
+                activeOpacity={0.7}
+                onPress={() => openEnrollmentDetail(item)}
               >
                 <Text style={[styles.enrollmentStatus, { color: colors.text }]}>{item.status}</Text>
                 <Text style={[styles.enrollmentCount, { color: item.color }]}>{item.count} packs</Text>
                 <Text style={[styles.enrollmentSub, { color: colors.textMuted }]}>
                   {item.completedSessions}/{item.totalSessions} ({item.completionRate}%)
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -659,24 +829,26 @@ export default function ReportsScreen() {
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHeader}>
           <Ionicons name="compass-outline" size={18} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Patient Enquiry Source</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Patient Enquiry Source</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>Tap bar for channel details</Text>
+          </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={[styles.chartArea, { width: acquisitionChartWidth }]}>
+          <View style={[styles.chartAreaRotated, { width: acquisitionChartWidth, position: 'relative' }]}>
             <CartesianChart
               data={acquisitionChartData}
               xKey="idx"
               yKeys={['count']}
               domain={acquisitionDomain}
-              domainPadding={{ left: 20, right: 20, top: 28, bottom: 0 }}
+              domainPadding={{ left: 50, right: 50, top: 32, bottom: 0 }}
               xAxis={{
                 font: AXIS_FONT,
                 labelColor: colors.textMuted,
-                formatXLabel: (val) => {
-                  const s = acquisitionLabels[val as number] ?? '';
-                  return s.length > 8 ? s.substring(0, 8) + '…' : s;
-                },
+                labelRotate: -45,
+                labelOffset: 8,
+                formatXLabel: (val) => acquisitionLabels[val as number] ?? '',
                 tickCount: acquisitionChartData.length,
                 lineColor: gridColor,
               }}
@@ -715,9 +887,126 @@ export default function ReportsScreen() {
                 </>
               )}
             </CartesianChart>
+
+            {/* Interactive Tap Zones over each bar */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+              <View style={{ flex: 1, flexDirection: 'row', paddingHorizontal: 40 }}>
+                {acquisitionChartData.map((_, i) => (
+                  <TouchableOpacity
+                    key={`acq-touch-${i}`}
+                    style={{ flex: 1, height: '100%' }}
+                    activeOpacity={0.4}
+                    onPress={() => handleAcquisitionBarPress(i)}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
         </ScrollView>
       </View>
+
+      {/* ── Chart Item Detail Modal ────────────────────────────────────── */}
+      <Modal
+        visible={!!selectedDetail}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedDetail(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedDetail(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[
+              styles.detailModalCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header Badge */}
+            <View style={styles.modalHeaderRow}>
+              <View style={[styles.categoryBadge, { backgroundColor: (selectedDetail?.color || colors.primary) + '22' }]}>
+                <Ionicons
+                  name={selectedDetail?.icon || 'analytics-outline'}
+                  size={14}
+                  color={selectedDetail?.color || colors.primary}
+                />
+                <Text style={[styles.categoryBadgeText, { color: selectedDetail?.color || colors.primary }]}>
+                  {selectedDetail?.category}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => { playClickSound(); setSelectedDetail(null); }}
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surface }]}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Main Title & Metric */}
+            <Text style={[styles.detailTitle, { color: colors.text }]}>{selectedDetail?.title}</Text>
+            {selectedDetail?.subtitle && (
+              <Text style={[styles.detailSubtitle, { color: colors.textMuted }]}>{selectedDetail.subtitle}</Text>
+            )}
+
+            {/* Large Counter & Percentage */}
+            <View style={[styles.detailMetricBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View>
+                <Text style={[styles.detailCount, { color: selectedDetail?.color || colors.primary }]}>
+                  {selectedDetail?.count}
+                </Text>
+                <Text style={[styles.detailCountLabel, { color: colors.textMuted }]}>
+                  Total Units / Sessions
+                </Text>
+              </View>
+              <View style={styles.detailPctBadge}>
+                <Text style={[styles.detailPctText, { color: selectedDetail?.color || colors.primary }]}>
+                  {selectedDetail?.percentage}%
+                </Text>
+                <Text style={[styles.detailPctSub, { color: colors.textMuted }]}>of Total</Text>
+              </View>
+            </View>
+
+            {/* Contribution Progress Bar */}
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.min(Math.max(selectedDetail?.percentage || 0, 4), 100)}%`,
+                    backgroundColor: selectedDetail?.color || colors.primary,
+                  },
+                ]}
+              />
+            </View>
+
+            {/* Context Clinical Description */}
+            {selectedDetail?.contextText && (
+              <View style={[styles.contextRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+                <Ionicons name="information-circle-outline" size={16} color={selectedDetail?.color || colors.primary} style={{ marginTop: 2 }} />
+                <Text style={[styles.contextText, { color: colors.text }]}>
+                  {selectedDetail.contextText}
+                </Text>
+              </View>
+            )}
+
+            {/* Dismiss Button */}
+            <TouchableOpacity
+              style={[styles.dismissBtn, { backgroundColor: colors.primary }]}
+              onPress={() => { playClickSound(); setSelectedDetail(null); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dismissBtnText}>Close Details</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -847,6 +1136,9 @@ const styles = StyleSheet.create({
   // ── Chart areas ───────────────────────────────────────────────────────
   chartArea: {
     height: 210,
+  },
+  chartAreaRotated: {
+    height: 245,
   },
   // ── Pie / Polar containers — NO flex centering, explicit w/h only ─────
   pieContainer: {
@@ -987,5 +1279,119 @@ const styles = StyleSheet.create({
   enrollmentSub: {
     fontSize: 9,
     marginTop: 1,
+  },
+  // ── Detail Modal ──────────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  detailModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    gap: 14,
+    elevation: 20,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  detailSubtitle: {
+    fontSize: 12,
+    marginTop: -8,
+  },
+  detailMetricBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  detailCount: {
+    fontSize: 26,
+    fontWeight: '800',
+  },
+  detailCountLabel: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  detailPctBadge: {
+    alignItems: 'flex-end',
+  },
+  detailPctText: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  detailPctSub: {
+    fontSize: 10,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(128,128,128,0.15)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  contextRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+  },
+  contextText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  dismissBtn: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  dismissBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });

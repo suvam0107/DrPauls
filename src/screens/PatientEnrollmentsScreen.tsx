@@ -115,7 +115,7 @@ export default function PatientEnrollmentsScreen() {
       </View>
 
       {/* Enrollments Content List */}
-      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
+      {isSearchFetching && isSearchActive && searchResults.length === 0 ? (
         <EnrollmentsSkeleton />
       ) : (
         <ScrollView

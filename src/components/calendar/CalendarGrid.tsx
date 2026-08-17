@@ -42,6 +42,8 @@ export interface CalendarGridProps {
   onSlotPress?: (date: string, time: string) => void;
   onAppointmentPress?: (appointment: Appointment) => void;
   onDateSelect?: (date: string) => void;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export default function CalendarGrid({
@@ -54,9 +56,13 @@ export default function CalendarGrid({
   onSlotPress,
   onAppointmentPress,
   onDateSelect,
+  refreshing: propsRefreshing,
+  onRefresh: propsOnRefresh,
 }: CalendarGridProps) {
   const { colors, isDark } = useTheme();
-  const { refreshing, onRefresh } = useRefresh();
+  const fallbackRefresh = useRefresh();
+  const refreshing = propsRefreshing !== undefined ? propsRefreshing : fallbackRefresh.refreshing;
+  const onRefresh = propsOnRefresh || fallbackRefresh.onRefresh;
   const { handleScroll: navScrollHandler } = useScrollNavbar();
   const timeSlots = generateTimeSlots();
 

@@ -134,9 +134,7 @@ export default function CalendarScreen() {
       />
 
       {/* Main Content Area */}
-      {refreshing ? (
-        <CalendarScreenSkeleton />
-      ) : displayMode === 'list' ? (
+      {displayMode === 'list' ? (
         /* List Mode View (view-only list, no drag-drop) */
         <ScrollView
           style={styles.container}
@@ -205,6 +203,8 @@ export default function CalendarScreen() {
           onSlotPress={handleSlotPress}
           onAppointmentPress={handleAppointmentPress}
           onDateSelect={handleMonthDateSelect}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       )}
 

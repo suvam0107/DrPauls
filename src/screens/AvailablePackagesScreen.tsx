@@ -103,7 +103,7 @@ export default function AvailablePackagesScreen() {
       </View>
 
       {/* Package Cards Content */}
-      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
+      {isSearchFetching && isSearchActive && searchResults.length === 0 ? (
         <PackagesCatalogSkeleton />
       ) : (
         <ScrollView

@@ -151,7 +151,7 @@ export default function PatientListScreen({ onNavigate }: PatientListScreenProps
         </TouchableOpacity>
       </View>
 
-      {refreshing || (isSearchFetching && isSearchActive && searchResults.length === 0) ? (
+      {isSearchFetching && isSearchActive && searchResults.length === 0 ? (
         <PatientListSkeleton />
       ) : (
         <FlatList

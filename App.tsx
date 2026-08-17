@@ -30,6 +30,7 @@ import ExitConfirmationModal from './src/components/shared/ExitConfirmationModal
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './src/api/queryClient';
+import { setAudioModeAsync } from 'expo-audio';
 import useUIStore from './src/store/useUIStore';
 import useAuthStore from './src/store/useAuthStore';
 import { playNavigationSound } from './src/utils/feedback';
@@ -200,6 +201,7 @@ function MainApp() {
           activeTab={activeTab}
           onTabSelect={handleTabSelect}
           onPlusPress={() => setShowQuickAddPopup((prev) => !prev)}
+          isQuickAddOpen={showQuickAddPopup}
         />
       )}
 
@@ -267,6 +269,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export default function App() {
+  // Allow Expo audio playback to mix with other media and behave like standard system sound
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>

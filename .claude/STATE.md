@@ -6,6 +6,65 @@
 ---
 
 ## Last Updated
+`2026-08-17` — Fixed **Pie / Donut Slice Touch Angle Alignment (`@Frontend`)**:
+1. **Geometric Angle Alignment (`findSliceFromTouch` in `ReportsScreen.tsx`)**:
+   - Realigned the canvas touch angle math to match Skia's `Path.arcToOval` layout geometry (which begins at `0°` / 3 o'clock / East and rotates clockwise).
+   - Removed the artificial `+90°` offset that previously caused touch events on a slice (e.g. green Confirmed) to incorrectly match the adjacent slice (blue Scheduled).
+2. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Enhanced **Reports & Analytics Chart Layouts, 45° Tilted Ticks & Interactive Detail Modal (`@Frontend`)**:
+1. **Resolved Bar Cut-offs (`ReportsScreen.tsx`)**:
+   - Expanded `domainPadding` to `{ left: 36, right: 36, top: 32, bottom: 8 }` (Volume) and `{ left: 40, right: 40, top: 32, bottom: 25 }` (Acquisition) with generous horizontal canvas width formulas.
+   - Index `0` and index `n-1` bars and their top count labels now render fully without boundary clipping.
+2. **45-Degree Angled Axis Ticks (`ReportsScreen.tsx`)**:
+   - Enabled `labelRotate: -45` with `labelOffset: 8` on the Patient Enquiry Source chart.
+   - Removed substring truncation so complete channel names render crisply at a 45° angle with increased chart height (`245px`).
+3. **Cleaned Pie Slices & Interactive `ChartDetailModal` (`ReportsScreen.tsx`)**:
+   - Removed crowded `<Pie.Label>` text overlays from all Polar/Pie charts for clean visual aesthetics.
+   - Added interactive tap zones on pie canvases (angular touch detection via `atan2`), donut rings, legend items, lifecycle cards, and bar columns.
+   - Created a modal (`ChartDetailModal`) displaying category badge, formatted count, percentage progress bar, and clinical insight.
+4. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Enhanced **Darker Bottom Navbar & Pill Shadow Elevation (`@Frontend`)**:
+1. **Prominent Dark Shadows (`BottomNav.tsx`)**:
+   - Replaced muted rgba shadow with deep `#000000` shadow tokens (`shadowOpacity: 0.35` in light mode, `0.85` in dark mode).
+   - Increased shadow blur radius and offset (`shadowRadius: 16`, `shadowOffset: { width: 0, height: 8 }`, `elevation: 18`) on `pillContainer` and `fabCircle`.
+   - Added drop shadow to inner selection `tabPill` (`elevation: 3`, `shadowOffset: { width: 0, height: 2 }`, `shadowOpacity: 0.18`, `shadowRadius: 4`).
+2. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Enhanced **Bottom Nav FAB Plus Icon Plain Smooth Rotation Animation (`@Frontend`)**:
+1. **FAB Plus Icon Smooth Plain Rotation (`BottomNav.tsx`, `App.tsx`)**:
+   - Replaced spring physics with a smooth, plain `withTiming` transition (`duration: 220ms`, `Easing.bezier(0.25, 0.1, 0.25, 1)`) from `0deg` to `45deg` on the FAB `+` icon when opened to form an `×`.
+   - Smoothly rotates back to `0deg` on popup dismissal without spring bouncing or overshoot.
+2. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Enhanced **Bottom Navbar Shadow & Dense Spring Icon / Bold Title Micro-Interactions (`@Frontend`)**:
+1. **Bottom Nav Shadow Elevation (`BottomNav.tsx`)**:
+   - Upgraded floating pill container and `[+]` FAB circle shadows (`elevation: 12`, `shadowRadius: 12`, `shadowOffset: { width: 0, height: 6 }`, theme-adaptive `shadowOpacity` and `shadowColor`).
+2. **Dense Spring Icon Animation (`TabItem` in `BottomNav.tsx`)**:
+   - Added a dense, tactile spring transform (`scale: 1.15`, `translateY: -1.5` with `damping: 12`, `stiffness: 350`, `mass: 0.5`) to active tab icons when the selection pill expands.
+3. **Synchronized Bold Title Micro-Spring (`BottomNav.tsx`)**:
+   - Enhanced tab labels to bold `fontWeight: '700'` with a synchronized micro-spring scale (`scale: 1.05`, `translateY: -0.5`) when activated.
+4. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Fixed **Pull-To-Refresh Invalid Hook / useContext Null Crash (`@UXEngineer` & `@Frontend`)**:
+1. **Root Cause Analysis**:
+   - Several screens (`HomeScreen`, `ReportsScreen`, `PatientRecordsScreen`, `CalendarScreen`, `PatientListScreen`, `DoctorScreen`, `AvailablePackagesScreen`, `PatientEnrollmentsScreen`, `AppointmentsScreen`) were conditionally rendering full-screen skeleton components when `refreshing === true`.
+   - When a user initiated a native pull-to-refresh gesture, the active `<ScrollView>` or `<FlatList>` hosting the active `<RefreshControl>` / `<AppRefreshControl>` was immediately unmounted while the native refresh gesture and event dispatch were active.
+   - This tore down the active Fiber tree during gesture handling, corrupting React's internal dispatcher context and throwing `TypeError: Cannot read property 'useContext' of null` / `Invalid hook call`.
+2. **Architecture Resolution**:
+   - Removed early full-screen skeleton unmounting guards on `refreshing === true` across all screens.
+   - Preserved persistent `<ScrollView>` and `<FlatList>` component trees with `<AppRefreshControl refreshing={refreshing} onRefresh={onRefresh} />` so the native spinner smoothly manages the loading indicator without unmounting the view hierarchy.
+   - Connected `CalendarGrid` to consume `refreshing` and `onRefresh` from `CalendarScreen`.
+   - Added an unmounted component lifecycle guard (`mountedRef`) in `src/utils/useRefresh.ts` to guarantee clean state updates.
+3. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
+`2026-08-17` — Completed **Expo Audio System Mixing Configuration (`@UXEngineer`)**:
+1. **Audio Mode Configuration (`App.tsx`, `src/utils/feedback.ts`)**:
+   - Initialized `setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })` from `expo-audio` inside top-level component `App.tsx` and centralized feedback utility module `src/utils/feedback.ts`.
+   - Allows UI sound effects and audio feedback to seamlessly mix with background media playback (Spotify, YouTube Music, podcasts) and play during silent mode without interrupting other audio sessions or taking exclusive audio focus.
+2. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
 `2026-08-14` — Fixed **Today's Overview Live Indicator Operating Hours Status**:
 1. **Dynamic Operating Hours Detection (`HomeScreen.tsx`)**:
    - Integrated `useCentersQuery` to dynamically look up the active clinic's `openHours` (e.g. `10:00`–`19:00`) and `closedDays`.
