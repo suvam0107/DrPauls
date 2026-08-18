@@ -132,7 +132,7 @@ export default function PatientRecordsScreen({ patientId, onBack }: PatientRecor
             <View style={{ flex: 1 }}>
               <Text style={[styles.patientName, { color: colors.text }]}>{targetPatient.name}</Text>
               <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-                ID: {targetPatient.id} • {targetPatient.gender} {targetPatient.dob ? `• DOB: ${targetPatient.dob}` : ''} • Reliability: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Reliability</Text>
+                ID: {targetPatient.id} • {targetPatient.gender} {targetPatient.dob ? `• DOB: ${targetPatient.dob}` : ''} • <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Reliability</Text>
               </Text>
             </View>
           </View>

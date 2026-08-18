@@ -177,7 +177,7 @@ export default function PatientDetailModal({
               <View style={{ flex: 1 }}>
                 <Text style={[styles.patientName, { color: colors.text }]}>{name || activePat.name}</Text>
                 <Text style={[styles.patientMeta, { color: colors.textMuted }]}>
-                  {gender || activePat.gender} • {rescheduleCount} Reschedule{rescheduleCount !== 1 ? 's' : ''} • Reliability: <Text style={{ color: priorityColor, fontWeight: '700' }}>{priority} Reliability</Text>
+                  {gender || activePat.gender} <Text style={{ color: priorityColor, fontWeight: '700' }}>• {priority} Reliability</Text>
                 </Text>
               </View>
 
@@ -608,7 +608,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
   },
   avatar: {
     width: 52,

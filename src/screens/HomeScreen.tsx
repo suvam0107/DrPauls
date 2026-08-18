@@ -78,8 +78,12 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const rescheduledCount = allTodayAppts.filter((a) => a.status === APPOINTMENT_STATUS.RESCHEDULED).length;
   const cancelledCount = allTodayAppts.filter((a) => a.status === APPOINTMENT_STATUS.CANCELLED).length;
 
-  // Overdue detection: appointments scheduled for today that are still Pending
-  const overdueAppts = todayAppts.filter((a) => a.status === APPOINTMENT_STATUS.PENDING);
+  // Overdue detection: appointments explicitly marked Overdue or past Pending sessions (date < today)
+  const overdueAppts = centerAppts.filter(
+    (a) =>
+      a.status !== APPOINTMENT_STATUS.CANCELLED &&
+      (a.status === APPOINTMENT_STATUS.OVERDUE || (a.status === APPOINTMENT_STATUS.PENDING && a.date < today))
+  );
   const overdueCount = overdueAppts.length;
 
   // Next up appointment: next upcoming session to be conducted today
