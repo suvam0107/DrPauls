@@ -6,6 +6,15 @@
 ---
 
 ## Last Updated
+`2026-08-17` — Completed **Unused Dependencies Cleanup & Permissions Removal (`@DataEngineer`, `@Frontend`)**:
+1. **Uninstalled Unused Packages**: Removed `@react-navigation/bottom-tabs`, `@react-navigation/native`, `@react-navigation/native-stack`, `react-native-screens`, `lucide-react-native`, `expo-contacts`, and `expo-location`.
+2. **Explicit Icon Package**: Explicitly installed `@expo/vector-icons@^15.0.3` matching Expo SDK 54 requirements.
+3. **Cleaned `app.json` Configuration**:
+   - Removed unused location permissions (`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`).
+   - Removed unused contacts permissions (`READ_CONTACTS`, `WRITE_CONTACTS`).
+   - Removed `expo-location` and `expo-contacts` config plugins from `plugins` array.
+4. **Validation**: `npx depcheck` returned 0 unused dependencies; `npx tsc --noEmit` returned 0 errors.
+
 `2026-08-17` — Completed **React Hook Form + Zod Form Engine Migration (`@DataEngineer`, `@Frontend`, `@UXEngineer`)**:
 1. **Installed Form Stack**: Installed `react-hook-form`, `zod`, and `@hookform/resolvers` via Expo SDK 54 package manager.
 2. **Domain Schemas (`src/schemas/`)**:

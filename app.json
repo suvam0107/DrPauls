@@ -21,35 +21,15 @@
         "foregroundImage": "./assets/images/logo.png"
       },
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "READ_CONTACTS",
-        "WRITE_CONTACTS",
         "READ_CALL_LOG",
         "WRITE_CALL_LOG",
         "CALL_PHONE",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.READ_CONTACTS",
-        "android.permission.WRITE_CONTACTS",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "package": "com.suvam0107.DrPauls"
     },
     "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "DrPauls needs access to location to show nearby clinics and doctors."
-        }
-      ],
-      [
-        "expo-contacts",
-        {
-          "contactsPermission": "DrPauls needs access to your contacts to easily invite family members or set emergency contacts."
-        }
-      ],
       "expo-audio",
       "expo-asset"
     ],
