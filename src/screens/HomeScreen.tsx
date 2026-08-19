@@ -17,6 +17,7 @@ import { useRefresh } from '../utils/useRefresh';
 
 import UpcomingSessionsWidget from '../components/package/UpcomingSessionsWidget';
 import PackageEnrollmentDetailSheet from '../components/package/PackageEnrollmentDetailSheet';
+import ScheduleCompletionCard from '../components/home/ScheduleCompletionCard';
 import HomeScreenSkeleton from '../components/skeletons/HomeScreenSkeleton';
 
 import { useAppointmentsQuery } from '../hooks/queries/useAppointmentsQuery';
@@ -114,8 +115,6 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
     opacity: pulseOpacity.value,
   }));
 
-  const completionPct = todayAppts.length > 0 ? Math.round((paidCount / todayAppts.length) * 100) : 0;
-
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -193,63 +192,19 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         </View>
       )}
 
-      {/* Today's Operational Progress Summary Card */}
-      <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.summaryHeader}>
-          <Text style={[styles.summaryTitle, { color: colors.text }]}>Schedule Completion</Text>
-          <Text style={[styles.summaryPct, { color: colors.primary }]}>{completionPct}% Paid</Text>
-        </View>
-        <View style={[styles.progressBarTrack, { backgroundColor: colors.surface }]}>
-          <View
-            style={[
-              styles.progressBarFill,
-              { backgroundColor: colors.primary, width: `${Math.min(100, completionPct)}%` },
-            ]}
-          />
-        </View>
-        <View style={styles.summaryBadgeRow}>
-          <View style={[styles.summaryChip, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-            <Text style={[styles.summaryChipText, { color: colors.primary }]}>{todayAppts.length} Total</Text>
-          </View>
-          {confirmedCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.successBg }]}>
-              <Ionicons name="checkmark-circle-outline" size={14} color={colors.success} />
-              <Text style={[styles.summaryChipText, { color: colors.success }]}>{confirmedCount} Confirmed</Text>
-            </View>
-          )}
-          {paidCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.purpleBg }]}>
-              <Ionicons name="card-outline" size={14} color={colors.purple} />
-              <Text style={[styles.summaryChipText, { color: colors.purple }]}>{paidCount} Paid</Text>
-            </View>
-          )}
-          {pendingCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.warningBg }]}>
-              <Ionicons name="time-outline" size={14} color={colors.warning} />
-              <Text style={[styles.summaryChipText, { color: colors.warning }]}>{pendingCount} Pending</Text>
-            </View>
-          )}
-          {scheduledCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="calendar-number-outline" size={14} color={colors.primary} />
-              <Text style={[styles.summaryChipText, { color: colors.primary }]}>{scheduledCount} Scheduled</Text>
-            </View>
-          )}
-          {rescheduledCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.cyanBg }]}>
-              <Ionicons name="refresh-outline" size={14} color={colors.cyan} />
-              <Text style={[styles.summaryChipText, { color: colors.cyan }]}>{rescheduledCount} Rescheduled</Text>
-            </View>
-          )}
-          {cancelledCount > 0 && (
-            <View style={[styles.summaryChip, { backgroundColor: colors.dangerBg }]}>
-              <Ionicons name="close-circle-outline" size={14} color={colors.danger} />
-              <Text style={[styles.summaryChipText, { color: colors.danger }]}>{cancelledCount} Cancelled</Text>
-            </View>
-          )}
-        </View>
-      </View>
+      {/* Schedule Completion Card */}
+      <ScheduleCompletionCard
+        todayApptsCount={todayAppts.length}
+        confirmedCount={confirmedCount}
+        paidCount={paidCount}
+        pendingCount={pendingCount}
+        scheduledCount={scheduledCount}
+        rescheduledCount={rescheduledCount}
+        cancelledCount={cancelledCount}
+        onNavigateAppointments={(statusFilter) => {
+          onNavigate('appointments', statusFilter ? { statusFilter } : undefined);
+        }}
+      />
 
       {/* Quick Nav Bar */}
       <View style={styles.quickNavRow}>
