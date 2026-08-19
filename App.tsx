@@ -225,7 +225,7 @@ function MainApp() {
         open={drawerOpen}
         onOpen={() => setDrawerOpen(true)}
         onClose={() => setDrawerOpen(false)}
-        edgeSwipeEnabled={true}
+        edgeSwipeEnabled={currentScreen === 'home'}
       >
         <SidebarDrawer
           onClose={() => setDrawerOpen(false)}

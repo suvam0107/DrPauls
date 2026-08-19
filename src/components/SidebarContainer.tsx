@@ -152,8 +152,8 @@ export default function SidebarContainer({
     opacity: backdropOpacity.value,
   }));
 
-  // Edge strip starts below the header so the hamburger tap is never blocked
-  const headerOffset = insets.top + 56;
+  // Edge strip starts below the header & sub-header region so interactive navigation buttons are never blocked
+  const headerOffset = insets.top + 120;
 
   return (
     // box-none: this wrapper passes all touches through to children

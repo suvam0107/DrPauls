@@ -96,10 +96,14 @@ export default function CalendarHeader({
 
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      {/* Row 1: Date range, Today shortcut & List/Grid toggle icon */}
       <View style={styles.row}>
         <View style={styles.dateNavGroup}>
-          <TouchableOpacity onPress={() => handleDatePress(-1)} hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => handleDatePress(-1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.navArrowBtn}
+            activeOpacity={0.7}
+          >
             <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
@@ -107,7 +111,12 @@ export default function CalendarHeader({
             {getDateLabel()}
           </Text>
 
-          <TouchableOpacity onPress={() => handleDatePress(1)} hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => handleDatePress(1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.navArrowBtn}
+            activeOpacity={0.7}
+          >
             <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -237,6 +246,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  navArrowBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
   },
   dateLabel: { fontSize: 16, fontWeight: '700' },
   topRightActions: {
