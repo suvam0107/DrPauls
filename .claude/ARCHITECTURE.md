@@ -321,3 +321,19 @@ No emojis anywhere in the UI. All icons use `@expo/vector-icons` Ionicons.
    - Centralized hook managing loading state, click sound feedback, and concurrent re-fetch of all Zustand stores (`appointments`, `patients`, `doctors`, `centers`, `packages`).
 2. **Theme-Aligned Refresh Component (`AppRefreshControl.tsx`)**:
    - Encapsulates native `RefreshControl` with active theme tokens (`colors.primary` tint, `colors.card` Android background container, `colors.textMuted` title label) integrated across all scrollable screens and lists.
+
+---
+
+## 10. Intelligent Schedule Filtering & Calendar Grouped List Views
+
+1. **HomeScreen Today's Schedule Time-Interval Filter & Scroll Viewport**:
+   - **1-Hour Dropdown Filter**: Dynamic 1-hour slot generator derived from the active clinic's `openHours` (`openStart` to `openEnd`), defaulting to `'ALL'`.
+   - **Touch-Isolated Modal Picker**: Uses `Modal` + `measureInWindow` + Reanimated for flawless gesture isolation from the parent `ScrollView` with smart above/below screen boundary detection.
+   - **Scroll-Capped Viewport**: Constrained to a 4-card viewport (`maxHeight: 340`) with a bottom `LinearGradient` fade and a `+N more · scroll to see all` hint that automatically dismisses when the user scrolls to the bottom.
+
+2. **Calendar List Mode Grouped Hierarchy**:
+   - **Day View**: Appointments grouped into **1-hour intervals** (`10:00 AM – 11:00 AM`, etc.) with empty intervals hidden.
+   - **Week View**: Appointments grouped **day-wise** across the 7-day week (empty days hidden).
+   - **Month View**: Appointments grouped **week-wise** across the 5-week month matrix (e.g. `Week 1 (27 Jul – 02 Aug)`).
+   - **Clean Session Count Header**: Header renders total session count only (e.g. `12 sessions`), while each group section features a primary theme accent bar and count badge pill.
+

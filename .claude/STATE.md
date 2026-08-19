@@ -6,6 +6,19 @@
 ---
 
 ## Last Updated
+`2026-08-19` — Completed **HomeScreen Time Filter Dropdown & Calendar Grouped List View (`@Frontend`)**:
+1. **HomeScreen Today's Schedule Time Filter & Scrollable List (`HomeScreen.tsx`)**:
+   - Built a 1-hour interval time-slot dropdown filter (`TimeSlotDropdown`) derived from clinic open hours with an `'ALL'` default.
+   - Used `Modal` + `measureInWindow` + Reanimated for clean touch isolation and smart above/below coordinate positioning.
+   - Rendered the schedule within a 4-card scroll-capped container (`maxHeight: 340`) with a bottom gradient fade and a `+N more · scroll to see all` hint that automatically dismisses when scrolled to the bottom.
+2. **Calendar List Mode Grouped Views (`CalendarScreen.tsx`)**:
+   - **Day View**: Grouped appointments by 1-hour intervals (`10:00 AM – 11:00 AM`, etc.) with empty intervals hidden.
+   - **Week View**: Grouped appointments day-wise across the selected 7-day week (empty days hidden).
+   - **Month View**: Grouped appointments week-wise (Weeks 1–5 of the month matrix with date ranges).
+   - **Header Display**: Cleanly renders total sessions count only (e.g. `12 sessions`) across Day, Week, and Month list views.
+   - Styled themed section headers with accent indicator bars and session count pills.
+3. **TypeScript Gate Passed**: `npx tsc --noEmit` returned **0 errors**.
+
 `2026-08-17` — Completed **Unused Dependencies Cleanup & Permissions Removal (`@DataEngineer`, `@Frontend`)**:
 1. **Uninstalled Unused Packages**: Removed `@react-navigation/bottom-tabs`, `@react-navigation/native`, `@react-navigation/native-stack`, `react-native-screens`, `lucide-react-native`, `expo-contacts`, and `expo-location`.
 2. **Explicit Icon Package**: Explicitly installed `@expo/vector-icons@^15.0.3` matching Expo SDK 54 requirements.

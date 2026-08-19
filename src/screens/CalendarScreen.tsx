@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
 import CalendarHeader from '../components/calendar/CalendarHeader';
@@ -12,7 +12,18 @@ import StatusChip from '../components/shared/StatusChip';
 import useAppointmentStore from '../store/useAppointmentStore';
 import useUIStore from '../store/useUIStore';
 import useDoctorStore from '../store/useDoctorStore';
-import { todayISO, offsetDate, offsetMonth, getWeekDates, formatTime } from '../utils/dateUtils';
+import {
+  todayISO,
+  offsetDate,
+  offsetMonth,
+  getWeekDates,
+  formatTime,
+  timeToMins,
+  minsToTime,
+  getMonthGrid,
+  formatDateShort,
+  formatMonthYear,
+} from '../utils/dateUtils';
 import { useTheme } from '../theme/ThemeContext';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
@@ -116,7 +127,105 @@ export default function CalendarScreen() {
     return true;
   });
 
-  const selectedDateAppts = filteredAppointments.filter((a) => a.date === selectedDate);
+  // Grouping computation for List Mode:
+  // - Day: 1-hour time intervals (e.g. 10:00 AM – 11:00 AM)
+  // - Week: Day-wise (e.g. Mon, 18 Aug)
+  // - Month: Week-wise (e.g. Week 1, Week 2...)
+  const { groups, totalCount, emptyMessage } = useMemo(() => {
+    if (calendarView === 'day') {
+      const dayAppts = filteredAppointments
+        .filter((a) => a.date === selectedDate)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      const hourMap = new Map<number, Appointment[]>();
+      dayAppts.forEach((appt) => {
+        const startMins = timeToMins(appt.startTime);
+        const hour = Math.floor(startMins / 60);
+        if (!hourMap.has(hour)) {
+          hourMap.set(hour, []);
+        }
+        hourMap.get(hour)!.push(appt);
+      });
+
+      const sortedHours = Array.from(hourMap.keys()).sort((a, b) => a - b);
+      const dayGroups = sortedHours.map((hour) => {
+        const startStr = minsToTime(hour * 60);
+        const endStr = minsToTime((hour + 1) * 60);
+        const label = `${formatTime(startStr)} – ${formatTime(endStr)}`;
+        return {
+          key: `hour-${hour}`,
+          label,
+          appointments: hourMap.get(hour) || [],
+        };
+      });
+
+      return {
+        groups: dayGroups,
+        totalCount: dayAppts.length,
+        emptyMessage: `No appointments scheduled for ${formatDateShort(selectedDate)}.`,
+      };
+    }
+
+    if (calendarView === 'week') {
+      const weekAppts = filteredAppointments.filter((a) => weekDates.includes(a.date));
+
+      const weekGroups: { key: string; label: string; appointments: Appointment[] }[] = [];
+      weekDates.forEach((dateStr) => {
+        const apptsForDate = weekAppts
+          .filter((a) => a.date === dateStr)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        if (apptsForDate.length > 0) {
+          weekGroups.push({
+            key: `day-${dateStr}`,
+            label: formatDateShort(dateStr),
+            appointments: apptsForDate,
+          });
+        }
+      });
+
+      return {
+        groups: weekGroups,
+        totalCount: weekAppts.length,
+        emptyMessage: 'No appointments scheduled for this week.',
+      };
+    }
+
+    // Month view: group week-wise (5 weeks in 7x5 matrix)
+    const monthGrid = getMonthGrid(selectedDate);
+    const monthAppts = filteredAppointments.filter((a) =>
+      monthGrid.some((cell) => cell.date === a.date)
+    );
+
+    const monthGroups: { key: string; label: string; appointments: Appointment[] }[] = [];
+    for (let w = 0; w < 5; w++) {
+      const weekCells = monthGrid.slice(w * 7, (w + 1) * 7);
+      const weekCellDates = weekCells.map((c) => c.date);
+      const apptsForWeek = monthAppts
+        .filter((a) => weekCellDates.includes(a.date))
+        .sort((a, b) =>
+          a.date === b.date
+            ? a.startTime.localeCompare(b.startTime)
+            : a.date.localeCompare(b.date)
+        );
+
+      if (apptsForWeek.length > 0) {
+        const startStr = formatDateShort(weekCells[0].date);
+        const endStr = formatDateShort(weekCells[6].date);
+        monthGroups.push({
+          key: `week-${w + 1}`,
+          label: `Week ${w + 1} (${startStr} – ${endStr})`,
+          appointments: apptsForWeek,
+        });
+      }
+    }
+
+    return {
+      groups: monthGroups,
+      totalCount: monthAppts.length,
+      emptyMessage: `No appointments scheduled for ${formatMonthYear(selectedDate)}.`,
+    };
+  }, [calendarView, selectedDate, weekDates, filteredAppointments]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -135,7 +244,7 @@ export default function CalendarScreen() {
 
       {/* Main Content Area */}
       {displayMode === 'list' ? (
-        /* List Mode View (view-only list, no drag-drop) */
+        /* List Mode View with Dynamic Grouping (Day: Hourly, Week: Daily, Month: Weekly) */
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.listContent}
@@ -145,41 +254,64 @@ export default function CalendarScreen() {
         >
           <View style={styles.listHeader}>
             <Text style={[styles.listTitle, { color: colors.text }]}>
-              Schedule List ({selectedDateAppts.length})
+              {totalCount} {totalCount === 1 ? 'session' : 'sessions'}
             </Text>
           </View>
 
-          {selectedDateAppts.length === 0 ? (
+          {totalCount === 0 ? (
             <View style={[styles.emptyBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                No appointments for this date in list view.
+                {emptyMessage}
               </Text>
             </View>
           ) : (
-            selectedDateAppts.map((appt) => (
-              <TouchableOpacity
-                key={appt.id}
-                style={[styles.apptCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => {
-                  playClickSound();
-                  setSelectedAppt(appt);
-                }}
-              >
-                <View style={styles.apptTimeCol}>
-                  <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
-                  <Text style={[styles.durationText, { color: colors.textMuted }]}>30 mins</Text>
-                </View>
-
-                <View style={styles.apptInfoCol}>
-                  <Text style={[styles.patientName, { color: colors.text }]}>{appt.patientName}</Text>
-                  <Text style={[styles.apptMeta, { color: colors.textMuted }]}>
-                    {appt.serviceType} • {appt.doctorName}
+            groups.map((group) => (
+              <View key={group.key} style={styles.groupSection}>
+                {/* Group Section Header */}
+                <View style={styles.groupHeader}>
+                  <View style={[styles.groupHeaderAccent, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.groupHeaderLabel, { color: colors.text }]}>
+                    {group.label}
                   </Text>
+                  <View style={[styles.groupBadge, { backgroundColor: colors.primaryLight }]}>
+                    <Text style={[styles.groupBadgeText, { color: colors.primary }]}>
+                      {group.appointments.length} {group.appointments.length === 1 ? 'session' : 'sessions'}
+                    </Text>
+                  </View>
                 </View>
 
-                <StatusChip status={appt.status} date={appt.date} small />
-              </TouchableOpacity>
+                {/* Appointment Cards within Group */}
+                {group.appointments.map((appt) => (
+                  <TouchableOpacity
+                    key={appt.id}
+                    style={[styles.apptCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => {
+                      playClickSound();
+                      setSelectedAppt(appt);
+                    }}
+                  >
+                    <View style={styles.apptTimeCol}>
+                      <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
+                      {calendarView !== 'day' && (
+                        <Text style={[styles.apptDateText, { color: colors.textMuted }]}>
+                          {formatDateShort(appt.date)}
+                        </Text>
+                      )}
+                      <Text style={[styles.durationText, { color: colors.textMuted }]}>30 mins</Text>
+                    </View>
+
+                    <View style={styles.apptInfoCol}>
+                      <Text style={[styles.patientName, { color: colors.text }]}>{appt.patientName}</Text>
+                      <Text style={[styles.apptMeta, { color: colors.textMuted }]}>
+                        {appt.serviceType} • {appt.doctorName}
+                      </Text>
+                    </View>
+
+                    <StatusChip status={appt.status} date={appt.date} small />
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))
           )}
         </ScrollView>
@@ -271,6 +403,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  groupSection: {
+    marginBottom: 16,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  groupHeaderAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+  },
+  groupHeaderLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+  },
+  groupBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  groupBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
   emptyBox: {
     padding: 32,
     borderRadius: 12,
@@ -289,10 +449,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 12,
   },
-  apptTimeCol: { width: 68, alignItems: 'flex-start' },
+  apptTimeCol: { width: 72, alignItems: 'flex-start' },
   timeText: { fontSize: 13, fontWeight: '700' },
+  apptDateText: { fontSize: 10, marginTop: 1, fontWeight: '500' },
   durationText: { fontSize: 10, marginTop: 2 },
   apptInfoCol: { flex: 1 },
   patientName: { fontSize: 14, fontWeight: '700' },
   apptMeta: { fontSize: 12, marginTop: 2 },
 });
+

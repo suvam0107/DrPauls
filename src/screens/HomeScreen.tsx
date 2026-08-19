@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import React, { useState, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, Dimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import useUIStore from '../store/useUIStore';
@@ -9,7 +9,8 @@ import AppointmentDetailModal from '../components/calendar/AppointmentDetailModa
 import RescheduleModal from '../components/calendar/RescheduleModal';
 import CreateAppointmentSheet from '../components/appointment/CreateAppointmentSheet';
 import AppRefreshControl from '../components/shared/AppRefreshControl';
-import { todayISO, formatDateShort, formatTime, isPastSlot, timeToMins } from '../utils/dateUtils';
+import { todayISO, formatDateShort, formatTime, isPastSlot, timeToMins, minsToTime } from '../utils/dateUtils';
+import { LinearGradient } from 'expo-linear-gradient';
 import { APPOINTMENT_STATUS } from '../constants';
 import { Appointment } from '../types';
 import { playClickSound } from '../utils/feedback';
@@ -25,6 +26,173 @@ import { usePatientsQuery } from '../hooks/queries/usePatientsQuery';
 import { useDoctorsQuery } from '../hooks/queries/useDoctorsQuery';
 import { useCentersQuery } from '../hooks/queries/useCentersQuery';
 import { useScrollNavbar } from '../hooks/useScrollNavbar';
+
+// --- TimeSlotDropdown ---
+interface TimeSlotDropdownProps {
+  value: string;
+  options: Array<{ label: string; value: string }>;
+  onChange: (val: string) => void;
+}
+
+function TimeSlotDropdown({ value, options, onChange }: TimeSlotDropdownProps) {
+  const { colors } = useTheme();
+  const triggerRef = useRef<View>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [layoutPos, setLayoutPos] = useState({ x: 0, y: 0, width: 160, height: 32 });
+
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(-4);
+  const screenHeight = Dimensions.get('window').height;
+
+  const animateIn = () => {
+    opacity.value = withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) });
+    translateY.value = withTiming(0, { duration: 90, easing: Easing.out(Easing.quad) });
+  };
+
+  const animateOut = (onComplete?: () => void) => {
+    opacity.value = withTiming(0, { duration: 80, easing: Easing.in(Easing.quad) });
+    translateY.value = withTiming(
+      -4,
+      { duration: 80, easing: Easing.in(Easing.quad) },
+      (finished) => { if (finished && onComplete) runOnJS(onComplete)(); }
+    );
+  };
+
+  const handleOpen = () => {
+    playClickSound();
+    if (triggerRef.current) {
+      triggerRef.current.measureInWindow((x, y, width, height) => {
+        setLayoutPos({ x, y, width, height });
+        setIsOpen(true);
+        animateIn();
+      });
+    } else {
+      setIsOpen(true);
+      animateIn();
+    }
+  };
+
+  const handleClose = (selectedValue?: string) => {
+    playClickSound();
+    animateOut(() => {
+      setIsOpen(false);
+      if (selectedValue !== undefined) onChange(selectedValue);
+    });
+  };
+
+  const popupAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const selected = options.find((o) => o.value === value);
+  const displayLabel = selected ? selected.label : 'All';
+  const isFiltered = value !== 'ALL';
+
+  const dropdownWidth = 224;
+  const cardHeight = Math.min(280, options.length * 44);
+  const spaceBelow = screenHeight - (layoutPos.y + layoutPos.height);
+  const showAbove = spaceBelow < cardHeight + 20 && layoutPos.y > cardHeight + 20;
+  const topPos = showAbove ? layoutPos.y - cardHeight - 4 : layoutPos.y + layoutPos.height + 4;
+  const leftPos = Math.max(12, layoutPos.x + layoutPos.width - dropdownWidth);
+
+  return (
+    <View>
+      <View ref={triggerRef} collapsable={false}>
+        <TouchableOpacity
+          style={[
+            styles.timeFilterPill,
+            {
+              backgroundColor: isFiltered ? colors.primaryLight : colors.card,
+              borderColor: isFiltered ? colors.primary : colors.border,
+            },
+          ]}
+          onPress={isOpen ? () => handleClose() : handleOpen}
+          activeOpacity={0.75}
+        >
+          <Ionicons name="time-outline" size={11} color={isFiltered ? colors.primary : colors.textMuted} />
+          <Text
+            style={[styles.timeFilterPillText, { color: isFiltered ? colors.primary : colors.textMuted }]}
+            numberOfLines={1}
+          >
+            {displayLabel}
+          </Text>
+          <Ionicons
+            name={isOpen ? 'chevron-up' : 'chevron-down'}
+            size={11}
+            color={isFiltered ? colors.primary : colors.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={isOpen}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={() => handleClose()}
+      >
+        <Pressable style={styles.dropdownOverlay} onPress={() => handleClose()}>
+          <Animated.View
+            style={[
+              styles.dropdownCard,
+              popupAnimatedStyle,
+              {
+                position: 'absolute',
+                top: topPos,
+                left: leftPos,
+                width: dropdownWidth,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <ScrollView
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: 280 }}
+            >
+              {options.map((item, i) => {
+                const isActive = item.value === value;
+                const isLast = i === options.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.dropdownOption,
+                      isActive && { backgroundColor: colors.primaryLight },
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    ]}
+                    onPress={() => handleClose(item.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownOptionText,
+                        {
+                          color: isActive ? colors.primary : colors.text,
+                          fontWeight: isActive ? '600' : '400',
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                    {isActive && (
+                      <Ionicons name="checkmark-outline" size={15} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+// --- End TimeSlotDropdown ---
 
 export interface HomeScreenProps {
   onNavigate: (screen: string, params?: { patientId?: string; statusFilter?: string }) => void;
@@ -63,6 +231,8 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
   const [rescheduleTargetAppt, setRescheduleTargetAppt] = useState<Appointment | null>(null);
   const [selectedSessionAppt, setSelectedSessionAppt] = useState<Appointment | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('ALL');
+  const [reachedEnd, setReachedEnd] = useState(false);
 
   const today = todayISO();
   const centerAppts = appointments.filter((a) => !a.centerId || a.centerId === activeCenterId);
@@ -101,6 +271,33 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         !isPastSlot(a.date, a.endTime || a.startTime)
     )
     .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+
+  // 1-hour interval filter options derived from clinic open hours (no extra fetch needed)
+  const hourSlotOptions = useMemo(() => {
+    const opts: { label: string; value: string }[] = [{ label: 'All', value: 'ALL' }];
+    let m = timeToMins(openStart);
+    const end = timeToMins(openEnd);
+    while (m < end) {
+      const timeStr = minsToTime(m);
+      const nextStr = minsToTime(Math.min(m + 60, end));
+      opts.push({ value: timeStr, label: `${formatTime(timeStr)} – ${formatTime(nextStr)}` });
+      m += 60;
+    }
+    return opts;
+  }, [openStart, openEnd]);
+
+  // Today's appointments filtered by the selected hour slot
+  const filteredTodayAppts = useMemo(
+    () =>
+      selectedTimeSlot === 'ALL'
+        ? todayAppts
+        : todayAppts.filter((a) => {
+            const apptMins = timeToMins(a.startTime);
+            const slotMins = timeToMins(selectedTimeSlot);
+            return apptMins >= slotMins && apptMins < slotMins + 60;
+          }),
+    [todayAppts, selectedTimeSlot],
+  );
 
   // Animated live pulse dot
   const pulseOpacity = useSharedValue(1);
@@ -248,42 +445,91 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
       {/* Upcoming Packaged Sessions Widget */}
       <UpcomingSessionsWidget onSelectEnrollment={(id) => setSelectedEnrollmentId(id)} />
 
-      {/* Today's Appointments List */}
+      {/* Today's Schedule — Time-Filtered */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Schedule</Text>
-        <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{todayAppts.length} sessions</Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Schedule</Text>
+          <Text style={[styles.sectionCount, { color: colors.textMuted }]}>
+            {selectedTimeSlot === 'ALL'
+              ? `${todayAppts.length} sessions`
+              : `${filteredTodayAppts.length} of ${todayAppts.length}`}
+          </Text>
+        </View>
+        <TimeSlotDropdown
+          value={selectedTimeSlot}
+          options={hourSlotOptions}
+          onChange={(val) => {
+            setSelectedTimeSlot(val);
+            setReachedEnd(false);
+          }}
+        />
       </View>
 
-      {todayAppts.length === 0 ? (
+      {filteredTodayAppts.length === 0 ? (
         <View style={[styles.emptyBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="calendar-clear-outline" size={36} color={colors.textMuted} />
-          <Text style={[styles.emptyText, { color: colors.textMuted }]}>No appointments scheduled for today.</Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            {selectedTimeSlot === 'ALL'
+              ? 'No appointments scheduled for today.'
+              : 'No appointments in this time slot.'}
+          </Text>
         </View>
       ) : (
-        todayAppts.map((appt) => (
-          <TouchableOpacity
-            key={appt.id}
-            style={[styles.apptCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              playClickSound();
-              setSelectedAppt(appt);
+        <View style={styles.scheduleListContainer}>
+          <ScrollView
+            key={selectedTimeSlot}
+            style={styles.scheduleListScroll}
+            scrollEnabled
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
+              if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 20) {
+                setReachedEnd(true);
+              }
             }}
           >
-            <View style={styles.apptTimeCol}>
-              <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
-              <Text style={[styles.durationText, { color: colors.textMuted }]}>30 mins</Text>
-            </View>
-
-            <View style={styles.apptInfoCol}>
-              <Text style={[styles.patientName, { color: colors.text }]}>{appt.patientName}</Text>
-              <Text style={[styles.apptMeta, { color: colors.textMuted }]}>
-                {appt.serviceType} • {appt.doctorName}
-              </Text>
-            </View>
-
-            <StatusChip status={appt.status} date={appt.date} small />
-          </TouchableOpacity>
-        ))
+            {filteredTodayAppts.map((appt) => (
+              <TouchableOpacity
+                key={appt.id}
+                style={[styles.apptCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  playClickSound();
+                  setSelectedAppt(appt);
+                }}
+              >
+                <View style={styles.apptTimeCol}>
+                  <Text style={[styles.timeText, { color: colors.primary }]}>{formatTime(appt.startTime)}</Text>
+                  <Text style={[styles.durationText, { color: colors.textMuted }]}>30 mins</Text>
+                </View>
+                <View style={styles.apptInfoCol}>
+                  <Text style={[styles.patientName, { color: colors.text }]}>{appt.patientName}</Text>
+                  <Text style={[styles.apptMeta, { color: colors.textMuted }]}>
+                    {appt.serviceType} • {appt.doctorName}
+                  </Text>
+                </View>
+                <StatusChip status={appt.status} date={appt.date} small />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {filteredTodayAppts.length > 4 && !reachedEnd && (
+            <>
+              <View pointerEvents="none" style={styles.scrollHintGradient}>
+                <LinearGradient
+                  colors={['transparent', colors.background]}
+                  style={{ flex: 1 }}
+                />
+              </View>
+              <View style={styles.scrollHintRow}>
+                <Ionicons name="chevron-down-circle-outline" size={13} color={colors.textMuted} />
+                <Text style={[styles.scrollHintText, { color: colors.textMuted }]}>
+                  +{filteredTodayAppts.length - 4} more · scroll to see all
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
       )}
 
       {/* Appointment Detail Modal */}
@@ -423,6 +669,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   sectionCount: { fontSize: 12 },
   emptyBox: {
@@ -559,5 +810,72 @@ const styles = StyleSheet.create({
   summaryChipText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  // --- Today's Schedule: time-filter dropdown + capped FlatList ---
+  scheduleListContainer: {
+    position: 'relative',
+  },
+  scheduleListScroll: {
+    maxHeight: 340,
+  },
+  scrollHintGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 56,
+  },
+  scrollHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingTop: 5,
+    paddingBottom: 2,
+  },
+  scrollHintText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  timeFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 4,
+    maxWidth: 170,
+  },
+  timeFilterPillText: {
+    fontSize: 10,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    elevation: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  dropdownOptionText: {
+    fontSize: 13,
+    flex: 1,
+    marginRight: 8,
   },
 });

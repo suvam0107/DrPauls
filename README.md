@@ -36,8 +36,12 @@ Engineered with **Expo SDK 54**, **TanStack Query v5**, **Zustand v5**, **React 
 - **Zero-Delay UI Typing**: Local input state updates immediately on keypress, while debounced queries trigger TanStack Query server-side search hooks starting on the first character.
 - **Skeleton Search Indicators**: Displays inline activity spinners and skeleton loading cards during active search fetches.
 
-### 4. Interactive Drag-and-Drop Calendar Engine
+### 4. Interactive Drag-and-Drop Calendar & Grouped List Engine
 - **Triple View Modes**: Instant toggle between **Day**, **Week**, and **Month** grid layouts.
+- **Dual Display Modes (Grid & Grouped List)**: Switch between interactive drag-and-drop grid and structured grouped list views with view-specific hierarchy:
+  - **Day List Mode**: Grouped by **1-hour time intervals** (`10:00 AM – 11:00 AM`, etc.).
+  - **Week List Mode**: Grouped **day-wise** across the 7-day week (empty days hidden).
+  - **Month List Mode**: Grouped **week-wise** across the 5 weeks of the month matrix.
 - **Gesture Drag-and-Drop**: Reschedule `Scheduled`, `Confirmed`, and `Rescheduled` appointment chips across timeslots and days via native gesture pan handlers (`PanResponder`) with 0.5 ghosting opacity and red unavailable overlay highlights.
 - **Reschedule Confirmation Guard**: Drag releases and edit modals trigger `RescheduleConfirmationModal`, prompting receptionists to verify date/time, doctor assignment, and priority impact before committing.
 - **Original Schedule Audit Log**: Preserves historical schedule metadata (`originalSchedule: { date, startTime, doctorName, rescheduledAt }`) rendered in `AppointmentDetailModal`.
